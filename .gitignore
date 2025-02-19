@@ -145,3 +145,10 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+# Turbo
+.turbo
+
+
+# Compact
+artifacts/
