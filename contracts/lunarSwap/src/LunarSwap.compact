@@ -3,4 +3,129 @@ pragma language_version >= 0.14.0;
 
 import CompactStandardLibrary;
 
+// Following TypeScript Enum convention for naming set of constants with a capical letters.
+enum Role { 
+    Admin, 
+    Lp, 
+    Trader,
+    None
+}
 
+enum DexState {
+    Active, 
+    InActive
+}
+
+struct TokenPair { 
+    tokenA: TokenID,
+    tokenB: TokenID
+}
+
+struct EncryptedPoolState {
+    ciphertext: Bytes<32>
+}
+
+struct PoolState {
+    reserveA: Uint<64>,
+    reserveB: Uint<64>,
+    lpTokens: Uint<64>
+}
+
+//Public data
+export ledger roleCommits: MerkleTree<10, Bytes<32>>;
+export ledger balanceCommits: MerkleTree<10, Bytes<32>>;
+export ledger poolStateCommits: MerkleTree<10, Bytes<32>>;
+export ledger lpTokensCommits: MerkleTree<10, Bytes<32>>;
+export ledger pot: QualifiedCoinInfo;
+export ledger potHasCoin: Boolean;
+export ledger dexState: DexState;
+export ledger encryptorPublicKey: Bytes<32>;
+
+// Private Data
+witness getRole(user: UserID): Role;
+witness updateRole(user: UserID, role: Role);
+witness getBalance(user: UserID, token: TokenID): Uint<64>;
+witness updateBalance(user: UserID, token: TokenID): Uint<64>;
+witness getDecryptedPoolState(pair: TokenPair, encryptedPoolState: Bytes<32>): PoolState;
+witness encryptPoolState(pair: TokenPair, newPoolState: PoolState): Bytes<32>;
+witness getLpBalance(user: UserID, pair: TokenPair): Uint<64>;
+witness updateLpBalance(user: UserID, pair: TokenPair, newBalance: Uint<64>);
+//TODO witness getRolePath()
+witness getBalancePath(user: UserID): Maybe<MerkleTreePath<10, Bytes<32>>>;
+witness getPoolStatePath(pair: TokenPair): Maybe<MerkleTreePath<10, Bytes<32>>>;
+witness getLpBalancePath(user: UserID): Maybe<MerkleTreePath<10, Bytes<32>>>;
+
+/**
+ * @description Initializes the DEX contract with an initial NIGHT fee, Admin, and Encryptor/Decryptor key.
+ * @param initialFee CoinInfo - NIGHT token fee to seed the contract's pot.
+ * @param initialAdmin UserID - Shielded address of the initial Admin.
+ * @param encryptorKey Bytes<32> - Public key of the Centralized Encryptor/Decryptor.
+ */
+constructor(initialFee: CoinInfo, initialAdmin: UserID, encryptorPK: Bytes<32>) {
+    pot = initialFee;
+    potHashCoin = true;
+    dexState = DexState.Active;
+    updateRole(initialAdmin, Role.Admin);
+    encryptorPublicKey = encryptorPK;
+}
+
+/**
+ * @description Grants a role (Admin, LP, Trader) to a target user, callable only by Admins.
+ * @param target UserID - Shielded address of the user to grant the role to.
+ * @param role Role - The role to assign (admin, lp, trader).
+ * @param coin CoinInfo - NIGHT fee for transaction processing.
+ * @return [] - No direct return; updates roleCommits.
+ */
+export circuit addRole(target: UserID, role: Role, coin: CoinInfo): [] {
+    assert (hasRole(Role.Admin) == true) "LunarSwapError: Only Admins can add roles.";
+    updateRole(target, role);
+    return [];
+}
+/**
+ * @description Revokes a role from a target user, callable only by Admins.
+ * @param target UserID - Shielded address of the user to revoke the role from.
+ * @param coin CoinInfo - NIGHT fee for transaction processing.
+ * @return [] - No direct return; updates roleCommits.
+ */
+export circuit removeRole(target: UserID, coin: CoinInfo): [] {
+    assert (hasRole(Role.Admin) == true) "LunarSwapError: Only Admins can remove roles."
+    updateRole(target, Role.None);
+    return [];
+}
+
+/**
+ * @description Checks if the caller has a specific role, restricted to permitted users.
+ * @param role Role - The role to check (admin, lp, trader).
+ * @return Bool - True if the caller has the specified role, false otherwise.
+ */
+export circuit hasRole(role: Role): Bool {
+    // TODO msg.sender Midnight alternative
+    return getRole(caller()) == role;
+}
+
+export circuit checkExchangeRate(from: TokenID, to: TokenID, amount: Uint<64>): Uint<64> {
+    assert (hasRole(Role.Lp) == true || hasRole(Role.Trader)) "LunarSwapError: Only LPs or Traders can check rates.";
+    const state = getPoolState(tokenPair(from, to));
+    // Placeholder: Decryption handled off-chain; rate calculation simplified
+    return calculateExchangeRate(amount); 
+}
+
+export circuit addLiqudity(
+    tokenA: TokenID,
+    tokenB: TokenID,
+    amountA: Uint<64>,
+    amountB: Uint<64>,
+    coin: CoinInfo,
+    encryptedState: Bytes<32>,
+    signature: Bytes<32>,
+    transitionProof: Bytes<32>
+): CoinInfo {
+    assert (hasRole(Role.Lp)) "LunarSwapError: Only LPs can add Liquidity";
+    // TODO verify signature from Encrytor/Decryptor
+    
+}
+
+// TODO Implement
+pure circuit calculateExchangeRate(amount: Uint<64>): Uint<64> {
+    return amount;
+}
