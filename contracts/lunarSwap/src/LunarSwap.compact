@@ -41,18 +41,21 @@ export ledger potHasCoin: Boolean;
 export ledger dexState: DexState;
 export ledger encryptorPublicKey: Bytes<32>;
 
-// Private Data
+/// Private Data
+// Role
 witness getRole(user: UserID): Role;
-witness updateRole(user: UserID, role: Role);
+witness updateRole(user: UserID, role: Role): [];
+// Balance
 witness getBalance(user: UserID, token: TokenID): Uint<64>;
 witness updateBalance(user: UserID, token: TokenID): Uint<64>;
-witness getDecryptedPoolState(pair: TokenPair, encryptedPoolState: Bytes<32>): PoolState;
-witness encryptPoolState(pair: TokenPair, newPoolState: PoolState): Bytes<32>;
-witness getLpBalance(user: UserID, pair: TokenPair): Uint<64>;
-witness updateLpBalance(user: UserID, pair: TokenPair, newBalance: Uint<64>);
-//TODO witness getRolePath()
 witness getBalancePath(user: UserID): Maybe<MerkleTreePath<10, Bytes<32>>>;
+// PoolState
+witness getDecryptedPoolState(pairCommit: Bytes<32>): PoolState;
+witness encryptPoolState(pair: TokenPair, newPoolState: PoolState): Bytes<32>;
 witness getPoolStatePath(pair: TokenPair): Maybe<MerkleTreePath<10, Bytes<32>>>;
+// LP Tokens
+witness getLpBalance(user: UserID, pair: TokenPair): Uint<64>;
+witness updateLpBalance(user: UserID, pair: TokenPair, newBalance: Uint<64>): [];
 witness getLpBalancePath(user: UserID): Maybe<MerkleTreePath<10, Bytes<32>>>;
 
 /**
@@ -88,7 +91,7 @@ export circuit addRole(target: UserID, role: Role, coin: CoinInfo): [] {
  * @return [] - No direct return; updates roleCommits.
  */
 export circuit removeRole(target: UserID, coin: CoinInfo): [] {
-    assert (hasRole(Role.Admin) == true) "LunarSwapError: Only Admins can remove roles."
+    assert (hasRole(Role.Admin) == true) "LunarSwapError: Only Admins can remove roles.";
     updateRole(target, Role.None);
     return [];
 }
@@ -115,14 +118,71 @@ export circuit addLiqudity(
     tokenB: TokenID,
     amountA: Uint<64>,
     amountB: Uint<64>,
-    coin: CoinInfo,
-    encryptedState: Bytes<32>,
-    signature: Bytes<32>,
-    transitionProof: Bytes<32>
+    coin: CoinInfo 
 ): CoinInfo {
-    assert (hasRole(Role.Lp)) "LunarSwapError: Only LPs can add Liquidity";
-    // TODO verify signature from Encrytor/Decryptor
+    assert (hasRole(Role.Lp)) "LunarSwapError: Only LPs can add Liquidity.";
+    assert (amountA > 0 && amountB > 0) "LunarSwapError: Amounts must be positive.";
+
     
+
+    // TODO verify pool state commits.
+    assert (currentPoolState.reserveA >= 0 && currentPoolState.reserveB >=0 && currentPoolState.lpTokens >=0) "LunarSwapError: Invalid pool state";
+}
+
+circuit _addLiquidity(
+    tokenA: TokenID,
+    tokenB: TokenID,
+    amountA: Uint<64>,
+    amountB: Uint<64>
+): [PoolState, Uint<64>, Uint<64>] {
+    const pair = TokenPair { tokenA, tokenB };
+    const pairCommit = hashTokenPair(pair);
+    const currentPoolState = getDecryptedPoolState(pairCommit);
+
+    assert (currentPoolState.reserveA >= 0 && currentPoolState.reserveB >= 0 && currentPoolState.lpTokens >= 0) "LunarSwapError: Invalid decrypted pool state"; 
+
+    // Compute new pool state on-chain
+    // TODO it is better to use let similar in Typescript to just have one common variable.
+    if (currentPoolState.reserveA == 0 && currentPoolState.reserveB == 0) {
+        const newPoolState = PoolState {
+            reserveA: amountA,
+            reserveB: amountB,
+            lpTokens: sqrt(amountA * amountB)
+        };
+
+        return [newPoolState, amountA, amountB];
+    } else {
+        // TODO fix the exchange ration calculator
+        const numerator = amountA * currentPoolState.reserveB;
+        const denominator = currentPoolState.reserveA;
+        // Replace division with a check using multiplication
+        assert(numerator == amountB * denominator) "LunarSwapError: Amounts must maintain pool ratio";
+
+        const newPoolState = PoolState {
+            reserveA: currentPoolState.reserveA + amountA,
+            reserveB: currentPoolState.reserveB + amountB,
+            lpTokens: currentPoolState.lpTokens + sqrt(amountA * amountB)
+        };
+        return [newPoolState, amountA, amountB];
+    }
+}
+
+pure circuit hashPoolState(state: PoolState): Bytes<32> {
+    return presistent_hash<PoolState>(state);
+}
+
+pure circuit hashTokenPair(pair: TokenPair): Bytes<32> {
+    return presistent_hash<TokenPair>(pair);
+}
+
+/**
+ * @description Computes the square root of a number using the Babylonian method.
+ * @param x Uint<64> - The number to compute the square root of.
+ * @return Uint<64> - The largest integer y such that y * y <= x.
+ */
+ // TODO implementent
+pure circuit sqrt(x: Uint<64>): Uint<64> {
+    return x;
 }
 
 // TODO Implement
