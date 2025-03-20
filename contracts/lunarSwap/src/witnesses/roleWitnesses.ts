@@ -1,6 +1,8 @@
 import type { WitnessContext } from '@midnight-ntwrk/compact-runtime';
 import * as Contract from '../artifacts/role/contract/index.cjs';
 import type { RoleValue } from '../types';
+import { maybeFromNullable } from '../utils';
+import { emptyMerkleTreePath } from '../utils/test';
 
 export type RoleContractPrivateState = {
   roles: Record<string, RoleValue>;
@@ -97,7 +99,19 @@ export const RoleWitnesses =
         [],
       ];
     },
-    // getRolePath(context: WitnessContext<Contract.Ledger, RoleContractPrivateState>, user: Contract.ZswapCoinPublicKey): [RoleContractPrivateState, Contract.Maybe<Contract.MerkleTreePath<Uint8Array>>] {
-    //     const path = RoleContractPrivateState.getRolePath(context.privateState, user);
-    // }
+    getRolePath(
+      context: WitnessContext<Contract.Ledger, RoleContractPrivateState>,
+      userRoleCommit: Uint8Array,
+    ): [
+      RoleContractPrivateState,
+      Contract.Maybe<Contract.MerkleTreePath<Uint8Array>>,
+    ] {
+      return [
+        context.privateState,
+        maybeFromNullable(
+          context.ledger.roleCommits.findPathForLeaf(userRoleCommit),
+          emptyMerkleTreePath,
+        ),
+      ];
+    },
   });

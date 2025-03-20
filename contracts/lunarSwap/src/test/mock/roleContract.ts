@@ -1,6 +1,7 @@
 import {
   type CircuitContext,
   type CoinPublicKey,
+  ContractState,
   QueryContext,
   constructorContext,
   encodeCoinPublicKey,
@@ -50,19 +51,22 @@ export class RoleContractMock {
     this.contractAddress = this.circuitContext.transactionContext.address;
   }
 
-  public getLedger(): Contract.Ledger {
+  public getCurrentLedger(): Contract.Ledger {
     return Contract.ledger(this.circuitContext.transactionContext.state);
   }
 
-  public getPrivateState(): RoleContractPrivateState {
+  public getCurrentPrivateState(): RoleContractPrivateState {
     return this.circuitContext.currentPrivateState;
+  }
+
+  public getCurrentContractState(): ContractState {
+    return this.circuitContext.originalState;
   }
 
   public addRole(
     user: Contract.ZswapCoinPublicKey,
     role: Contract.Role,
-    coin: Contract.CoinInfo,
   ) {
-    this.contract.impureCircuits.addRole(this.circuitContext, user, role, coin);
+    this.contract.impureCircuits.addRole(this.circuitContext, user, role);
   }
 }
