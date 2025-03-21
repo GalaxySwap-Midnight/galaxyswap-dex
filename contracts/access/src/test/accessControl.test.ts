@@ -60,7 +60,7 @@ describe('AccessControl', () => {
     );
   });
 
-  test('add role', () => {
+  test('grant role', () => {
     const currentPrivateState =
       testAccessControlMockContract.getCurrentPrivateState();
     const currentContractState =
@@ -115,9 +115,10 @@ describe('AccessControl', () => {
     expect(actualLpRoleValue).toEqual(expectedLpRoleValue);
   });
 
-  test.concurrent('add role concurrent 1', () => {});
+  // TODO: Test concurrency for `grantRole()`
+  test.concurrent('grant role concurrent 1', () => {});
 
-  test.concurrent('add role concurrent 2', () => {});
+  test.concurrent('grant role concurrent 2', () => {});
 
-  //test('remove role', () => {});
+  //test('revoke role', () => {});
 });
