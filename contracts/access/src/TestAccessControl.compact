@@ -21,7 +21,6 @@ export {hashUserRole};
  * @throws {RoleError} - If the contract is already initialized (inherited from AccessControl).
  */
 constructor(initialAdmin: ZswapCoinPublicKey) {
-    const bool = true; // Unused variable, possibly for future use
     return initialize(initialAdmin);
 }
 
