@@ -1,40 +1,38 @@
 import {
   type CircuitContext,
   type CoinPublicKey,
-  ContractState,
+  type ContractState,
   QueryContext,
   constructorContext,
   encodeCoinPublicKey,
 } from '@midnight-ntwrk/compact-runtime';
+import { sampleContractAddress } from '@midnight-ntwrk/zswap';
+// TODO add those two imports in one line
+import { Contract as TestAccessControlContract } from '../../artifacts/TestAccessControl/contract/index.cjs';
+import * as Contract from '../../artifacts/TestAccessControl/contract/index.cjs';
 import {
-  sampleCoinPublicKey,
-  sampleContractAddress,
-} from '@midnight-ntwrk/zswap';
-import { Contract as RoleContract } from '../../artifacts/role/contract/index.cjs';
-import * as Contract from '../../artifacts/role/contract/index.cjs';
-import {
-  RoleContractPrivateState,
-  RoleWitnesses,
-} from '../../witnesses/roleWitnesses';
+  AccessContractPrivateState,
+  AccessControlWitnesses,
+} from '../../witnesses';
 
-export class RoleContractMock {
-  readonly contract: RoleContract<RoleContractPrivateState>;
+export class TestAccessControlMockContract {
+  readonly contract: TestAccessControlContract<AccessContractPrivateState>;
   readonly contractAddress: string;
   readonly admin: CoinPublicKey;
-  circuitContext: CircuitContext<RoleContractPrivateState>;
+
+  circuitContext: CircuitContext<AccessContractPrivateState>;
 
   constructor(admin: CoinPublicKey) {
-    this.contract = new RoleContract<RoleContractPrivateState>(RoleWitnesses());
+    this.contract = new TestAccessControlContract<AccessContractPrivateState>(
+      AccessControlWitnesses(),
+    );
     this.admin = admin;
     const {
       currentPrivateState,
       currentContractState,
       currentZswapLocalState,
     } = this.contract.initialState(
-      constructorContext(
-        RoleContractPrivateState.generate(),
-        sampleCoinPublicKey(),
-      ),
+      constructorContext(AccessContractPrivateState.generate(), this.admin),
       {
         bytes: encodeCoinPublicKey(this.admin),
       },
@@ -55,7 +53,7 @@ export class RoleContractMock {
     return Contract.ledger(this.circuitContext.transactionContext.state);
   }
 
-  public getCurrentPrivateState(): RoleContractPrivateState {
+  public getCurrentPrivateState(): AccessContractPrivateState {
     return this.circuitContext.currentPrivateState;
   }
 
@@ -63,10 +61,7 @@ export class RoleContractMock {
     return this.circuitContext.originalState;
   }
 
-  public addRole(
-    user: Contract.ZswapCoinPublicKey,
-    role: Contract.Role,
-  ) {
-    this.contract.impureCircuits.addRole(this.circuitContext, user, role);
+  public testAddRole(user: Contract.ZswapCoinPublicKey, role: Contract.Role) {
+    this.contract.impureCircuits.testAddRole(this.circuitContext, user, role);
   }
 }

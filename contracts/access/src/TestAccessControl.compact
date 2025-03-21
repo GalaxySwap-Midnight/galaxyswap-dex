@@ -1,0 +1,23 @@
+// TODO check the recent compact version
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+// TODO Not sure if I should user prefix better, like Access_. 
+import "./AccessControl"; 
+
+// Export std
+export {Maybe, CoinInfo, MerkleTreePath, ZswapCoinPublicKey}
+// Export Public state
+export {Role, roleCommits}
+// Export circuits
+export {hashRole}
+
+constructor(initialAdmin: ZswapCoinPublicKey) {
+    const bool = true;
+    return initialize(initialAdmin);
+}
+
+export circuit testAddRole(user: ZswapCoinPublicKey, role: Role): [] {
+    return addRole(user, role);
+} 
+

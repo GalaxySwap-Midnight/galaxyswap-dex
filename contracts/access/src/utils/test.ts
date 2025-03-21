@@ -1,12 +1,12 @@
 import {
-  type ContractAddress,
-  emptyZswapLocalState,
-  QueryContext,
   type CircuitContext,
   type CoinPublicKey,
+  type ContractAddress,
   type ContractState,
+  QueryContext,
+  emptyZswapLocalState,
 } from '@midnight-ntwrk/compact-runtime';
-import type * as Contract from '../artifacts/role/contract/index.cjs';
+import type * as Contract from '..//artifacts/TestAccessControl/contract/index.cjs';
 
 // Runtime requires a bit of additional structure for running circuits...
 export function circuitContext<T>(
@@ -24,7 +24,7 @@ export function circuitContext<T>(
 }
 
 export const emptyMerkleTreePath: Contract.MerkleTreePath<Uint8Array> = {
-  leaf: new Uint8Array(32), 
+  leaf: new Uint8Array(32),
   path: Array(10).fill({
     sibling: { field: BigInt(0) },
     goes_left: false,

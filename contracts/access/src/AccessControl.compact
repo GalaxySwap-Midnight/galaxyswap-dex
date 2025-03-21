@@ -1,0 +1,92 @@
+pragma language_version >= 0.14.0;
+
+module AccessControl {
+    import CompactStandardLibrary;
+
+    export enum Role {
+        Admin,
+        Lp,
+        Trader,
+        None
+    };
+
+    // Public state
+    export ledger isInitialized: Boolean;
+    export ledger roleCommits: MerkleTree<10, Bytes<32>>;
+    // For keeping track of the next possible index in the Role tree.
+    export ledger index: Counter;
+
+    // Private state
+    export witness getRole(user: ZswapCoinPublicKey): Role;
+    export witness updateRole(userRoleCommit: Bytes<32>, role: Role, index: Uint<64>): [];
+    export witness getRolePath(userRoleCommit: Bytes<32>): Maybe<MerkleTreePath<10, Bytes<32>>>;
+
+    export circuit initialize(initialAdmin: ZswapCoinPublicKey): [] {
+        assert (!isInitialized) "RoleError: Role contract is initialized!";
+
+        insertRole(initialAdmin, Role.Admin);
+
+        isInitialized = true;
+
+        return [];
+    }
+
+    export circuit addRole(user: ZswapCoinPublicKey, role: Role): [] {
+        assert (isInitialized) "RoleError: Role contract is not initialized yet!";
+        assert (onlyAdmin()) "RoleError: Caller does not have an Admin role.";
+        assert (!roleCommits.is_full()) "RoleError: Role commitments tree is full!";
+
+        return insertRole(user, role);
+    }
+
+    export circuit hashRole(user: ZswapCoinPublicKey, role: Role): Bytes<32> {
+        // TODO: Revisit to enhance privacy by adding salt or randomness for shielding user identity
+        const roleHash = persistent_hash<Vector<1, Role>>([role]);
+        return persistent_hash<Vector<2, Bytes<32>>>([user.bytes, roleHash]);
+    }
+
+    export circuit onlyAdmin(): Boolean {
+        return hasRole(Role.Admin);
+    }
+
+    export circuit onlyLp(): Boolean {
+        return hasRole(Role.Lp);
+    }
+
+    export circuit onlyTrader(): Boolean {
+        return hasRole(Role.Trader); 
+    }
+
+    circuit hasRole(role: Role): Boolean {
+        const caller = own_public_key();
+
+        const userRoleCommit = hashRole(caller, role);
+        const userRolePath = getRolePath(userRoleCommit);
+        const ind = index;
+
+        assert (
+            userRolePath.is_some && 
+            roleCommits.check_root(getPathRoot(userRolePath.value)) &&
+            userRoleCommit == userRolePath.value.leaf
+        ) "RoleError: Unauthorized action!";    
+
+        return true;
+    }
+
+    circuit insertRole(user: ZswapCoinPublicKey, role: Role): [] {
+        const userRoleCommit = hashRole(user, role);
+
+        const currentIndex = index;
+
+        roleCommits.insert_index(userRoleCommit, currentIndex);
+        
+        updateRole(userRoleCommit, role, currentIndex);
+        
+        return index.increment(1);
+    }
+
+    // TODO: move that to utils.compact
+    circuit getPathRoot(path: MerkleTreePath<10, Bytes<32>>): MerkleTreeDigest {
+        return merkle_tree_path_root<10, Bytes<32>>(path);
+    }
+}
