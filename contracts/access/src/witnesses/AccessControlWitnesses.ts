@@ -3,15 +3,17 @@ import * as Contract from '..//artifacts/MockAccessControl/contract/index.cjs';
 import type { RoleValue } from '../types';
 import { maybeFromNullable } from '../utils';
 import { emptyMerkleTreePath } from '../utils/test';
+import * as crypto from 'node:crypto';
 
 export type AccessContractPrivateState = {
+  secretKey: Buffer;
   roles: Record<string, RoleValue>;
 };
 
 // Operations on PrivateState
 export const AccessContractPrivateState = {
   generate: (): AccessContractPrivateState => {
-    return { roles: {} };
+    return { secretKey: crypto.getRandomValues(Buffer.alloc(32)), roles: {} };
   },
 
   updateRole: (
@@ -106,5 +108,10 @@ export const AccessControlWitnesses =
           emptyMerkleTreePath,
         ),
       ];
+    },
+    getSecretKey(
+      context: WitnessContext<Contract.Ledger, AccessContractPrivateState>,
+    ): [AccessContractPrivateState, Uint8Array] {
+      return [context.privateState, context.privateState.secretKey];
     },
   });

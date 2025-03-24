@@ -69,7 +69,7 @@ describe('AccessControl', () => {
 
     // Failed test: Non Admin call!
     expect(() =>
-      testAccessControlMockContract.contract.circuits.testGrantRole(
+      testAccessControlMockContract.contract.circuits.grantRole(
         useCircuitContextSender(
           testAccessControlMockContract,
           notAuthorizedUser,
@@ -81,7 +81,7 @@ describe('AccessControl', () => {
 
     // Success test: Admin call!
     const circuitResult =
-      testAccessControlMockContract.contract.impureCircuits.testGrantRole(
+      testAccessControlMockContract.contract.impureCircuits.grantRole(
         useCircuitContextSender(testAccessControlMockContract, admin),
         { bytes: encodeCoinPublicKey(lpUser) },
         MockAccessContract.AccessControl_Role.Lp,
@@ -104,6 +104,15 @@ describe('AccessControl', () => {
     };
 
     expect(actualLpRoleValue).toEqual(expectedLpRoleValue);
+
+    // Fail test: Prevent double granting the same role to the same address!
+    expect(() =>
+      testAccessControlMockContract.contract.impureCircuits.grantRole(
+        useCircuitContextSender(testAccessControlMockContract, admin),
+        { bytes: encodeCoinPublicKey(lpUser) },
+        MockAccessContract.AccessControl_Role.Lp,
+      ),
+    ).toThrowError('AccessControl: Role already granted!');
   });
 
   // TODO: Test concurrency for `grantRole()`

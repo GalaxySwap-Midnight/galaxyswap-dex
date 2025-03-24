@@ -63,11 +63,4 @@ export class MockAccessControlContract
   public getCurrentContractState(): ContractState {
     return this.circuitContext.originalState;
   }
-
-  public testGrantRole(
-    user: Contract.ZswapCoinPublicKey,
-    role: Contract.AccessControl_Role,
-  ) {
-    this.contract.impureCircuits.testGrantRole(this.circuitContext, user, role);
-  }
 }

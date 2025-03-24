@@ -32,6 +32,12 @@ module AccessControl {
     export ledger roleCommits: MerkleTree<10, Bytes<32>>;
 
     /**
+     * @description A set of nullifiers tracking used user-role pairs to prevent duplicate role assignments.
+     * @type {Set<Bytes<32>>}
+     */
+    export ledger roleNullifiers: Set<Bytes<32>>;
+
+    /**
      * @description Counter tracking the next available index for inserting into the role tree.
      * @type {Counter}
      */
@@ -52,6 +58,11 @@ module AccessControl {
      * @returns {Maybe<MerkleTreePath<10, Bytes<32>>>} - The path if it exists, otherwise None.
      */
     export witness getRolePath(userRoleCommit: Bytes<32>): Maybe<MerkleTreePath<10, Bytes<32>>>;
+
+    /**
+     * @description Witness to provide user’s secret key for nullifier generation.
+     */
+    export witness getSecretKey(): Bytes<32>;
 
     /**
      * @description Initializes the AccessControl contract by granting the Admin role to an initial user.
@@ -75,8 +86,14 @@ module AccessControl {
      */
     export circuit grantRole(user: ZswapCoinPublicKey, role: Role): [] {
         assert (isInitialized) "AccessControl: Role contract is not initialized yet!";
-        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role.";
+        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role!";
         assert (!roleCommits.is_full()) "AccessControl: Role commitments tree is full!";
+
+        const nullifier = hashNullifier(user, role);
+        const isExist = roleNullifiers.member(nullifier);
+        assert (!roleNullifiers.member(nullifier)) "AccessControl: Role already granted!";
+    
+        roleNullifiers.insert(disclose(nullifier));
         return _grantRole(user, role);
     }
 
@@ -104,8 +121,8 @@ module AccessControl {
      */
     circuit revokeRole(user: ZswapCoinPublicKey, role: Role): [] {
         assert (isInitialized) "AccessControl: Role contract is not initialized yet!";
-        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role.";
-        assert (hasRole(user, role)) "AccessControl: User does not have a role.";
+        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role!";
+        assert (hasRole(user, role)) "AccessControl: User does not have a role!";
     }
 
     /**
@@ -185,6 +202,14 @@ module AccessControl {
         ) "AccessControl: Unauthorized user!";    
 
         return true;
+    }
+
+    /**
+     * @description Computes a nullifier for a user and role using secret knowledge.
+     */
+    circuit hashNullifier(user: ZswapCoinPublicKey, role: Role): Bytes<32> {
+        const sk = getSecretKey();
+        return persistent_hash<Vector<4, Bytes<32>>>([pad(32, "role-nullifier"), hashRole(role), user.bytes, sk]);
     }
 
     // TODO: Should be in a general Compact utils contract for MerkleTree.
