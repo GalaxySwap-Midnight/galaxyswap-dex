@@ -7,23 +7,26 @@ import {
   encodeCoinPublicKey,
 } from '@midnight-ntwrk/compact-runtime';
 import { sampleContractAddress } from '@midnight-ntwrk/zswap';
-// TODO add those two imports in one line
-import { Contract as TestAccessControlContract } from '../../artifacts/TestAccessControl/contract/index.cjs';
-import * as Contract from '../../artifacts/TestAccessControl/contract/index.cjs';
+// TODO: add those two imports in one line
+import { Contract as MockAccessControl } from '../../artifacts/MockAccessControl/contract/index.cjs';
+import * as Contract from '../../artifacts/MockAccessControl/contract/index.cjs';
 import {
   AccessContractPrivateState,
   AccessControlWitnesses,
 } from '../../witnesses';
+import type { MockContract } from '../../types';
 
-export class TestAccessControlMockContract {
-  readonly contract: TestAccessControlContract<AccessContractPrivateState>;
+export class MockAccessControlContract
+  implements MockContract<AccessContractPrivateState, Contract.Ledger>
+{
+  readonly contract: MockAccessControl<AccessContractPrivateState>;
   readonly contractAddress: string;
   readonly admin: CoinPublicKey;
 
   circuitContext: CircuitContext<AccessContractPrivateState>;
 
   constructor(admin: CoinPublicKey) {
-    this.contract = new TestAccessControlContract<AccessContractPrivateState>(
+    this.contract = new MockAccessControl<AccessContractPrivateState>(
       AccessControlWitnesses(),
     );
     this.admin = admin;
@@ -61,7 +64,10 @@ export class TestAccessControlMockContract {
     return this.circuitContext.originalState;
   }
 
-  public testGrantRole(user: Contract.ZswapCoinPublicKey, role: Contract.Role) {
+  public testGrantRole(
+    user: Contract.ZswapCoinPublicKey,
+    role: Contract.AccessControl_Role,
+  ) {
     this.contract.impureCircuits.testGrantRole(this.circuitContext, user, role);
   }
 }

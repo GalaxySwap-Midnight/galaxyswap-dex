@@ -37,7 +37,6 @@ module AccessControl {
      */
     export ledger index: Counter;
 
-
     /**
      * @description Witness function to update a user’s role and its index in private state.
      * @param {Bytes<32>} userRoleCommit - The commitment hash of the user-role pair.
@@ -61,7 +60,7 @@ module AccessControl {
      * @throws {RoleError} - If the contract is already initialized.
      */
     export circuit initialize(initialAdmin: ZswapCoinPublicKey): [] {
-        assert (!isInitialized) "RoleError: Role contract is initialized!";
+        assert (!isInitialized) "AccessControl: AccessControl contract is initialized!";
         _grantRole(initialAdmin, Role.Admin);
         isInitialized = true;
         return [];
@@ -75,9 +74,9 @@ module AccessControl {
      * @throws {RoleError} - If the contract is not initialized, caller is not Admin, or the role tree is full.
      */
     export circuit grantRole(user: ZswapCoinPublicKey, role: Role): [] {
-        assert (isInitialized) "RoleError: Role contract is not initialized yet!";
-        assert (onlyAdmin()) "RoleError: Caller does not have an Admin role.";
-        assert (!roleCommits.is_full()) "RoleError: Role commitments tree is full!";
+        assert (isInitialized) "AccessControl: Role contract is not initialized yet!";
+        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role.";
+        assert (!roleCommits.is_full()) "AccessControl: Role commitments tree is full!";
         return _grantRole(user, role);
     }
 
@@ -104,8 +103,8 @@ module AccessControl {
      * @todo Implement revocation logic with a queue for index reuse.
      */
     circuit revokeRole(user: ZswapCoinPublicKey, role: Role): [] {
-        assert (isInitialized) "RoleError: Role contract is not initialized yet!";
-        assert (onlyAdmin()) "RoleError: Caller does not have an Admin role.";
+        assert (isInitialized) "AccessControl: Role contract is not initialized yet!";
+        assert (onlyAdmin()) "AccessControl: Caller does not have an Admin role.";
         assert (hasRole(user, role)) "AccessControl: User does not have a role.";
     }
 
@@ -183,7 +182,7 @@ module AccessControl {
             userRolePath.is_some && 
             roleCommits.check_root(getPathRoot(userRolePath.value)) &&
             userRoleCommit == userRolePath.value.leaf
-        ) "RoleError: Unauthorized action!";    
+        ) "AccessControl: Unauthorized user!";    
 
         return true;
     }

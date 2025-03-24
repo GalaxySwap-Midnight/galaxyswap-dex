@@ -3,16 +3,16 @@ pragma language_version >= 0.14.0;
 
 import CompactStandardLibrary;
 // TODO: Not sure if I should use prefix better, like Access_.
-import "./AccessControl";
+import AccessControl prefix AccessControl_;
 
 // Export std
-export {Maybe, CoinInfo, MerkleTreePath, ZswapCoinPublicKey};
+export { Maybe, MerkleTreePath, ZswapCoinPublicKey };
 
 // Export Public state
-export {Role, roleCommits};
+export { AccessControl_Role, AccessControl_roleCommits };
 
 // Export circuits
-export {hashUserRole};
+export { AccessControl_hashUserRole };
 
 /**
  * @description Constructs the contract by initializing the AccessControl module with an initial admin.
@@ -21,7 +21,7 @@ export {hashUserRole};
  * @throws {RoleError} - If the contract is already initialized (inherited from AccessControl).
  */
 constructor(initialAdmin: ZswapCoinPublicKey) {
-    return initialize(initialAdmin);
+    return AccessControl_initialize(initialAdmin);
 }
 
 /**
@@ -31,6 +31,6 @@ constructor(initialAdmin: ZswapCoinPublicKey) {
  * @returns {[]} - An empty array indicating success.
  * @throws {RoleError} - If the contract is not initialized, caller is not Admin, or the role tree is full.
  */
-export circuit testGrantRole(user: ZswapCoinPublicKey, role: Role): [] {
-    return grantRole(user, role);
+export circuit testGrantRole(user: ZswapCoinPublicKey, role: AccessControl_Role): [] {
+    return AccessControl_grantRole(user, role);
 }

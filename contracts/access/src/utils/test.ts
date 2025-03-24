@@ -3,27 +3,71 @@ import {
   type CoinPublicKey,
   type ContractAddress,
   type ContractState,
+  type MerkleTreePath,
   QueryContext,
   emptyZswapLocalState,
 } from '@midnight-ntwrk/compact-runtime';
-import type * as Contract from '..//artifacts/TestAccessControl/contract/index.cjs';
+import type { MockContract } from '../types';
 
-// Runtime requires a bit of additional structure for running circuits...
-export function circuitContext<T>(
-  privateState: T,
+/**
+ * Constructs a `CircuitContext` from the given state and sender information.
+ *
+ * This is typically used at runtime to provide the necessary context
+ * for executing circuits, including contract state, private state,
+ * sender identity, and transaction data.
+ *
+ * @template P - The type of the contract's private state.
+ *
+ * @param privateState - The current private state of the contract.
+ * @param contractState - The full contract state, including public and private data.
+ * @param sender - The public key of the sender (used in the circuit).
+ * @param contractAddress - The address of the deployed contract.
+ * @returns A fully populated `CircuitContext` for circuit execution.
+ */
+export function useCircuitContext<P>(
+  privateState: P,
   contractState: ContractState,
-  coinPublicKey: CoinPublicKey,
+  sender: CoinPublicKey,
   contractAddress: ContractAddress,
-): CircuitContext<T> {
+): CircuitContext<P> {
   return {
     originalState: contractState,
     currentPrivateState: privateState,
     transactionContext: new QueryContext(contractState.data, contractAddress),
-    currentZswapLocalState: emptyZswapLocalState(coinPublicKey),
+    currentZswapLocalState: emptyZswapLocalState(sender),
   };
 }
 
-export const emptyMerkleTreePath: Contract.MerkleTreePath<Uint8Array> = {
+/**
+ * Prepares a new `CircuitContext` using the given sender and contract.
+ *
+ * Useful for mocking or updating the circuit context with a custom sender.
+ *
+ * @template P - The type of the contract's private state.
+ * @template L - The type of the contract's ledger (public state).
+ * @template C - The specific type of the contract implementing `MockContract`.
+ *
+ * @param contract - The contract instance implementing `MockContract`.
+ * @param sender - The public key to set as the sender in the new circuit context.
+ * @returns A new `CircuitContext` with the sender and updated context values.
+ */
+export function useCircuitContextSender<P, L, C extends MockContract<P, L>>(
+  contract: C,
+  sender: CoinPublicKey,
+): CircuitContext<P> {
+  const currentPrivateState = contract.getCurrentPrivateState();
+  const originalState = contract.getCurrentContractState();
+  const contractAddress = contract.contractAddress;
+
+  return {
+    originalState,
+    currentPrivateState,
+    transactionContext: new QueryContext(originalState.data, contractAddress),
+    currentZswapLocalState: emptyZswapLocalState(sender),
+  };
+}
+
+export const emptyMerkleTreePath: MerkleTreePath<Uint8Array> = {
   leaf: new Uint8Array(32),
   path: Array(10).fill({
     sibling: { field: BigInt(0) },

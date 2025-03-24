@@ -1,5 +1,5 @@
 import type { WitnessContext } from '@midnight-ntwrk/compact-runtime';
-import * as Contract from '..//artifacts/TestAccessControl/contract/index.cjs';
+import * as Contract from '..//artifacts/MockAccessControl/contract/index.cjs';
 import type { RoleValue } from '../types';
 import { maybeFromNullable } from '../utils';
 import { emptyMerkleTreePath } from '../utils/test';
@@ -17,7 +17,7 @@ export const AccessContractPrivateState = {
   updateRole: (
     state: AccessContractPrivateState,
     userRoleCommit: Uint8Array,
-    role: Contract.Role,
+    role: Contract.AccessControl_Role,
     index: bigint,
   ): AccessContractPrivateState => {
     const userRoleCommitString = userRoleCommit.toString();
@@ -38,9 +38,9 @@ export const AccessContractPrivateState = {
   getRole: (
     state: AccessContractPrivateState,
     user: Contract.ZswapCoinPublicKey,
-  ): Contract.Role => {
+  ): Contract.AccessControl_Role => {
     const userKey = Buffer.from(user.bytes).toString('hex');
-    return state.roles[userKey]?.role ?? Contract.Role.None;
+    return state.roles[userKey]?.role ?? Contract.AccessControl_Role.None;
   },
 
   updatePath: (
@@ -66,7 +66,7 @@ export const AccessControlWitnesses =
     updateRole(
       context: WitnessContext<Contract.Ledger, AccessContractPrivateState>,
       userRoleCommit: Uint8Array,
-      role: Contract.Role,
+      role: Contract.AccessControl_Role,
       index: bigint,
     ): [AccessContractPrivateState, []] {
       return [
@@ -99,7 +99,7 @@ export const AccessControlWitnesses =
       return [
         context.privateState,
         maybeFromNullable(
-          context.ledger.roleCommits.pathForLeaf(
+          context.ledger.accessControlRoleCommits.pathForLeaf(
             context.privateState.roles[userRoleCommitString].index,
             userRoleCommit,
           ),
