@@ -1,6 +1,0 @@
-// TODO check the recent compact version
-pragma language_version >= 0.14.0;
-
-import CompactStandardLibrary;
-
-
