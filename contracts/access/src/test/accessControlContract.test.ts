@@ -6,7 +6,7 @@ import { sampleCoinPublicKey } from '@midnight-ntwrk/zswap';
 import { beforeEach, describe, expect, test } from 'vitest';
 import * as MockAccessContract from '../artifacts/MockAccessControl/contract/index.cjs';
 import type { RoleValue } from '../types';
-import { AccessControlContractSimulator } from './mock/MockAccessControlContract';
+import { AccessControlContractSimulator } from './AccessControlContractSimulator';
 
 let mockAccessControlContract: AccessControlContractSimulator;
 let admin: CoinPublicKey;
@@ -26,7 +26,7 @@ describe('AccessControl', () => {
       const publicState = mockAccessControlContract.getCurrentPublicState();
       const privateState = mockAccessControlContract.getCurrentPrivateState();
       const adminRoleCommit =
-        MockAccessContract.pureCircuits.AccessControl_hashUserRole(
+        MockAccessContract.pureCircuits.hashUserRole(
           { bytes: adminPkBytes },
           MockAccessContract.AccessControl_Role.Admin,
         );
@@ -68,7 +68,7 @@ describe('AccessControl', () => {
         admin,
       );
       const lpRoleCommit =
-        MockAccessContract.pureCircuits.AccessControl_hashUserRole(
+        MockAccessContract.pureCircuits.hashUserRole(
           { bytes: encodeCoinPublicKey(lpUser) },
           MockAccessContract.AccessControl_Role.Lp,
         );
@@ -171,7 +171,7 @@ describe('AccessControl', () => {
         admin,
       );
       const noneRoleCommit =
-        MockAccessContract.pureCircuits.AccessControl_hashUserRole(
+        MockAccessContract.pureCircuits.hashUserRole(
           { bytes: encodeCoinPublicKey(user) },
           MockAccessContract.AccessControl_Role.None,
         );
