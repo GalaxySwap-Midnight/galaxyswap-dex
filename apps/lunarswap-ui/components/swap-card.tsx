@@ -1,54 +1,68 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { ArrowDown, Settings } from "lucide-react"
-import { TokenInput } from "./token-input"
-import { TokenSelectModal } from "./token-select-modal"
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { ArrowDown, Fuel, Info, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { TokenInput } from './token-input';
+import { TokenSelectModal } from './token-select-modal';
 
 export function SwapCard() {
-  const [showTokenModal, setShowTokenModal] = useState(false)
-  const [selectingToken, setSelectingToken] = useState<"from" | "to">("from")
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [selectingToken, setSelectingToken] = useState<'from' | 'to'>('from');
   const [fromToken, setFromToken] = useState({
-    symbol: "ETH",
-    name: "Ethereum",
-    logo: "/placeholder.svg?height=24&width=24",
-    balance: "1.56",
-  })
+    symbol: 'ETH',
+    name: 'Ethereum',
+    logo: '/placeholder.svg?height=24&width=24',
+    balance: '1.56',
+  });
   const [toToken, setToToken] = useState({
-    symbol: "USDC",
-    name: "USD Coin",
-    logo: "/placeholder.svg?height=24&width=24",
-    balance: "2,456.78",
-  })
-  const [fromAmount, setFromAmount] = useState("")
-  const [toAmount, setToAmount] = useState("")
+    symbol: 'USDC',
+    name: 'USD Coin',
+    logo: '/placeholder.svg?height=24&width=24',
+    balance: '2,456.78',
+  });
+  const [fromAmount, setFromAmount] = useState('');
+  const [toAmount, setToAmount] = useState('');
 
   const handleTokenSelect = (token: any) => {
-    if (selectingToken === "from") {
-      setFromToken(token)
+    if (selectingToken === 'from') {
+      setFromToken(token);
     } else {
-      setToToken(token)
+      setToToken(token);
     }
-    setShowTokenModal(false)
-  }
+    setShowTokenModal(false);
+  };
 
-  const openTokenModal = (type: "from" | "to") => {
-    setSelectingToken(type)
-    setShowTokenModal(true)
-  }
+  const openTokenModal = (type: 'from' | 'to') => {
+    setSelectingToken(type);
+    setShowTokenModal(true);
+  };
 
   const handleFromAmountChange = (value: string) => {
-    setFromAmount(value)
+    setFromAmount(value);
     // In a real app, you would calculate the equivalent amount based on exchange rate
-    setToAmount(value ? (Number.parseFloat(value) * 1800).toString() : "")
-  }
+    setToAmount(value ? (Number.parseFloat(value) * 1800).toString() : '');
+  };
 
   const handleSwap = () => {
     // Swap logic would go here
-    alert("Swap functionality would be implemented here")
-  }
+    alert('Swap functionality would be implemented here');
+  };
+
+  // Simulated gas price - in a real app, this would come from an API
+  const gasPrice = '$0.01234';
 
   return (
     <>
@@ -68,7 +82,7 @@ export function SwapCard() {
             token={fromToken}
             amount={fromAmount}
             onChange={handleFromAmountChange}
-            onSelectToken={() => openTokenModal("from")}
+            onSelectToken={() => openTokenModal('from')}
             label="From"
           />
           <div className="flex justify-center -my-2">
@@ -77,11 +91,11 @@ export function SwapCard() {
               size="icon"
               className="rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 z-10"
               onClick={() => {
-                const temp = fromToken
-                setFromToken(toToken)
-                setToToken(temp)
-                setFromAmount(toAmount)
-                setToAmount(fromAmount)
+                const temp = fromToken;
+                setFromToken(toToken);
+                setToToken(temp);
+                setFromAmount(toAmount);
+                setToAmount(fromAmount);
               }}
             >
               <ArrowDown className="h-5 w-5" />
@@ -91,7 +105,7 @@ export function SwapCard() {
             token={toToken}
             amount={toAmount}
             onChange={setToAmount}
-            onSelectToken={() => openTokenModal("to")}
+            onSelectToken={() => openTokenModal('to')}
             label="To"
             readonly
           />
@@ -111,19 +125,46 @@ export function SwapCard() {
             </div>
           )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex flex-col gap-3">
+          <TooltipProvider>
+            <div className="flex items-center justify-center w-full text-xs text-gray-500 dark:text-gray-400">
+              <Fuel className="h-3.5 w-3.5 mr-1 text-gray-400" />
+              <span>Average gas fee: {gasPrice} DUST</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 ml-1 p-0"
+                  >
+                    <Info className="h-3.5 w-3.5 text-gray-400" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="w-[200px] text-xs">
+                    This is the estimated network fee to complete this
+                    transaction. Actual gas costs may vary.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+
           <Button
             className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 text-white font-medium py-6 rounded-xl"
             disabled={!fromAmount}
             onClick={handleSwap}
           >
-            {!fromAmount ? "Enter an amount" : "Swap"}
+            {!fromAmount ? 'Enter an amount' : 'Swap'}
           </Button>
         </CardFooter>
       </Card>
 
-      <TokenSelectModal show={showTokenModal} onClose={() => setShowTokenModal(false)} onSelect={handleTokenSelect} />
+      <TokenSelectModal
+        show={showTokenModal}
+        onClose={() => setShowTokenModal(false)}
+        onSelect={handleTokenSelect}
+      />
     </>
-  )
+  );
 }
-

@@ -1,55 +1,22 @@
-import { Button } from "@/components/ui/button"
-import { Menu, Settings } from "lucide-react"
-import Link from "next/link"
-import { WalletConnect } from "./wallet-connect"
-import { ThemeToggle } from "./theme-toggle"
+import { Button } from '@/components/ui/button';
+import { Menu, Settings } from 'lucide-react';
+import Link from 'next/link';
+import { Logo } from './logo';
+import { NetworkSelector } from './network-selector';
+import { ThemeToggle } from './theme-toggle';
+import { WalletConnect } from './wallet-connect';
 
 export function Header() {
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
+    <header className="fixed top-0 left-0 right-0 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <div className="relative h-9 w-9 flex items-center justify-center">
-                <svg viewBox="0 0 40 40" className="h-full w-full">
-                  {/* Outer circle (dark gray) */}
-                  <circle cx="20" cy="20" r="18" fill="#1f2937" className="dark:fill-gray-800" />
-
-                  {/* Moon surface (light gray with craters) */}
-                  <circle cx="20" cy="20" r="16" fill="#d1d5db" className="dark:fill-gray-400" />
-
-                  {/* Craters */}
-                  <circle cx="14" cy="15" r="3" fill="#9ca3af" className="dark:fill-gray-600" />
-                  <circle cx="26" cy="18" r="4" fill="#9ca3af" className="dark:fill-gray-600" />
-                  <circle cx="18" cy="26" r="2.5" fill="#9ca3af" className="dark:fill-gray-600" />
-
-                  {/* Shadow gradient */}
-                  <circle cx="20" cy="20" r="16" fill="url(#moonGradient)" />
-
-                  {/* Orbit ring */}
-                  <circle
-                    cx="20"
-                    cy="20"
-                    r="18"
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="1.5"
-                    className="dark:stroke-blue-500"
-                  />
-
-                  {/* Small satellite */}
-                  <circle cx="33" cy="12" r="2.5" fill="#3b82f6" className="dark:fill-blue-500" />
-
-                  {/* Gradient definition */}
-                  <defs>
-                    <radialGradient id="moonGradient" cx="30%" cy="30%" r="70%" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="transparent" />
-                      <stop offset="100%" stopColor="rgba(0,0,0,0.3)" />
-                    </radialGradient>
-                  </defs>
-                </svg>
-              </div>
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-bold text-xl"
+            >
+              <Logo size={36} />
               <span className="bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-300 dark:to-blue-400 bg-clip-text text-transparent font-bold tracking-tight">
                 Lunarswap
               </span>
@@ -77,6 +44,7 @@ export function Header() {
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <NetworkSelector />
             <Button
               variant="ghost"
               size="icon"
@@ -96,6 +64,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }
-
