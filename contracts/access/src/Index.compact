@@ -1,0 +1,26 @@
+// TODO: check the recent compact version
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+
+import AccessControl prefix AccessControl_;
+
+// Export std
+export { 
+    Maybe, 
+    MerkleTreePath, 
+    ZswapCoinPublicKey
+};
+
+// Export Public state
+export { 
+    AccessControl_Role, 
+    AccessControl_roleCommits, 
+    AccessControl_isInitialized, 
+    AccessControl_index 
+};
+
+// Export circuits
+export { 
+    AccessControl_hashUserRole
+};
