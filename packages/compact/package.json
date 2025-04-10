@@ -11,8 +11,8 @@
   "type": "module",
   "main": "index.js",
   "bin": {
-    "compact-compile": "dist/Compiler.js",
-    "compact-build": "dist/Builder.js"
+    "compact-compiler": "dist/runCompiler.js",
+    "compact-builder": "dist/runBuilder.js"
   },
   "scripts": {
     "prepare": "tsc",

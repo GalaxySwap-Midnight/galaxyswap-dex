@@ -262,6 +262,9 @@ importers:
 
   contracts/structs:
     dependencies:
+      '@midnight-dapps/biome-config':
+        specifier: workspace:^
+        version: link:../../packages/biome-config
       '@midnight-dapps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
@@ -284,6 +287,8 @@ importers:
       vitest:
         specifier: ^3.0.9
         version: 3.0.9(@types/node@22.14.0)(jiti@2.4.2)(lightningcss@1.29.1)(yaml@2.7.1)
+
+  packages/biome-config: {}
 
   packages/compact:
     dependencies:
