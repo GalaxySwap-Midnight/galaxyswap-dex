@@ -71,7 +71,6 @@ describe('MathU256', () => {
       ).toThrowError('MathU256: subtraction underflow');
     });
 
-    // TODO: fix there is a bug in sub because of this test
     test('should handle large numbers', () => {
       const largeNum = 2n ** 200n;
       expect(mathU256Simulator.sub(largeNum * 2n, largeNum)).toBe(largeNum);

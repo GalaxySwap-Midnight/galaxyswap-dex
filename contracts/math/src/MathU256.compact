@@ -308,7 +308,6 @@ module MathU256 {
         return _add(a, b);
     }
 
-    // TODO: 
     /**
      * @description Internal implementation to subtract one U256 value from another, checking for underflow.
      *
@@ -324,12 +323,11 @@ module MathU256 {
      *    - If false, D < 0, throw "MathU256: subtraction underflow".
      * 2. Low Part Subtraction:
      *    - Compute borrow = 1 if aU256.low < bU256.low, else 0.
-     *    - Compute lowDiff = aU256.low - bU256.low, which wraps modulo 2^128 if
-     *      aU256.low < bU256.low, yielding lowDiff = (aU256.low - bU256.low) mod 2^128.
+     *    - If aU256.low >= bU256.low, compute lowDiff = aU256.low - bU256.low.
+     *    - Else, compute lowDiff = aU256.low + 2^128 - bU256.low, ensuring
+     *      lowDiff is in [0, 2^128 - 1] via modular arithmetic.
      * 3. High Part Subtraction with Borrow:
-     *    - Compute highWithBorrow = bU256.high + borrow, where highWithBorrow is in
-     *      [0, 2^128].
-     *    - Compute highDiff = aU256.high - highWithBorrow.
+     *    - Compute highDiff = aU256.high - bU256.high - borrow.
      * 4. Construct Result:
      *    - Return U256 {low: lowDiff, high: highDiff}, representing
      *      D = highDiff * 2^128 + lowDiff.
@@ -338,7 +336,6 @@ module MathU256 {
      * @param aU256 The U256 value to subtract from (minuend).
      * @param bU256 The U256 value to subtract (subtrahend).
      * @returns U256 The difference between a and b.
-     * @remarks TODO: there is a potential bug based on that test: https://github.com/OpenZeppelin/midnight-dapps/blob/3bfc80e0fb7aced7439588a8a801ebf7f068fe81/contracts/math/src/test/mathU256.test.ts#L74-78
      */
     circuit _sub(aU256: U256, bU256: U256): U256 {
         // Check for underflow: a must be >= b
@@ -346,16 +343,23 @@ module MathU256 {
         
         // Handle low part subtraction with borrow
         const borrow = aU256.low < bU256.low ? 1 as Uint<128> : 0 as Uint<128>;
-        const lowDiff = aU256.low - bU256.low; // Uint<128>
-        
-        // Handle high part subtraction, accounting for borrow
         const highWithBorrow = bU256.high + borrow;
         const highDiff = aU256.high - highWithBorrow;
         
-        return U256 {
-            low: lowDiff,
-            high: highDiff
-        };
+        // TODO: change to ternary expression after this bug is resolved: https://github.com/midnightntwrk/compactc/issues/982 
+        if (borrow == 0) {
+            const lowDiff = aU256.low - bU256.low;
+            return U256 {
+                low: lowDiff,
+                high: highDiff
+            };
+        } else {
+            const lowDiff = aU256.low + TWO_POW_128 - bU256.low;
+            return U256 {
+                low: lowDiff as Uint<128>,
+                high: highDiff
+            };
+        }
     }
 
     /**
