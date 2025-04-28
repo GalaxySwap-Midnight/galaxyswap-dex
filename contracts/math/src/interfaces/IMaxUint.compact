@@ -18,8 +18,5 @@ module IMaxUint {
     export ledger MAX_U64: Uint<64>;
 
     /** @description Maximum value for Uint<128> (2^128 - 1). */
-    export ledger MAX_U128: Uint<128>;
-    
-    /** @description Maximum value for Uint<256> (2^256 - 1). */
-    export ledger MAX_U256: Uint<256>;
+    export ledger MAX_U128: Uint<128>; 
 }

@@ -108,8 +108,16 @@ describe('MathU256', () => {
   });
 
   describe('Div', () => {
-    test('should divide two numbers', () => {
-      expect(mathU256Simulator.div(10n, 3n)).toBe(3n);
+    test('should handle division with remainder (small numbers)', () => {
+      expect(mathU256Simulator.div(10n, 3n)).toBe(3n); // 10 / 3 = 3 remainder 1
+    });
+
+    test('should handle division with no remainder', () => {
+      expect(mathU256Simulator.div(15n, 5n)).toBe(3n); // 15 / 5 = 3, no remainder
+    });
+
+    test('should handle division with remainder (large numbers)', () => {
+      expect(mathU256Simulator.div(100n, 7n)).toBe(14n); // 100 / 7 = 14 remainder 2
     });
 
     test('should fail on division by zero', () => {
@@ -294,7 +302,7 @@ describe('MathU256', () => {
       expect(
         mathU256Simulator.greaterThanU256(
           { low: 5n, high: 1n },
-          { low: 5n, high: 1n },
+          { low: 6n, high: 1n },
         ),
       ).toBe(false);
     });
