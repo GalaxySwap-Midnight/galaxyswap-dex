@@ -137,11 +137,11 @@ export class MathU256Simulator
     b: { low: bigint; high: bigint },
   ): { low: bigint; high: bigint } {
     const aU256: U256 = { low: a.low, high: a.high };
-    const bU256: U256 = { low: b.low, high: b.high };
+    const bU26: U256 = { low: b.low, high: b.high };
     const result = this.contract.circuits.mulU256(
       this.circuitContext,
       aU256,
-      bU256,
+      bU26,
     );
     this.circuitContext = result.context;
     return { low: result.result.low, high: result.result.high };
@@ -213,44 +213,32 @@ export class MathU256Simulator
     return result.result;
   }
 
-  public lessThan(a: bigint, b: bigint): boolean {
-    const result = this.contract.circuits.lessThan(this.circuitContext, a, b);
+  public le(a: bigint, b: bigint): boolean {
+    const result = this.contract.circuits.le(this.circuitContext, a, b);
     this.circuitContext = result.context;
     return result.result;
   }
 
-  public lessThanU256(
-    aU256: { low: bigint; high: bigint },
-    bU256: { low: bigint; high: bigint },
+  public leU256(
+    a: { low: bigint; high: bigint },
+    b: { low: bigint; high: bigint },
   ): boolean {
-    const result = this.contract.circuits.lessThanU256(
-      this.circuitContext,
-      aU256,
-      bU256,
-    );
+    const result = this.contract.circuits.leU256(this.circuitContext, a, b);
     this.circuitContext = result.context;
     return result.result;
   }
 
-  public greaterThan(a: bigint, b: bigint): boolean {
-    const result = this.contract.circuits.greaterThan(
-      this.circuitContext,
-      a,
-      b,
-    );
+  public gt(a: bigint, b: bigint): boolean {
+    const result = this.contract.circuits.gt(this.circuitContext, a, b);
     this.circuitContext = result.context;
     return result.result;
   }
 
-  public greaterThanU256(
-    aU256: { low: bigint; high: bigint },
-    bU256: { low: bigint; high: bigint },
+  public gtU256(
+    a: { low: bigint; high: bigint },
+    b: { low: bigint; high: bigint },
   ): boolean {
-    const result = this.contract.circuits.greaterThanU256(
-      this.circuitContext,
-      aU256,
-      bU256,
-    );
+    const result = this.contract.circuits.gtU256(this.circuitContext, a, b);
     this.circuitContext = result.context;
     return result.result;
   }

@@ -14,8 +14,8 @@ pragma language_version >= 0.14.0;
  *   - toU256(): Converts a Uint<256> to a U256 struct by splitting into high and low 128-bit parts.
  *   - fromU256(): Converts a U256 struct to a Uint<256> by combining high and low parts.
  * - Comparisons:
- *   - lessThan(), lessThanU256(): Checks if one 256-bit number is less than another.
- *   - greaterThan(), greaterThanU256(): Checks if one 256-bit number is greater than another.
+ *   - le(), leU256(): Checks if one 256-bit number is less than another.
+ *   - gt(), gtU256(): Checks if one 256-bit number is greater than another.
  * - Arithmetic:
  *   - add(), addU256(): Adds two 256-bit numbers, checking for overflow.
  *   - sub(), subU256(): Subtracts one 256-bit number from another, checking for underflow.
@@ -143,33 +143,33 @@ module MathU256 {
     }
 
     /**
-     * @description Compares two U256 values to check if aU256 < bU256.
+     * @description Compares two U256 values to check if a < b.
      *
      * Theoretical Description:
-     * This circuit compares two 256-bit numbers A = aU256.high * 2^128 + aU256.low and
-     * B = bU256.high * 2^128 + bU256.low, where aU256.high, aU256.low, bU256.high,
-     * bU256.low are in [0, 2^128 - 1], to determine if A < B. It performs a lexicographical
+     * This circuit compares two 256-bit numbers A = a.high * 2^128 + a.low and
+     * B = b.high * 2^128 + b.low, where a.high, a.low, b.high,
+     * b.low are in [0, 2^128 - 1], to determine if A < B. It performs a lexicographical
      * comparison by checking the high parts first, then the low parts if the high parts are
      * equal, returning true if A < B, false otherwise. No arithmetic operations are performed,
      * only comparisons and logical operations (OR, AND).
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns Boolean True if aU256 < bU256, false otherwise.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns Boolean True if a < b, false otherwise.
      */
-    circuit _lessThan(aU256: U256, bU256: U256): Boolean {
-        return aU256.high < bU256.high || (aU256.high == bU256.high && aU256.low < bU256.low);
+    circuit _le(a: U256, b: U256): Boolean {
+        return a.high < b.high || (a.high == b.high && a.low < b.low);
     }
 
     /**
-     * @description Compares two U256 values to check if aU256 < bU256.
+     * @description Compares two U256 values to check if a < b.
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns Boolean True if aU256 < bU256, false otherwise.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns Boolean True if a < b, false otherwise.
      */
-    export circuit lessThanU256(aU256: U256, bU256: U256): Boolean {
-        return _lessThan(aU256, bU256);
+    export circuit leU256(a: U256, b: U256): Boolean {
+        return _le(a, b);
     }
 
     /**
@@ -179,40 +179,40 @@ module MathU256 {
      * @param b The second Uint<256> value.
      * @returns Boolean True if a < b, false otherwise.
      */
-    export circuit lessThan(a: Uint<256>, b: Uint<256>): Boolean {
+    export circuit le(a: Uint<256>, b: Uint<256>): Boolean {
         const aU256 = _toU256(a);
         const bU256 = _toU256(b);
-        return _lessThan(aU256, bU256);
+        return _le(aU256, bU256);
     }
 
     /**
-     * @description Internal implementation to compare two U256 values to check if aU256 > bU256.
+     * @description Internal implementation to compare two U256 values to check if a > b.
      *
      * Theoretical Description:
-     * This circuit compares two 256-bit numbers A = aU256.high * 2^128 + aU256.low and
-     * B = bU256.high * 2^128 + bU256.low, where aU256.high, aU256.low, bU256.high,
-     * bU256.low are in [0, 2^128 - 1], to determine if A > B. It performs a lexicographical
+     * This circuit compares two 256-bit numbers A = a.high * 2^128 + a.low and
+     * B = b.high * 2^128 + b.low, where a.high, a.low, b.high,
+     * b.low are in [0, 2^128 - 1], to determine if A > B. It performs a lexicographical
      * comparison by checking the high parts first, then the low parts if the high parts are
      * equal, returning true if A > B, false otherwise. No arithmetic operations are performed,
      * only comparisons and logical operations (OR, AND).
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns Boolean True if aU256 > bU256, false otherwise.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns Boolean True if a > b, false otherwise.
      */
-    circuit _greaterThan(aU256: U256, bU256: U256): Boolean {
-        return aU256.high > bU256.high || (aU256.high == bU256.high && aU256.low > bU256.low);
+    circuit _gt(a: U256, b: U256): Boolean {
+        return a.high > b.high || (a.high == b.high && a.low > b.low);
     }
 
     /**
-     * @description Compares two U256 values to check if aU256 > bU256.
+     * @description Compares two U256 values to check if a > b.
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns Boolean True if aU256 > bU256, false otherwise.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns Boolean True if a > b, false otherwise.
      */
-    export circuit greaterThanU256(aU256: U256, bU256: U256): Boolean {
-        return _greaterThan(aU256, bU256);
+    export circuit gtU256(a: U256, b: U256): Boolean {
+        return _gt(a, b);
     }
 
     /**
@@ -222,10 +222,10 @@ module MathU256 {
      * @param b The second Uint<256> value.
      * @returns Boolean True if a > b, false otherwise.
      */
-    export circuit greaterThan(a: Uint<256>, b: Uint<256>): Boolean {
+    export circuit gt(a: Uint<256>, b: Uint<256>): Boolean {
         const aU256 = _toU256(a);
         const bU256 = _toU256(b);
-        return _greaterThan(aU256, bU256);
+        return _gt(aU256, bU256);
     }
 
     /**
@@ -233,19 +233,19 @@ module MathU256 {
      *
      * Theoretical Description:
      * This circuit computes the sum S = A + B of two 256-bit numbers represented as U256 structs,
-     * where A = aU256.high * 2^128 + aU256.low, B = bU256.high * 2^128 + bU256.low, and
-     * aU256.high, aU256.low, bU256.high, bU256.low are in [0, 2^128 - 1]. The result is a U256
+     * where A = a.high * 2^128 + a.low, B = b.high * 2^128 + b.low, and
+     * a.high, a.low, b.high, b.low are in [0, 2^128 - 1]. The result is a U256
      * struct {low: S mod 2^128, high: floor(S / 2^128)}.
      *
      * Mathematical Steps:
      * 1. Low Part Addition:
-     *    - Compute lowSum = aU256.low + bU256.low, where aU256.low, bU256.low are in
+     *    - Compute lowSum = a.low + b.low, where a.low, b.low are in
      *      [0, 2^128 - 1], so lowSum is in [0, 2^129 - 2].
      *    - Split lowSum into carry = floor(lowSum / 2^128) (0 or 1) and
      *      lowResult = lowSum mod 2^128.
      * 2. High Part Addition with Carry:
-     *    - Compute highSum = aU256.high + bU256.high + carry, where aU256.high,
-     *      bU256.high are in [0, 2^128 - 1] and carry is 0 or 1, so highSum is in
+     *    - Compute highSum = a.high + b.high + carry, where a.high,
+     *      b.high are in [0, 2^128 - 1] and carry is 0 or 1, so highSum is in
      *      [0, 2^129 - 1].
      * 3. Overflow Check:
      *    - Ensure S = highSum * 2^128 + lowResult <= 2^256 - 1.
@@ -256,21 +256,21 @@ module MathU256 {
      *    - Return U256 {low: lowResult, high: highSum}, representing
      *      S = highSum * 2^128 + lowResult.
      *
-     * @param aU256 The first U256 value to add.
-     * @param bU256 The second U256 value to add.
+     * @param a The first U256 value to add.
+     * @param b The second U256 value to add.
      * @returns U256 The sum of a and b.
      * @throws MathU256: addition overflow If the sum exceeds 2^256 - 1.
      */
-    circuit _add(aU256: U256, bU256: U256): U256 {
+    circuit _add(a: U256, b: U256): U256 {
         // Add the low parts as Uint<256> to handle potential carry
-        const lowSumFull = aU256.low + bU256.low; // Results in Uint<256>
+        const lowSumFull = a.low + b.low; // Results in Uint<256>
         
         // Split lowSumFull into high and low parts to get the carry
         const lowSumFullU256 = _toU256(lowSumFull);
         const carry = lowSumFullU256.high; // 0 or 1, since lowSumFull <= 2^129 - 2
         
         // Add the high parts plus the carry
-        const highSumIntermediate = aU256.high + bU256.high;
+        const highSumIntermediate = a.high + b.high;
         const highSumFull = highSumIntermediate + carry;
         
         // Check for overflow: highSumFull must fit in 128 bits (i.e., highSumFull.high == 0)
@@ -313,48 +313,48 @@ module MathU256 {
      *
      * Theoretical Description:
      * This circuit computes the difference D = A - B of two 256-bit numbers represented as U256
-     * structs, where A = aU256.high * 2^128 + aU256.low, B = bU256.high * 2^128 + bU256.low,
-     * and aU256.high, aU256.low, bU256.high, bU256.low are in [0, 2^128 - 1]. The result is a
+     * structs, where A = a.high * 2^128 + a.low, B = b.high * 2^128 + b.low,
+     * and a.high, a.low, b.high, b.low are in [0, 2^128 - 1]. The result is a
      * U256 struct {low: D mod 2^128, high: floor(D / 2^128)}.
      *
      * Mathematical Steps:
      * 1. Check for Underflow:
-     *    - Assert A >= B (i.e., not A < B) using _lessThan.
+     *    - Assert A >= B (i.e., not A < B) using _le.
      *    - If false, D < 0, throw "MathU256: subtraction underflow".
      * 2. Low Part Subtraction:
-     *    - Compute borrow = 1 if aU256.low < bU256.low, else 0.
-     *    - If aU256.low >= bU256.low, compute lowDiff = aU256.low - bU256.low.
-     *    - Else, compute lowDiff = aU256.low + 2^128 - bU256.low, ensuring
+     *    - Compute borrow = 1 if a.low < b.low, else 0.
+     *    - If a.low >= b.low, compute lowDiff = a.low - b.low.
+     *    - Else, compute lowDiff = a.low + 2^128 - b.low, ensuring
      *      lowDiff is in [0, 2^128 - 1] via modular arithmetic.
      * 3. High Part Subtraction with Borrow:
-     *    - Compute highDiff = aU256.high - bU256.high - borrow.
+     *    - Compute highDiff = a.high - b.high - borrow.
      * 4. Construct Result:
      *    - Return U256 {low: lowDiff, high: highDiff}, representing
      *      D = highDiff * 2^128 + lowDiff.
      * The underflow check ensures D >= 0, and the result is in [0, 2^256 - 1].
      *
-     * @param aU256 The U256 value to subtract from (minuend).
-     * @param bU256 The U256 value to subtract (subtrahend).
+     * @param a The U256 value to subtract from (minuend).
+     * @param b The U256 value to subtract (subtrahend).
      * @returns U256 The difference between a and b.
      */
-    circuit _sub(aU256: U256, bU256: U256): U256 {
+    circuit _sub(a: U256, b: U256): U256 {
         // Check for underflow: a must be >= b
-        assert (!_lessThan(aU256, bU256)) "MathU256: subtraction underflow";
+        assert (!_le(a, b)) "MathU256: subtraction underflow";
         
         // Handle low part subtraction with borrow
-        const borrow = aU256.low < bU256.low ? 1 as Uint<128> : 0 as Uint<128>;
-        const highWithBorrow = bU256.high + borrow;
-        const highDiff = aU256.high - highWithBorrow;
+        const borrow = a.low < b.low ? 1 as Uint<128> : 0 as Uint<128>;
+        const highWithBorrow = b.high + borrow;
+        const highDiff = a.high - highWithBorrow;
         
         // TODO: change to ternary expression after this bug is resolved: https://github.com/midnightntwrk/compactc/issues/982 
         if (borrow == 0) {
-            const lowDiff = aU256.low - bU256.low;
+            const lowDiff = a.low - b.low;
             return U256 {
                 low: lowDiff,
                 high: highDiff
             };
         } else {
-            const lowDiff = aU256.low + TWO_POW_128 - bU256.low;
+            const lowDiff = a.low + TWO_POW_128 - b.low;
             return U256 {
                 low: lowDiff as Uint<128>,
                 high: highDiff
@@ -383,8 +383,8 @@ module MathU256 {
      * @param b The U256 value to subtract (subtrahend).
      * @returns U256 The difference between a and b.
      */
-    export circuit subU256(aU256: U256, bU256: U256): U256 {
-        return _sub(aU256, bU256);
+    export circuit subU256(a: U256, b: U256): U256 {
+        return _sub(a, b);
     }
 
     /**
@@ -392,18 +392,18 @@ module MathU256 {
      *
      * Theoretical Description:
      * This circuit computes the product P = A * B of two 256-bit numbers represented as U256
-     * structs, where A = aU256.high * 2^128 + aU256.low, B = bU256.high * 2^128 + bU256.low,
-     * and aU256.high, aU256.low, bU256.high, bU256.low are in [0, 2^128 - 1]. The result is a
+     * structs, where A = a.high * 2^128 + a.low, B = b.high * 2^128 + b.low,
+     * and a.high, a.low, b.high, b.low are in [0, 2^128 - 1]. The result is a
      * U256 struct {low: P mod 2^128, high: floor(P / 2^128)}, ensuring P <= 2^256 - 1.
      *
      * Mathematical Steps:
      * 1. Compute Partial Products:
-     *    - Represent A = aU256.high * 2^128 + aU256.low, B = bU256.high * 2^128 + bU256.low.
+     *    - Represent A = a.high * 2^128 + a.low, B = b.high * 2^128 + b.low.
      *    - Compute four partial products using Math_mul (128-bit to 256-bit multiplication):
-     *      ll = aU256.low * bU256.low (bits 0-255)
-     *      hl = aU256.high * bU256.low (bits 128-383)
-     *      lh = aU256.low * bU256.high (bits 128-383)
-     *      hh = aU256.high * bU256.high (bits 256-511)
+     *      ll = a.low * b.low (bits 0-255)
+     *      hl = a.high * b.low (bits 128-383)
+     *      lh = a.low * b.high (bits 128-383)
+     *      hh = a.high * b.high (bits 256-511)
      *    - Each partial product is a Uint<256> in [0, (2^128 - 1)^2].
      * 2. Convert Partial Products to U256:
      *    - Convert each partial product to a U256 struct using _toU256:
@@ -428,17 +428,17 @@ module MathU256 {
      * 5. Return Result:
      *    - Return resultU256 as a U256 struct.
      *
-     * @param aU256 The first U256 value to multiply.
-     * @param bU256 The second U256 value to multiply.
+     * @param a The first U256 value to multiply.
+     * @param b The second U256 value to multiply.
      * @returns U256 The product of a and b.
      * @throws MathU256: multiplication overflow If the product exceeds 2^256 - 1.
      */
-    circuit _mul(aU256: U256, bU256: U256): U256 {
+    circuit _mul(a: U256, b: U256): U256 {
         // Compute partial products
-        const ll = Math_mul(aU256.low, bU256.low);
-        const hl = Math_mul(aU256.high, bU256.low);
-        const lh = Math_mul(aU256.low, bU256.high);
-        const hh = Math_mul(aU256.high, bU256.high);
+        const ll = Math_mul(a.low, b.low);
+        const hl = Math_mul(a.high, b.low);
+        const lh = Math_mul(a.low, b.high);
+        const hh = Math_mul(a.high, b.high);
         
         // Convert to U256 structs
         const llU256 = _toU256(ll);
@@ -483,12 +483,12 @@ module MathU256 {
     /**
      * @description Multiplies two U256 values, checking for overflow.
      *
-     * @param aU256 The first U256 value to multiply.
-     * @param bU256 The second U256 value to multiply.
+     * @param a The first U256 value to multiply.
+     * @param b The second U256 value to multiply.
      * @returns U256 The product of a and b.
      */
-    export circuit mulU256(aU256: U256, bU256: U256): U256 {
-        return _mul(aU256, bU256);
+    export circuit mulU256(a: U256, b: U256): U256 {
+        return _mul(a, b);
     }
 
     /**
@@ -514,7 +514,7 @@ module MathU256 {
      * 4. Convert Results to U256:
      *    - Convert quot_Uint256 and rem_Uint256 to U256 structs: quotientU256, remainderU256.
      * 5. Verify Remainder:
-     *    - Assert remainderU256 < divisor using _lessThan, ensuring rem < divs.
+     *    - Assert remainderU256 < divisor using _le, ensuring rem < divs.
      * 6. Verify Correctness:
      *    - Compute P = quot * divs using _mul.
      *    - Compute S = P + rem using _add.
@@ -538,7 +538,7 @@ module MathU256 {
         
         // Compare remainder < divisor using high and low parts
         const remainderU256 = result.remainder;
-        assert (_lessThan(remainderU256, divisor)) "MathU256: remainder error";
+        assert (_le(remainderU256, divisor)) "MathU256: remainder error";
 
         // Verify: quotient * divisor + remainder == dividend
         const quotientU256 = result.quotient;
@@ -632,8 +632,8 @@ module MathU256 {
      *    - Compute R^2 using _mul with R as a U256 struct {low: R, high: 0}.
      *    - Compute (R + 1)^2, where R + 1 is in [0, 2^128], using _mul with R + 1 as
      *      a U256 struct {low: R + 1, high: 0}.
-     *    - Assert R^2 <= N (i.e., not _greaterThan), ensuring R^2 <= N.
-     *    - Assert (R + 1)^2 > N using _greaterThan, ensuring (R + 1)^2 > N.
+     *    - Assert R^2 <= N (i.e., not _gt), ensuring R^2 <= N.
+     *    - Assert (R + 1)^2 > N using _gt, ensuring (R + 1)^2 > N.
      * 4. Return Result:
      *    - Return R as Uint<128>.
      * The operations include square root computation, multiplication, comparison, and conversion.
@@ -696,10 +696,10 @@ module MathU256 {
         const nextSquareU256 = _mul(U256 { low: next, high: 0 }, U256 { low: next, high: 0 }); // Uint<256>
         
         // Verify: root^2 <= radicand
-        assert (!_greaterThan(rootSquareU256, radicand)) "MathU256: sqrt overestimate (root² > radicand)";
+        assert (!_gt(rootSquareU256, radicand)) "MathU256: sqrt overestimate (root² > radicand)";
         
         // Verify: (root + 1)² > radicand
-        assert (_greaterThan(nextSquareU256, radicand)) "MathU256: sqrt underestimate (next root still ≤ radicand)";
+        assert (_gt(nextSquareU256, radicand)) "MathU256: sqrt underestimate (next root still ≤ radicand)";
         
         return root;
     }
@@ -729,25 +729,25 @@ module MathU256 {
      * @description Internal implementation to return the minimum of two U256 values.
      *
      * Theoretical Description:
-     * This circuit computes the minimum of two 256-bit numbers A = aU256.high * 2^128 + aU256.low
-     * and B = bU256.high * 2^128 + bU256.low, where aU256.high, aU256.low, bU256.high,
-     * bU256.low are in [0, 2^128 - 1]. It returns the smaller value as a U256 struct.
+     * This circuit computes the minimum of two 256-bit numbers A = a.high * 2^128 + a.low
+     * and B = b.high * 2^128 + b.low, where a.high, a.low, b.high,
+     * b.low are in [0, 2^128 - 1]. It returns the smaller value as a U256 struct.
      *
      * Mathematical Steps:
      * 1. Compare Inputs:
-     *    - Use _lessThan to check if A < B.
+     *    - Use _le to check if A < B.
      * 2. Select Minimum:
-     *    - If A < B, return aU256.
-     *    - Otherwise, return bU256.
+     *    - If A < B, return a.
+     *    - Otherwise, return b.
      * The operation involves comparison and conditional selection, with no arithmetic operations
      * beyond the comparison logic. The result is a U256 struct representing min(A, B).
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns U256 The smaller of aU256 and bU256.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns U256 The smaller of a and b.
      */
-    circuit _min(aU256: U256, bU256: U256): U256 {
-        return _lessThan(aU256, bU256) ? aU256 : bU256;
+    circuit _min(a: U256, b: U256): U256 {
+        return _le(a, b) ? a : b;
     }
 
     /**
@@ -767,37 +767,37 @@ module MathU256 {
     /**
      * @description Returns the minimum of two U256 values.
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns U256 The smaller of aU256 and bU256.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns U256 The smaller of a and b.
      */
-    export circuit minU256(aU256: U256, bU256: U256): U256 {
-        return _min(aU256, bU256);
+    export circuit minU256(a: U256, b: U256): U256 {
+        return _min(a, b);
     }
 
     /**
      * @description Internal implementation to return the maximum of two U256 values.
      *
      * Theoretical Description:
-     * This circuit computes the maximum of two 256-bit numbers A = aU256.high * 2^128 + aU256.low
-     * and B = bU256.high * 2^128 + bU256.low, where aU256.high, aU256.low, bU256.high,
-     * bU256.low are in [0, 2^128 - 1]. It returns the larger value as a U256 struct.
+     * This circuit computes the maximum of two 256-bit numbers A = a.high * 2^128 + a.low
+     * and B = b.high * 2^128 + b.low, where a.high, a.low, b.high,
+     * b.low are in [0, 2^128 - 1]. It returns the larger value as a U256 struct.
      *
      * Mathematical Steps:
      * 1. Compare Inputs:
-     *    - Use _lessThan to check if A < B.
+     *    - Use _le to check if A < B.
      * 2. Select Maximum:
-     *    - If A < B, return bU256.
-     *    - Otherwise, return aU256.
+     *    - If A < B, return b.
+     *    - Otherwise, return a.
      * The operation involves comparison and conditional selection, with no arithmetic operations
      * beyond the comparison logic. The result is a U256 struct representing max(A, B).
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns U256 The larger of aU256 and bU256.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns U256 The larger of a and b.
      */
-    circuit _max(aU256: U256, bU256: U256): U256 {
-        return _lessThan(aU256, bU256) ? bU256 : aU256;
+    circuit _max(a: U256, b: U256): U256 {
+        return _le(a, b) ? b : a;
     }
 
     /**
@@ -817,12 +817,12 @@ module MathU256 {
     /**
      * @description Returns the maximum of two U256 values.
      *
-     * @param aU256 The first U256 value.
-     * @param bU256 The second U256 value.
-     * @returns U256 The larger of aU256 and bU256.
+     * @param a The first U256 value.
+     * @param b The second U256 value.
+     * @returns U256 The larger of a and b.
      */
-    export circuit maxU256(aU256: U256, bU256: U256): U256 {
-        return _max(aU256, bU256);
+    export circuit maxU256(a: U256, b: U256): U256 {
+        return _max(a, b);
     }
 
     /**

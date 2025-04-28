@@ -27,20 +27,20 @@ export circuit fromU256(value: U256): Uint<256> {
     return disclose(MathU256_fromU256(value));
 }
 
-export circuit lessThanU256(a: U256, b: U256): Boolean {
-    return disclose(MathU256_lessThanU256(a, b));
+export circuit leU256(a: U256, b: U256): Boolean {
+    return disclose(MathU256_leU256(a, b));
 }
 
-export circuit lessThan(a: Uint<256>, b: Uint<256>): Boolean {
-    return disclose(MathU256_lessThan(a, b));
+export circuit le(a: Uint<256>, b: Uint<256>): Boolean {
+    return disclose(MathU256_le(a, b));
 }
 
-export circuit greaterThanU256(a: U256, b: U256): Boolean {
-    return disclose(MathU256_greaterThanU256(a, b));
+export circuit gtU256(a: U256, b: U256): Boolean {
+    return disclose(MathU256_gtU256(a, b));
 }
 
-export circuit greaterThan(a: Uint<256>, b: Uint<256>): Boolean {
-    return disclose(MathU256_greaterThan(a, b));
+export circuit gt(a: Uint<256>, b: Uint<256>): Boolean {
+    return disclose(MathU256_gt(a, b));
 }
 
 export circuit add(a: Uint<256>, b: Uint<256>): Uint<256> {

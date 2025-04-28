@@ -65,9 +65,9 @@ describe('MathU256', () => {
     });
 
     test('should fail on underflow with large numbers', () => {
-      expect(() =>
-        mathU256Simulator.sub(MAX_U256 - 1n, MAX_U256),
-      ).toThrowError('MathU256: subtraction underflow');
+      expect(() => mathU256Simulator.sub(MAX_U256 - 1n, MAX_U256)).toThrowError(
+        'MathU256: subtraction underflow',
+      );
     });
 
     test('should handle large numbers', () => {
@@ -232,46 +232,31 @@ describe('MathU256', () => {
   describe('LessThan', () => {
     test('should compare two U256 values', () => {
       expect(
-        mathU256Simulator.lessThanU256(
-          { low: 5n, high: 0n },
-          { low: 6n, high: 0n },
-        ),
+        mathU256Simulator.leU256({ low: 5n, high: 0n }, { low: 6n, high: 0n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.lessThanU256(
-          { low: 5n, high: 1n },
-          { low: 6n, high: 1n },
-        ),
+        mathU256Simulator.leU256({ low: 5n, high: 1n }, { low: 6n, high: 1n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.lessThanU256(
-          { low: 5n, high: 0n },
-          { low: 5n, high: 1n },
-        ),
+        mathU256Simulator.leU256({ low: 5n, high: 0n }, { low: 5n, high: 1n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.lessThanU256(
-          { low: 5n, high: 1n },
-          { low: 5n, high: 1n },
-        ),
+        mathU256Simulator.leU256({ low: 5n, high: 1n }, { low: 5n, high: 1n }),
       ).toBe(false);
     });
 
     test('should handle edge cases', () => {
       expect(
-        mathU256Simulator.lessThanU256(
+        mathU256Simulator.leU256(
           { low: MAX_U128, high: MAX_U128 },
           { low: MAX_U128, high: MAX_U128 },
         ),
       ).toBe(false); // Equal values
       expect(
-        mathU256Simulator.lessThanU256(
-          { low: 0n, high: 0n },
-          { low: 1n, high: 0n },
-        ),
+        mathU256Simulator.leU256({ low: 0n, high: 0n }, { low: 1n, high: 0n }),
       ).toBe(true); // Zero vs small number
       expect(
-        mathU256Simulator.lessThanU256(
+        mathU256Simulator.leU256(
           { low: MAX_U128, high: MAX_U128 },
           { low: 0n, high: 0n },
         ),
@@ -282,46 +267,31 @@ describe('MathU256', () => {
   describe('GreaterThan', () => {
     test('should compare two U256 values', () => {
       expect(
-        mathU256Simulator.greaterThanU256(
-          { low: 6n, high: 0n },
-          { low: 5n, high: 0n },
-        ),
+        mathU256Simulator.gtU256({ low: 6n, high: 0n }, { low: 5n, high: 0n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.greaterThanU256(
-          { low: 6n, high: 1n },
-          { low: 5n, high: 1n },
-        ),
+        mathU256Simulator.gtU256({ low: 6n, high: 1n }, { low: 5n, high: 1n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.greaterThanU256(
-          { low: 5n, high: 1n },
-          { low: 5n, high: 0n },
-        ),
+        mathU256Simulator.gtU256({ low: 5n, high: 1n }, { low: 5n, high: 0n }),
       ).toBe(true);
       expect(
-        mathU256Simulator.greaterThanU256(
-          { low: 5n, high: 1n },
-          { low: 6n, high: 1n },
-        ),
+        mathU256Simulator.gtU256({ low: 5n, high: 1n }, { low: 6n, high: 1n }),
       ).toBe(false);
     });
 
     test('should handle edge cases', () => {
       expect(
-        mathU256Simulator.greaterThanU256(
+        mathU256Simulator.gtU256(
           { low: MAX_U128, high: MAX_U128 },
           { low: MAX_U128, high: MAX_U128 },
         ),
       ).toBe(false); // Equal values
       expect(
-        mathU256Simulator.greaterThanU256(
-          { low: 1n, high: 0n },
-          { low: 0n, high: 0n },
-        ),
+        mathU256Simulator.gtU256({ low: 1n, high: 0n }, { low: 0n, high: 0n }),
       ).toBe(true); // Small number vs zero
       expect(
-        mathU256Simulator.greaterThanU256(
+        mathU256Simulator.gtU256(
           { low: 0n, high: 0n },
           { low: MAX_U128, high: MAX_U128 },
         ),
