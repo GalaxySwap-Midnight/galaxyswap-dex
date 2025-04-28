@@ -66,7 +66,7 @@ describe('MathU256', () => {
 
     test('should fail on underflow with large numbers', () => {
       expect(() =>
-        mathU256Simulator.sub(MAX_U256 - 10n, MAX_U256),
+        mathU256Simulator.sub(MAX_U256 - 1n, MAX_U256),
       ).toThrowError('MathU256: subtraction underflow');
     });
 
