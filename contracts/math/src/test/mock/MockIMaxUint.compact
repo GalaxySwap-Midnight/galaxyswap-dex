@@ -1,12 +1,12 @@
 pragma language_version >= 0.14.0;
 
-import "../../interfaces/IMaxUint";
+import "../../Max" prefix Max_;
 
 // Export Ledger
 export {
-    MAX_U8,
-    MAX_U16,
-    MAX_U32,
-    MAX_U64,
-    MAX_U128
+    Max_U8,
+    Max_U16,
+    Max_U32,
+    Max_U64,
+    Max_U128
 };

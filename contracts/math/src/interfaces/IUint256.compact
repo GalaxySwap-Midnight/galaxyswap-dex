@@ -8,8 +8,5 @@ module IUint256 {
     export struct U256 {
         low: Uint<128>,
         high: Uint<128>
-    }
-
-    /** @description Constant for 2^128, used for bit decomposition of Uint<256>. */
-    export ledger TWO_POW_128: Uint<256>;
+    } 
 }

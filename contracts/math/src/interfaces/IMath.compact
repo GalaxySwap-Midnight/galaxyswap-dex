@@ -5,8 +5,6 @@ pragma language_version >= 0.14.0;
  * @description An interface module for the Math module.
  */
 module IMath {
-    import "./IMaxUint";
-
     export struct DivResult {
         quotient: Uint<128>,
         remainder: Uint<128>

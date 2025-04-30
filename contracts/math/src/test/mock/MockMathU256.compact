@@ -14,11 +14,6 @@ export {
     DivResultU256
 }
 
-// Circuits that are leaking private output
-export circuit initialize(): [] {
-    return MathU256_initialize();
-}
-
 export circuit toU256(value: Uint<256>): U256 {
     return disclose(MathU256_toU256(value));
 }

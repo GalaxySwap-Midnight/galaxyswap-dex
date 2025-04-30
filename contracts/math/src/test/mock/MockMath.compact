@@ -13,7 +13,6 @@ export {
 
 // Export Circuits 
 export {
-    Math_initialize,
     Math_add,
     Math_sub,
     Math_mul,

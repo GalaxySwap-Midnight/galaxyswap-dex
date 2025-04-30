@@ -39,23 +39,12 @@ pragma language_version >= 0.14.0;
 module MathU256 {
     import CompactStandardLibrary;
     
-    import "./interfaces/IMaxUint";
     import "./interfaces/IUint256";
     import "./interfaces/IMathU256";
 
-    import MaxUint prefix MaxUint_;
+    import Max prefix Max_;
     import Uint256 prefix Uint256_;
-    import Math prefix Math_;
-
-    /**
-     * @description Initializes IU256 interface module.
-     *
-     * @returns None
-     */
-    export circuit initialize(): [] {
-        MaxUint_initialize();
-        Uint256_initialize();
-    }
+    import Math prefix Math_; 
 
     /**
      * @description Internal implementation to convert a Uint<256> value to a U256 struct by splitting into high and low parts.
@@ -77,7 +66,7 @@ module MathU256 {
      * @returns U256 The high and low 128-bit parts of the value.
      */
     circuit _toU256(value: Uint<256>): U256 {
-        const divResult = divU256Locally(value, TWO_POW_128); // 2^128
+        const divResult = divU256Locally(value, Uint256_MODULUS()); // 2^128
         return disclose(U256 {
             low: divResult.remainder.low,
             high: divResult.quotient.low
@@ -127,7 +116,7 @@ module MathU256 {
         // Combine high and low parts using Field arithmetic to ensure bounds
         const highAsField = resultU256.high as Field;
         const lowAsField = resultU256.low as Field;
-        const twoPow128AsField = TWO_POW_128 as Field;
+        const twoPow128AsField = Uint256_MODULUS() as Field;
         const result = highAsField * twoPow128AsField + lowAsField;
         return result as Uint<256>;
     }
@@ -354,7 +343,7 @@ module MathU256 {
                 high: highDiff
             };
         } else {
-            const lowDiff = a.low + TWO_POW_128 - b.low;
+            const lowDiff = a.low + Uint256_MODULUS() - b.low;
             return U256 {
                 low: lowDiff as Uint<128>,
                 high: highDiff
@@ -457,10 +446,10 @@ module MathU256 {
         // Check for overflow: upper 256 bits (bits 256-511) must be zero
         assert (hhShiftedU256.low == 0 && hhShiftedU256.high == 0) "MathU256: multiplication overflow";
         
-        // Additional check to ensure result fits within MAX_U256
+        // Additional check to ensure result fits within Max_U256
         assert (
-            resultU256.high < MAX_U128 || 
-            (resultU256.high == MAX_U128 && resultU256.low <= MAX_U128)
+            resultU256.high < Max_U128() || 
+            (resultU256.high == Max_U128() && resultU256.low <= Max_U128())
         ) "MathU256: multiplication overflow";
         
         return resultU256;
@@ -616,14 +605,14 @@ module MathU256 {
      * 1. Handle Special Cases:
      *    - If N = 0 (radicand.high = 0, radicand.low = 0), return 0.
      *    - If N = 1 (radicand.high = 0, radicand.low = 1), return 1.
-     *    - If N = 2^8 - 1 (radicand.high = 0, radicand.low = MAX_U8), return 15.
-     *    - If N = 2^16 - 1 (radicand.high = 0, radicand.low = MAX_U16), return 255.
-     *    - If N = 2^32 - 1 (radicand.high = 0, radicand.low = MAX_U32), return 65535.
-     *    - If N = 2^64 - 1 (radicand.high = 0, radicand.low = MAX_U64), return 4294967295.
-     *    - If N = 2^128 - 1 (radicand.high = 0, radicand.low = MAX_U128), return
+     *    - If N = 2^8 - 1 (radicand.high = 0, radicand.low = Max_U8), return 15.
+     *    - If N = 2^16 - 1 (radicand.high = 0, radicand.low = Max_U16), return 255.
+     *    - If N = 2^32 - 1 (radicand.high = 0, radicand.low = Max_U32), return 65535.
+     *    - If N = 2^64 - 1 (radicand.high = 0, radicand.low = Max_U64), return 4294967295.
+     *    - If N = 2^128 - 1 (radicand.high = 0, radicand.low = Max_U128), return
      *      18446744073709551615.
-     *    - If N = 2^256 - 1 (radicand.high = MAX_U128, radicand.low = MAX_U128), return
-     *      MAX_U128 (2^128 - 1).
+     *    - If N = 2^256 - 1 (radicand.high = Max_U128, radicand.low = Max_U128), return
+     *      Max_U128 (2^128 - 1).
      * 2. General Case:
      *    - Convert N to Uint<256>: N_Uint256 = radicand.high * 2^128 + radicand.low using
      *      _fromU256.
@@ -653,35 +642,35 @@ module MathU256 {
             return 1 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U8
-        if (radicand.high == 0 && radicand.low == MAX_U8) {
+        // Special case: radicand = Max_U8
+        if (radicand.high == 0 && radicand.low == Max_U8()) {
             return 15 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U16
-        if (radicand.high == 0 && radicand.low == MAX_U16) {
+        // Special case: radicand = Max_U16
+        if (radicand.high == 0 && radicand.low == Max_U16()) {
             return 255 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U32
-        if (radicand.high == 0 && radicand.low == MAX_U32) {
+        // Special case: radicand = Max_U32
+        if (radicand.high == 0 && radicand.low == Max_U32()) {
             return 65535 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U64
-        if (radicand.high == 0 && radicand.low == MAX_U64) {
+        // Special case: radicand = Max_U64
+        if (radicand.high == 0 && radicand.low == Max_U64()) {
             return 4294967295 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U128
-        if (radicand.high == 0 && radicand.low == MAX_U128) {
+        // Special case: radicand = Max_U128
+        if (radicand.high == 0 && radicand.low == Max_U128()) {
             return 18446744073709551615 as Uint<128>;
         }
         
-        // Special case: radicand = MAX_U256
-        const maxU256 = U256 { low: MAX_U128, high: MAX_U128 };
+        // Special case: radicand = Max_U256
+        const maxU256 = U256 { low: Max_U128(), high: Max_U128() };
         if (radicand.high == maxU256.high && radicand.low == maxU256.low) {
-            return MAX_U128;
+            return Max_U128();
         }
         
         // General case

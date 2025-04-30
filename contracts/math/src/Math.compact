@@ -32,18 +32,8 @@ module Math {
     import CompactStandardLibrary;
 
     import "./interfaces/IMath";
-    import "./interfaces/IMaxUint";
 
-    import MaxUint prefix MaxUint_;
-
-    /**
-     * @description Initializes the max value constants for common Uint types.
-     *
-     * @returns None
-     */
-    export circuit initialize(): [] {
-        MaxUint_initialize();
-    }
+    import Max prefix Max_; 
 
     /**
      * @description Internal implementation of addition for two Uint<128> numbers, checking for overflow.
@@ -57,7 +47,7 @@ module Math {
         augend: Uint<128>
     ): Uint<128> {
         const result = addend + augend;
-        assert (result <= MAX_U128) "Math: addition overflow";
+        assert (result <= Max_U128()) "Math: addition overflow";
         return result as Uint<128>;
     }
 
@@ -192,7 +182,7 @@ module Math {
         radicand: Uint<128>
     ): Uint<128> {
         const root = sqrtLocally(radicand);
-        assert (mul(root, root) as Field as Uint<222> <= radicand as Field as Uint<222>) "Math: sqrt overestimate (root² > radicand)";
+        assert (mul(root, root) <= radicand) "Math: sqrt overestimate (root² > radicand)";
         assert (mul(add(root, 1), add(root, 1)) as Field as Uint<222> > radicand as Field as Uint<222>) "Math: sqrt underestimate (next root still ≤ radicand)";
         return root;
     }
