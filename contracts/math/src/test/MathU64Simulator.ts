@@ -66,36 +66,6 @@ export class MathContractSimulator
     return this.circuitContext.originalState;
   }
 
-  public add(addend: bigint, augend: bigint): bigint {
-    const result = this.contract.circuits.add(
-      this.circuitContext,
-      addend,
-      augend,
-    );
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
-  public sub(minuend: bigint, subtrahend: bigint): bigint {
-    const result = this.contract.circuits.sub(
-      this.circuitContext,
-      minuend,
-      subtrahend,
-    );
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
-  public mul(multiplicand: bigint, multiplier: bigint): bigint {
-    const result = this.contract.circuits.mul(
-      this.circuitContext,
-      multiplicand,
-      multiplier,
-    );
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
   public div(dividend: bigint, divisor: bigint): bigint {
     const result = this.contract.circuits.div(
       this.circuitContext,
