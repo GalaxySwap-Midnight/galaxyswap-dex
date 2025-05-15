@@ -9,19 +9,6 @@ import "../../MathU64" prefix MathU64_;
 /**
  * @description A mock contract for testing the Math module's circuits.
  */
-
-export circuit add(a: Uint<64>, b: Uint<64>): Uint<128> {
-    return MathU64_add(a, b);
-}
-
-export circuit sub(a: Uint<64>, b: Uint<64>): Uint<64> {
-    return MathU64_sub(a, b);
-}
-
-export circuit mul(a: Uint<64>, b: Uint<64>): Uint<128> {
-    return MathU64_mul(a, b);
-}
-
 export circuit div(a: Uint<64>, b: Uint<64>): Uint<64> {
     return disclose(MathU64_div(a, b));
 }

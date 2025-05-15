@@ -8,10 +8,6 @@ pragma language_version >= 0.14.0;
  * underflow checks where applicable.
  *
  * Supported Mathematical Operations:
- * - Arithmetic:
- *   - add(): Adds two `Uint<64>` numbers, returning a `Uint<128>` result to handle potential overflow.
- *   - sub(): Subtracts one `Uint<64>` number from another, checking for underflow.
- *   - mul(): Multiplies two `Uint<64>` numbers, returning a `Uint<128>` result.
  * - Division:
  *   - div(): Computes the quotient of dividing one `Uint<64>` number by another.
  *   - rem(): Computes the remainder of dividing one `Uint<64>` number by another.
@@ -28,38 +24,6 @@ module MathU64 {
     import "./interfaces/IMathU64";
 
     import Max prefix Max_; 
-
-    /**
-     * @description Adds two `Uint<64>` numbers, returning a `Uint<128>` result to accommodate potential overflow.
-     * @param a - The first unsigned 64-bit integer.
-     * @param b - The second unsigned 64-bit integer.
-     * @returns The sum of `a` and `b` as a `Uint<128>` value.
-     */
-    export circuit add(a: Uint<64>, b: Uint<64>): Uint<128> {
-        return a + b;
-    }
-
-    /**
-     * @description Subtracts `b` from `a`, checking for underflow to ensure the result is non-negative.
-     * @param a - The unsigned 64-bit integer to subtract from (minuend).
-     * @param b - The unsigned 64-bit integer to subtract (subtrahend).
-     * @returns The difference `a - b` as a `Uint<64>` value.
-     * @throws If `b > a`, causing underflow.
-     */
-    export circuit sub(a: Uint<64>, b: Uint<64>): Uint<64> {
-        assert (a >= b) "Math: subtraction underflow";
-        return a - b;
-    }
-
-    /**
-     * @description Multiplies two `Uint<64>` values, returning a `Uint<128>` result to handle large products.
-     * @param a - The first unsigned 64-bit integer (multiplicand).
-     * @param b - The second unsigned 64-bit integer (multiplier).
-     * @returns The product of `a` and `b` as a `Uint<128>` value.
-     */
-    export circuit mul(a: Uint<64>, b: Uint<64>): Uint<128> {
-        return a * b;
-    }
 
     /**
      * @description Internal circuit to divide a Uint<64> number by another, returning quotient and remainder.
@@ -178,11 +142,11 @@ module MathU64 {
      */
     export circuit sqrt(radicand: Uint<64>): Uint<32> {
         const root = sqrtU64Locally(radicand);
-        const rootSquare = mul(root, root);
+        const rootSquare = root * root;
         assert (rootSquare <= radicand) "Math: sqrt overestimate";
         
         const next = root + 1;
-        const nextSquare = mul(next, next);
+        const nextSquare = next * next;
         assert (nextSquare > radicand) "Math: sqrt underestimate";
         
         return root;

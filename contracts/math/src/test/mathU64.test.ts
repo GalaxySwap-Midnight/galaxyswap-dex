@@ -14,67 +14,6 @@ const setup = () => {
 describe('MathU64', () => {
   beforeEach(setup);
 
-  describe('Add', () => {
-    test('should add two numbers', () => {
-      expect(mathSimulator.add(5n, 3n)).toBe(8n);
-    });
-
-    test('should not overflow', () => {
-      expect(mathSimulator.add(MAX_U64, MAX_U64)).toBe(36893488147419103230n);
-    });
-  });
-
-  describe('Sub', () => {
-    test('should subtract two numbers', () => {
-      expect(mathSimulator.sub(10n, 4n)).toBe(6n);
-    });
-
-    test('should subtract zero', () => {
-      expect(mathSimulator.sub(5n, 0n)).toBe(5n);
-      expect(mathSimulator.sub(0n, 0n)).toBe(0n);
-    });
-
-    test('should subtract from zero', () => {
-      expect(() => mathSimulator.sub(0n, 5n)).toThrowError(
-        'Math: subtraction underflow',
-      );
-    });
-
-    test('should subtract max Uint<64> minus 1', () => {
-      expect(mathSimulator.sub(MAX_U64, 1n)).toBe(MAX_U64 - 1n);
-    });
-
-    test('should subtract max Uint<64> minus itself', () => {
-      expect(mathSimulator.sub(MAX_U64, MAX_U64)).toBe(0n);
-    });
-
-    test('should fail on underflow with small numbers', () => {
-      expect(() => mathSimulator.sub(3n, 5n)).toThrowError(
-        'Math: subtraction underflow',
-      );
-    });
-
-    test('should fail on underflow with large numbers', () => {
-      expect(() => mathSimulator.sub(MAX_U64 - 10n, MAX_U64)).toThrowError(
-        'Math: subtraction underflow',
-      );
-    });
-  });
-
-  describe('Mul', () => {
-    test('should multiply two numbers', () => {
-      expect(mathSimulator.mul(4n, 3n)).toBe(12n);
-    });
-
-    test('should handle max Uint<64> times 1', () => {
-      expect(mathSimulator.mul(MAX_U64, 1n)).toBe(MAX_U64);
-    });
-
-    test('should handle max Uint<64> times max Uint<64> without overflow', () => {
-      expect(mathSimulator.mul(MAX_U64, MAX_U64)).toBe(MAX_U64 * MAX_U64);
-    });
-  });
-
   describe('div', () => {
     test('should divide small numbers', () => {
       expect(mathSimulator.div(10n, 3n)).toBe(3n);
