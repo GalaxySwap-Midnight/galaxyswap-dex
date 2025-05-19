@@ -2,7 +2,7 @@
 pragma language_version >= 0.14.0;
 
 /**
- * @description An interface module for the Math module.
+ * @description An interface module for the MathU64 module.
  */
 module IMathU64 {
     export struct DivResultU64 {
