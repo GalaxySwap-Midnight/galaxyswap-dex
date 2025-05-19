@@ -48,7 +48,7 @@ export const MathU64Witnesses =
     },
 
     /**
-     * @description Computes division of two Uint<128> values off-chain.
+     * @description Computes division of two Uint<64> values off-chain.
      * @param context - The witness context containing ledger and private state.
      * @param dividend - The number to divide.
      * @param divisor - The number to divide by.
