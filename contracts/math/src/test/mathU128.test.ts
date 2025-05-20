@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import type { U128, U256 } from '../artifacts/Index/contract/index.d.cts';
-import { MathU128Simulator } from './MathU128Simulator';
+import {
+  MathU128Simulator,
+  createMaliciousSimulator,
+} from './MathU128Simulator';
 
 let mathSimulator: MathU128Simulator;
 
@@ -494,6 +497,17 @@ describe('MathU128', () => {
         'MathU128: division by zero',
       );
     });
+
+    test('should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDiv: () => ({
+          quotient: 1n,
+          remainder: 5n, // invalid: remainder == divisor
+        }),
+      });
+
+      expect(() => sim.div(10n, 5n)).toThrow('MathU128: conversion invalid');
+    });
   });
 
   describe('divU128', () => {
@@ -552,6 +566,19 @@ describe('MathU128', () => {
         'MathU128: division by zero',
       );
     });
+
+    test('should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDiv: () => ({
+          quotient: 1n,
+          remainder: 5n, // divisor = 5n, remainder == 5n → invalid
+        }),
+      });
+
+      const a: U128 = { low: 10n, high: 0n };
+      const b: U128 = { low: 5n, high: 0n };
+      expect(() => sim.divU128(a, b)).toThrow('MathU128: conversion invalid');
+    });
   });
 
   describe('rem', () => {
@@ -594,6 +621,17 @@ describe('MathU128', () => {
       expect(() => mathSimulator.rem(5n, 0n)).toThrowError(
         'MathU128: division by zero',
       );
+    });
+
+    test('should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDiv: () => ({
+          quotient: 1n,
+          remainder: 10n, // too big
+        }),
+      });
+
+      expect(() => sim.rem(20n, 10n)).toThrow('MathU128: conversion invalid');
     });
   });
 
@@ -653,6 +691,19 @@ describe('MathU128', () => {
         'MathU128: division by zero',
       );
     });
+
+    test('remU128 should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDiv: () => ({
+          quotient: 1n,
+          remainder: 10n, // too big
+        }),
+      });
+
+      const a: U128 = { low: 20n, high: 0n };
+      const b: U128 = { low: 10n, high: 0n };
+      expect(() => sim.remU128(a, b)).toThrow('MathU128: conversion invalid');
+    });
   });
 
   describe('sqrt', () => {
@@ -690,6 +741,20 @@ describe('MathU128', () => {
 
     test('should handle large non-perfect square', () => {
       expect(mathSimulator.sqrt(100000001n)).toBe(10000n); // floor(sqrt(100000001)) ≈ 10000.00005
+    });
+
+    test('should fail if sqrt witness overestimates (root^2 > radicand)', () => {
+      const sim = createMaliciousSimulator({
+        mockSqrt: () => 11n, // 11^2 = 121 > 100
+      });
+      expect(() => sim.sqrt(100n)).toThrow('MathU128: sqrt overestimate');
+    });
+
+    test('should fail if sqrt witness underestimates (next^2 <= radicand)', () => {
+      const sim = createMaliciousSimulator({
+        mockSqrt: () => 9n, // (9+1)^2 = 100 <= 100
+      });
+      expect(() => sim.sqrt(100n)).toThrow('MathU128: sqrt underestimate');
     });
   });
 
