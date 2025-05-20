@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import type { U256 } from '../artifacts/Index/contract/index.d.cts';
-import { MathU256Simulator } from './MathU256Simulator';
+import {
+  MathU256Simulator,
+  createMaliciousSimulator,
+} from './MathU256Simulator';
 
 let mathSimulator: MathU256Simulator;
 
@@ -438,6 +441,24 @@ describe('MathU256', () => {
       const quotient = mathSimulator.div(a, b);
       expect(fromU256(quotient)).toBe(14n);
     });
+
+    test('div: should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 1n, remainder: 10n }),
+      });
+      const a = toU256(20n);
+      const b = toU256(5n);
+      expect(() => sim.div(a, b)).toThrow('MathU256: remainder error');
+    });
+
+    test('div: should fail when quotient * b + remainder != a', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 1n, remainder: 2n }), // 1*5+2 = 7 != 20
+      });
+      const a = toU256(20n);
+      const b = toU256(5n);
+      expect(() => sim.div(a, b)).toThrow('MathU256: division invalid');
+    });
   });
 
   describe('rem', () => {
@@ -496,6 +517,24 @@ describe('MathU256', () => {
       const b = toU256(5n);
       const remainder = mathSimulator.rem(a, b);
       expect(fromU256(remainder)).toBe(3n);
+    });
+
+    test('rem: should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 0n, remainder: 10n }),
+      });
+      const a = toU256(10n);
+      const b = toU256(5n);
+      expect(() => sim.rem(a, b)).toThrow('MathU256: remainder error');
+    });
+
+    test('rem: should fail when quotient * b + remainder != a', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 1n, remainder: 2n }),
+      });
+      const a = toU256(8n);
+      const b = toU256(5n);
+      expect(() => sim.rem(a, b)).toThrow('MathU256: division invalid');
     });
   });
 
@@ -563,6 +602,24 @@ describe('MathU256', () => {
       expect(mathSimulator.isZero(result.quotient)).toBe(true);
       expect(fromU256(result.remainder)).toBe(3n);
     });
+
+    test('divRem: should fail when remainder >= divisor', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 3n, remainder: 9n }),
+      });
+      const a = toU256(24n);
+      const b = toU256(8n);
+      expect(() => sim.divRem(a, b)).toThrow('MathU256: remainder error');
+    });
+
+    test('divRem: should fail when quotient * b + remainder != a', () => {
+      const sim = createMaliciousSimulator({
+        mockDivU256: () => ({ quotient: 3n, remainder: 2n }),
+      });
+      const a = toU256(25n);
+      const b = toU256(8n);
+      expect(() => sim.divRem(a, b)).toThrow('MathU256: division invalid');
+    });
   });
 
   describe('sqrt', () => {
@@ -603,6 +660,22 @@ describe('MathU256', () => {
 
     test('should handle large non-perfect square', () => {
       expect(mathSimulator.sqrt(toU256(100000001n))).toBe(10000n); // floor(sqrt(100000001)) ≈ 10000.00005
+    });
+
+    test('sqrt: should fail if malicious witness overestimates root', () => {
+      const sim = createMaliciousSimulator({
+        mockSqrtU256: () => 3n, // sqrt(8) should be 2
+      });
+      const a = toU256(8n);
+      expect(() => sim.sqrt(a)).toThrow('MathU256: sqrt overestimate');
+    });
+
+    test('sqrt: should fail if malicious witness underestimates root', () => {
+      const sim = createMaliciousSimulator({
+        mockSqrtU256: () => 1n, // sqrt(5) should be 2
+      });
+      const a = toU256(5n);
+      expect(() => sim.sqrt(a)).toThrow('MathU256: sqrt underestimate');
     });
   });
 

@@ -636,14 +636,9 @@ module MathU128 {
     * @throws MathU128: division invalid If quotient * b + remainder does not equal a.
     */
     circuit _div(a: U128, b: U128): DivResultU128 {
-        if (_isZero(b)) {
-            // Special case: division by zero
-            assert false "MathU128: division by zero";
-            return DivResultU128 {
-                quotient: ZERO_U128(),
-                remainder: ZERO_U128()
-            };
-        } else if (_isZero(a)) {
+        assert !_isZero(b) "MathU128: division by zero";
+        
+        if (_isZero(a)) {
             // Special case: dividend is zero
             return DivResultU128 {
                 quotient: ZERO_U128(),

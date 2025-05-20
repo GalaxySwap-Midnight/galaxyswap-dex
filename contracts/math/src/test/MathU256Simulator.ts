@@ -3,6 +3,7 @@ import {
   type CircuitContext,
   type ContractState,
   QueryContext,
+  type WitnessContext,
   constructorContext,
 } from '@midnight-ntwrk/compact-runtime';
 import {
@@ -10,6 +11,7 @@ import {
   sampleContractAddress,
 } from '@midnight-ntwrk/zswap';
 import type {
+  DivResultU128,
   DivResultU256,
   U256,
 } from '../artifacts/Index/contract/index.d.cts';
@@ -168,4 +170,121 @@ export class MathU256Simulator
     this.circuitContext = result.context;
     return result.result;
   }
+}
+
+export function createMaliciousSimulator({
+  mockSqrtU256,
+  mockDivU256,
+  mockDivU128,
+}: {
+  mockSqrtU256?: (radicand: U256) => bigint;
+  mockDivU256?: (a: U256, b: U256) => { quotient: bigint; remainder: bigint };
+  mockDivU128?: (
+    a: bigint,
+    b: bigint,
+  ) => { quotient: bigint; remainder: bigint };
+}): MathU256Simulator {
+  const MAX_U64 = 2n ** 64n - 1n;
+
+  const baseWitnesses = MathU256Witnesses();
+
+  const witnesses = {
+    ...baseWitnesses,
+    ...(mockSqrtU256 && {
+      sqrtU256Locally(
+        context: WitnessContext<Ledger, MathU256ContractPrivateState>,
+        radicand: U256,
+      ): [MathU256ContractPrivateState, bigint] {
+        return [context.privateState, mockSqrtU256(radicand)];
+      },
+    }),
+    ...(mockDivU256 && {
+      divU256Locally(
+        context: WitnessContext<Ledger, MathU256ContractPrivateState>,
+        a: U256,
+        b: U256,
+      ): [MathU256ContractPrivateState, DivResultU256] {
+        const { quotient, remainder } = mockDivU256(a, b);
+
+        const qLow = quotient & ((1n << 128n) - 1n);
+        const qHigh = quotient >> 128n;
+        const rLow = remainder & ((1n << 128n) - 1n);
+        const rHigh = remainder >> 128n;
+
+        return [
+          context.privateState,
+          {
+            quotient: {
+              low: {
+                low: qLow & MAX_U64,
+                high: qLow >> 64n,
+              },
+              high: {
+                low: qHigh & MAX_U64,
+                high: qHigh >> 64n,
+              },
+            },
+            remainder: {
+              low: {
+                low: rLow & MAX_U64,
+                high: rLow >> 64n,
+              },
+              high: {
+                low: rHigh & MAX_U64,
+                high: rHigh >> 64n,
+              },
+            },
+          },
+        ];
+      },
+    }),
+    ...(mockDivU128 && {
+      divU128Locally(
+        context: WitnessContext<Ledger, MathU256ContractPrivateState>,
+        a: bigint,
+        b: bigint,
+      ): [MathU256ContractPrivateState, DivResultU128] {
+        const { quotient, remainder } = mockDivU128(a, b);
+        return [
+          context.privateState,
+          {
+            quotient: {
+              low: quotient & MAX_U64,
+              high: quotient >> 64n,
+            },
+            remainder: {
+              low: remainder & MAX_U64,
+              high: remainder >> 64n,
+            },
+          },
+        ];
+      },
+    }),
+  };
+
+  const contract = new Contract<MathU256ContractPrivateState>(witnesses);
+
+  const { currentPrivateState, currentContractState, currentZswapLocalState } =
+    contract.initialState(
+      constructorContext(
+        MathU256ContractPrivateState.generate(),
+        sampleCoinPublicKey(),
+      ),
+    );
+
+  const badSimulator = new MathU256Simulator();
+  Object.defineProperty(badSimulator, 'contract', {
+    value: contract,
+    writable: false,
+    configurable: true,
+  });
+
+  badSimulator.circuitContext = {
+    currentPrivateState,
+    currentZswapLocalState,
+    originalState: currentContractState,
+    transactionContext: badSimulator.circuitContext.transactionContext,
+  };
+
+  return badSimulator;
 }

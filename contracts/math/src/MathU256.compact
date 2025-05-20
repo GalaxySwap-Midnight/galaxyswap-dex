@@ -193,17 +193,17 @@ module MathU256 {
      * @throws MathU256: addition overflow If the sum exceeds 2^256 - 1.
      */
     export circuit add(a: U256, b: U256): U256 {
+        assert !(
+            eq(a, MAX_U256()) &&
+            b.low.low == 1 && b.low.high == 0 &&
+            b.high.low == 0 && b.high.high == 0
+        ) "MathU256: addition overflow";
+
         // Special case: a = 0, return b
         if (isZero(a)) {
             return b;
         } else if (isZero(b)) {
             return a;
-        } else if (eq(a, MAX_U256()) && 
-                b.low.low == 1 && b.low.high == 0 && 
-                b.high.low == 0 && b.high.high == 0) {
-            assert false "MathU256: addition overflow";
-            // TODO: Compiler: Should return sth, otherwise will throw an error
-            return ZERO_U256();
         } else {
             // General case
             const lowSum = MathU128_addU128(a.low, b.low);
@@ -343,6 +343,12 @@ module MathU256 {
      * @throws MathU256: multiplication overflow If the product exceeds 2^256 - 1.
      */
     export circuit mul(a: U256, b: U256): U256 {
+        assert !(
+            eq(a, MAX_U256()) &&
+            b.low.low == 2 && b.low.high == 0 &&
+            b.high.low == 0 && b.high.high == 0
+        ) "MathU256: multiplication overflow";
+
         if (isZero(a) || isZero(b)) {
             // Special case: a = 0 or b = 0, return 0
             return ZERO_U256();
@@ -352,11 +358,6 @@ module MathU256 {
         } else if (b.low.low == 1 && b.low.high == 0 && b.high.low == 0 && b.high.high == 0) {
             // b = 1, return a
             return a; 
-        } else if (eq(a, MAX_U256()) &&
-              b.low.low == 2 && b.low.high == 0 &&
-              b.high.low == 0 && b.high.high == 0) {
-            assert false "MathU256: multiplication overflow";
-            return ZERO_U256();
         } else {
             // Compute partial products using MathU128.mulU128
             const ll = MathU128_mulU128(a.low, b.low); // Bits 0-255
@@ -431,14 +432,9 @@ module MathU256 {
      * @throws MathU256: division invalid If quotient * b + remainder does not equal a.
      */
     circuit _div(a: U256, b: U256): DivResultU256 {
-        if (isZero(b)) {
-            // Special case: division by zero
-            assert false "MathU256: division by zero";
-            return DivResultU256 {
-                quotient: ZERO_U256(),
-                remainder: ZERO_U256()
-            };
-        } else if (isZero(a)) {
+        assert !isZero(b) "MathU256: division by zero";
+        
+        if (isZero(a)) {
             // Dividend is zero: quotient = 0, remainder = 0
             return DivResultU256 {
                 quotient: ZERO_U256(),
