@@ -20,6 +20,22 @@ export circuit fromU128(value: U128): Uint<128> {
     return disclose(MathU128_fromU128(value));
 }
 
+export circuit isZero(value: Uint<128>): Boolean {
+    return MathU128_isZero(value);
+}
+
+export circuit isZeroU128(value: U128): Boolean {
+    return MathU128_isZeroU128(value);
+}
+
+export circuit eq(a: Uint<128>, b: Uint<128>): Boolean {
+    return MathU128_eq(a, b);
+}
+
+export circuit eqU128(a: U128, b: U128): Boolean {
+    return MathU128_eqU128(a, b);
+}
+
 export circuit le(a: Uint<128>, b: Uint<128>): Boolean {
     return disclose(MathU128_le(a, b));
 }

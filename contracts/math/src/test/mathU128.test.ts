@@ -58,6 +58,51 @@ describe('MathU128', () => {
     });
   });
 
+  describe('isZero', () => {
+    test('should return true for zero', () => {
+      expect(mathSimulator.isZero(0n)).toBe(true);
+    });
+
+    test('should return false for non-zero', () => {
+      expect(mathSimulator.isZero(1n)).toBe(false);
+    });
+  });
+
+  describe('isZeroU128', () => {
+    test('should return true for zero U128', () => {
+      const a: U128 = { low: 0n, high: 0n };
+      expect(mathSimulator.isZeroU128(a)).toBe(true);
+    });
+
+    test('should return false for non-zero U128', () => {
+      const b: U128 = { low: 1n, high: 0n };
+      expect(mathSimulator.isZeroU128(b)).toBe(false);
+    });
+  });
+
+  describe('eq', () => {
+    test('should return true for equal numbers', () => {
+      expect(mathSimulator.eq(5n, 5n)).toBe(true);
+    });
+
+    test('should return false for non-equal numbers', () => {
+      expect(mathSimulator.eq(5n, 10n)).toBe(false);
+    });
+  });
+
+  describe('eqU128', () => {
+    test('should return true for equal U128 numbers', () => {
+      const a: U128 = { low: 5n, high: 0n };
+      expect(mathSimulator.eqU128(a, a)).toBe(true);
+    });
+
+    test('should return false for non-equal U128 numbers', () => {
+      const a: U128 = { low: 5n, high: 0n };
+      const b: U128 = { low: 10n, high: 0n };
+      expect(mathSimulator.eqU128(a, b)).toBe(false);
+    });
+  });
+
   describe('le', () => {
     test('should compare small numbers', () => {
       expect(mathSimulator.le(5n, 10n)).toBe(true);
@@ -89,6 +134,11 @@ describe('MathU128', () => {
       const a: U128 = { low: MAX_U64, high: MAX_U64 - 1n };
       const b: U128 = { low: MAX_U64, high: MAX_U64 };
       expect(mathSimulator.leU128(a, b)).toBe(true);
+    });
+
+    test('should return true for equal U128 numbers', () => {
+      const a: U128 = { low: 5n, high: 0n };
+      expect(mathSimulator.leU128(a, a)).toBe(true);
     });
   });
 
@@ -123,6 +173,11 @@ describe('MathU128', () => {
       const a: U128 = { low: MAX_U64, high: MAX_U64 };
       const b: U128 = { low: MAX_U64, high: MAX_U64 - 1n };
       expect(mathSimulator.gtU128(a, b)).toBe(true);
+    });
+
+    test('should return false for equal U128 numbers', () => {
+      const a: U128 = { low: 5n, high: 0n };
+      expect(mathSimulator.gtU128(a, a)).toBe(false);
     });
   });
 
