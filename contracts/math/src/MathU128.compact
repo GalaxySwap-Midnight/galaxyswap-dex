@@ -69,31 +69,7 @@ module MathU128 {
             low: Max_U64(),
             high: Max_U64()
         };
-    }
-
-    /**
-     * @description Checks if a U256 value equals zero.
-     *
-     * This circuit checks if a 256-bit number A = a.high * 2^128 + a.low is zero by verifying
-     * that all fields (a.high.low, a.high.high, a.low.low, a.low.high) are zero.
-     * Returns true if A = 0, false otherwise. No arithmetic operations are performed,
-     * only field comparisons and logical operations (AND).
-     *
-     * @param a The U256 value to check.
-     * @returns Boolean True if a equals zero, false otherwise.
-     */
-    export pure circuit _isZero(a: U128): Boolean {
-        return _eq(a, ZERO_U128());
-    }
-
-    export pure circuit isZero(a: Uint<128>): Boolean {
-        const aU128 = toU128(a);
-        return _eq(aU128, ZERO_U128());
-    }
-
-    export pure circuit isZeroU128(a: U128): Boolean {
-        return _eq(a, ZERO_U128());
-    }
+    } 
 
     /**
      * @description Converts a Uint<128> to a U128 struct.
@@ -102,19 +78,19 @@ module MathU128 {
      * (`{ low: Uint<64>, high: Uint<64> }`), where `low` holds the lower 64 bits and `high` holds the
      * upper 64 bits of `value`. The conversion is verified to ensure correctness.
      *
-     * **Theoretical Description**:
+     * Theoretical Description:
      * The circuit splits a 128-bit unsigned integer value into two 64-bit unsigned integers,
      * value = high * 2^64 + low, where high, low are in [0, 2^64 - 1]. The result is a U128 struct
      * with low = value mod 2^64 and high = floor(value / 2^64).
      *
-     * **Mathematical Steps**:
-     * 1. **Propose Low and High Parts**:
+     * Mathematical Steps:
+     * 1. Propose Low and High Parts:
      *    - Compute low = value mod 2^64, the least significant 64 bits of value.
      *    - Compute high = floor(value / 2^64), the most significant 64 bits of value.
-     * 2. **Verification**:
+     * 2. Verification:
      *    - Reconstruct reconstructed = high * 2^64 + low, a 128-bit unsigned integer.
      *    - Verify that reconstructed = value to ensure the conversion is correct.
-     * 3. **Result Construction**:
+     * 3. Result Construction:
      *    - Return (low, high), a U128 struct satisfying value = high * 2^64 + low.
      *
      * The circuit ensures correctness by verifying the reconstructed value matches the input, using
@@ -145,6 +121,23 @@ module MathU128 {
     /**
      * @description Converts a U128 struct to a Uint<128>.
      *
+     * This circuit converts a U128 struct ({ low: Uint<64>, high: Uint<64> }) to a 128-bit unsigned
+     * integer by reconstructing value = high * 2^64 + low, where high and low are the upper and lower
+     * 64 bits respectively.
+     *
+     * Theoretical Description:
+     * The circuit combines two 64-bit unsigned integers (high, low) into a single 128-bit unsigned
+     * integer value, where value = high * 2^64 + low. The conversion reconstructs the original value
+     * by shifting high left by 64 bits and adding low.
+     *
+     * Mathematical Steps:
+     * 1. Shift High Part:
+     *    - Compute highShifted = high * 2^64, shifting high left by 64 bits.
+     * 2. Combine Parts:
+     *    - Compute result = highShifted + low, combining the shifted high part with low.
+     * 3. Result:
+     *    - Return result as a Uint<128>, satisfying result = high * 2^64 + low.
+     *
      * @param value The U128 struct to convert.
      * @returns Uint<128> The 128-bit value represented by high * 2^64 + low.
      */
@@ -153,16 +146,25 @@ module MathU128 {
         const result = highShifted + (value.low as Uint<128>);
         return result as Uint<128>;
     }
+    
+    /**
+     * @description Checks if a Uint<128> value equals zero.
+     * 
+     * @param a The Uint<128> value to check.
+     * @returns Boolean True if a equals zero, false otherwise.
+     */
+    export pure circuit isZero(a: Uint<128>): Boolean {
+        return a == 0;
+    }
 
     /**
-     * @description Internal circuit compares two U128 values for equality.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     * @returns Boolean True if a equals b, false otherwise.
+     * @description Checks if a U128 value equals zero.
+     * 
+     * @param a The U128 value to check.
+     * @returns Boolean True if a equals zero (a.low = a.high = 0), false otherwise.
      */
-    circuit _eq(a: U128, b: U128): Boolean {
-        return a.low == b.low && a.high == b.high;
+    export pure circuit isZeroU128(a: U128): Boolean {
+        return a.low == 0 && a.high == 0;
     }
 
     /**
@@ -173,9 +175,7 @@ module MathU128 {
      * @returns Boolean True if a is equal than b, false otherwise.
      */
     export circuit eq(a: Uint<128>, b: Uint<128>): Boolean {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        return _eq(aU128, bU128);
+        return a == b;
     }
 
     /**
@@ -186,29 +186,7 @@ module MathU128 {
      * @returns Boolean True if a is equal b, false otherwise.
      */
     export circuit eqU128(a: U128, b: U128): Boolean {
-        return _eq(a, b);
-    }
-
-    /**
-     * @description Compares two U128 values to check if a <= b.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     * @returns Boolean True if a is less than b, false otherwise.
-     */
-    circuit _le(a: U128, b: U128): Boolean {
-        return a.high < b.high || (a.high == b.high && a.low <= b.low);
-    }
-
-    /**
-     * @description Checks if one U128 value is less than or equal another.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     * @returns Boolean True if a is less than or equal b, false otherwise.
-     */
-    export circuit leU128(a: U128, b: U128): Boolean {
-        return _le(a, b);
+        return a.low == b.low && a.high == b.high;
     }
 
     /**
@@ -219,31 +197,18 @@ module MathU128 {
      * @returns Boolean True if a is less than or equal b, false otherwise.
      */
     export circuit le(a: Uint<128>, b: Uint<128>): Boolean {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        return _le(aU128, bU128);
+        return a <= b;
     }
 
     /**
-     * @description Compares two U128 values to check if a > b.
+     * @description Checks if one U128 value is less than or equal another.
      *
      * @param a The first U128 value.
      * @param b The second U128 value.
-     * @returns Boolean True if a is greater than b, false otherwise.
+     * @returns Boolean True if a is less than or equal b, false otherwise.
      */
-    circuit _gt(a: U128, b: U128): Boolean {
-        return a.high > b.high || (a.high == b.high && a.low > b.low);
-    }
-
-    /**
-     * @description Checks if one U128 value is greater than another.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     * @returns Boolean True if a is greater than b, false otherwise.
-     */
-    export circuit gtU128(a: U128, b: U128): Boolean {
-        return _gt(a, b);
+    export circuit leU128(a: U128, b: U128): Boolean {
+        return a.high < b.high || (a.high == b.high && a.low <= b.low);
     }
 
     /**
@@ -254,9 +219,18 @@ module MathU128 {
      * @returns Boolean True if a is greater than b, false otherwise.
      */
     export circuit gt(a: Uint<128>, b: Uint<128>): Boolean {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        return _gt(aU128, bU128);
+        return a > b;
+    }
+
+    /**
+     * @description Checks if one U128 value is greater than another.
+     *
+     * @param a The first U128 value.
+     * @param b The second U128 value.
+     * @returns Boolean True if a is greater than b, false otherwise.
+     */
+    export circuit gtU128(a: U128, b: U128): Boolean {
+        return a.high > b.high || (a.high == b.high && a.low > b.low);
     }
 
     /**
@@ -295,13 +269,13 @@ module MathU128 {
      * @returns U256 The sum of a and b as a U256 struct, with low (bits 0-127) and high (bits 128-255) parts.
      */
     circuit _add(a: U128, b: U128): U256 {
-        if (_isZero(a)) {
+        if (isZeroU128(a)) {
             // Special case: a = 0, return b
             return U256 {
                 low: b,
                 high: ZERO_U128()
             };
-        } else if (_isZero(b)) {
+        } else if (isZeroU128(b)) {
             // Special case: b = 0, return a
             return U256 {
                 low: a,
@@ -362,6 +336,20 @@ module MathU128 {
     }
 
     /**
+     * @description Subtracts one Uint<128> value from another.
+     *
+     * @param a The Uint<128> value to subtract from (minuend).
+     * @param b The Uint<128> value to subtract (subtrahend).
+     * @returns Uint<128> The difference between a and b.
+     * @throws MathU128: subtraction underflow If a < b.
+     */
+    export circuit sub(a: Uint<128>, b: Uint<128>): Uint<128> {
+        assert (a >= b) "MathU128: subtraction underflow";
+        return a - b;
+    }
+
+
+    /**
      * @description Subtracts one U128 value from another, checking for underflow.
      *
      * Theoretical Description:
@@ -395,11 +383,11 @@ module MathU128 {
      * @returns U128 The difference a - b as a U128 struct.
      * @throws MathU128: subtraction underflow If a < b.
      */
-    circuit _sub(a: U128, b: U128): U128 {
-        if (_isZero(b)) {
+    export circuit subU128(a: U128, b: U128): U128 {
+        if (isZeroU128(b)) {
             // Special case: b = 0, return a
             return a;
-        } else if (_eq(a, b)) {
+        } else if (eqU128(a, b)) {
             // Special case: a = b, return 0
             return ZERO_U128();
         } else if (a.low == Max_U64() && a.high == Max_U64() &&
@@ -411,7 +399,7 @@ module MathU128 {
             };
         } else {
             // General case
-            assert (_gt(a, b) || _eq(a, b)) "MathU128: subtraction underflow";
+            assert (gtU128(a, b) || eqU128(a, b)) "MathU128: subtraction underflow";
             
             const borrow = a.low < b.low ? 1 as Uint<64> : 0 as Uint<64>;
             const highWithBorrow = b.high + borrow;
@@ -431,35 +419,6 @@ module MathU128 {
                 };
             }
         }
-    }
-
-
-    /**
-     * @description Subtracts one Uint<128> value from another.
-     *
-     * @param a The Uint<128> value to subtract from (minuend).
-     * @param b The Uint<128> value to subtract (subtrahend).
-     * @returns Uint<128> The difference between a and b.
-     * @throws MathU128: subtraction underflow If a < b.
-     */
-    export circuit sub(a: Uint<128>, b: Uint<128>): Uint<128> {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        const diffU128 = _sub(aU128, bU128);
-        return fromU128(diffU128);
-    }
-
-
-    /**
-     * @description Subtracts one U128 value from another.
-     *
-     * @param a The U128 value to subtract from (minuend).
-     * @param b The U128 value to subtract (subtrahend).
-     * @returns U128 The difference between a and b.
-     * @throws MathU128: subtraction underflow If a < b.
-     */
-    export circuit subU128(a: U128, b: U128): U128 {
-        return _sub(a, b);
     }
 
     /**
@@ -505,26 +464,25 @@ module MathU128 {
      * @returns U256 The product a * b as a U256 struct.
      */
     circuit _mul(a: U128, b: U128): U256 {
-        if (_isZero(a) || _isZero(b)) {
+        if (isZeroU128(a) || isZeroU128(b)) {
             // Special case: a = 0 or b = 0, return 0
             return U256 {
                 low: U128 { low: 0, high: 0 },
                 high: U128 { low: 0, high: 0 }
             };
-        } else if (a.low == 1 && a.high == 0) {
+        } else if (eqU128(a, U128 { low: 1, high: 0 })) {
             // Special case: a = 1, return b
             return U256 {
                 low: b,
                 high: U128 { low: 0, high: 0 }
             };
-        } else if (b.low == 1 && b.high == 0) {
+        } else if (eqU128(b, U128 { low: 1, high: 0 })) {
             // Special case: b = 1, return a
             return U256 {
                 low: a,
                 high: U128 { low: 0, high: 0 }
             };
-        } else if (a.low == Max_U64() && a.high == Max_U64() &&
-                b.low == 2 && b.high == 0) {
+        } else if (eqU128(a, MAX_U128()) && eqU128(b, U128 { low: 2, high: 0 })) {
             // Special case: a = MAX_U128, b = 2
             return U256 {
                 low: U128 { low: Max_U64() - 1, high: Max_U64() },
@@ -636,38 +594,38 @@ module MathU128 {
     * @throws MathU128: division invalid If quotient * b + remainder does not equal a.
     */
     circuit _div(a: U128, b: U128): DivResultU128 {
-        assert !_isZero(b) "MathU128: division by zero";
+        assert !isZeroU128(b) "MathU128: division by zero";
         
-        if (_isZero(a)) {
+        if (isZeroU128(a)) {
             // Special case: dividend is zero
             return DivResultU128 {
                 quotient: ZERO_U128(),
                 remainder: ZERO_U128()
             };
-        } else if (b.low == 1 && b.high == 0) {
+        } else if (eqU128(b, U128 { low: 1, high: 0 })) {
             // Special case: divisor is one
             return DivResultU128 {
                 quotient: a,
                 remainder: ZERO_U128()
             };
-        } else if (_eq(a, b)) {
+        } else if (eqU128(a, b)) {
             // Special case: dividend equals divisor
             return DivResultU128 {
                 quotient: U128 { low: 1, high: 0 },
                 remainder: ZERO_U128()
             };
-        } else if (_le(a, b)) {
+        } else if (leU128(a, b)) {
             // Special case: dividend less than divisor
             return DivResultU128 {
                 quotient: ZERO_U128(),
                 remainder: a
             };
         } else {
-            assert (b.high > 0 || b.low > 0) "MathU128: division by zero";
+            assert (gtU128(b, ZERO_U128())) "MathU128: division by zero";
             const aValue = fromU128(a);
             const bValue = fromU128(b);
             const result = divU128Locally(aValue, bValue);
-            assert (_le(result.remainder, b)) "MathU128: remainder error";
+            assert (leU128(result.remainder, b)) "MathU128: remainder error";
             
             // quotient * b + remainder == a
             // Compute sumU256 = productU256 + remainderU256
@@ -678,10 +636,9 @@ module MathU128 {
 
             // Verify that sumU256.low == a and sumU256.high == 0
             assert (
-                _eq(highSumU256.low, ZERO_U128()) && 
-                _eq(highSumU256.high, ZERO_U128()) &&
-                lowSumU256.low.high == a.high &&
-                lowSumU256.low.low == a.low
+                eqU128(highSumU256.low, ZERO_U128()) && 
+                eqU128(highSumU256.high, ZERO_U128()) &&
+                eqU128(lowSumU256.low, a)
             ) "MathU128: division invalid";
             
             return result;
@@ -831,29 +788,29 @@ module MathU128 {
      * @throws MathU128: sqrt underestimate If (R + 1)^2 <= radicand.
      */
     circuit _sqrt(radicand: U128): Uint<64> {
-        if (_isZero(radicand)) {
+        if (isZeroU128(radicand)) {
             return 0 as Uint<64>;
-        } else if (radicand.low == 1 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 1, high: 0 })) {
             return 1 as Uint<64>;
-        } else if (radicand.low == 2 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 2, high: 0 })) {
             return 1 as Uint<64>;
-        } else if (radicand.low == 3 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 3, high: 0 })) {
             return 1 as Uint<64>;
-        } else if (radicand.low == 4 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 4, high: 0 })) {
             return 2 as Uint<64>;
-        } else if (radicand.low == 9 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 9, high: 0 })) {
             return 3 as Uint<64>;
-        } else if (radicand.low == Max_U8() && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: Max_U8(), high: 0 })) {
             return 15 as Uint<64>;
-        } else if (radicand.low == Max_U16() && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: Max_U16(), high: 0 })) {
             return 255 as Uint<64>;
-        } else if (radicand.low == Max_U32() && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: Max_U32(), high: 0 })) {
             return 65535 as Uint<64>;
-        } else if (radicand.low == Max_U64() && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: Max_U64(), high: 0 })) {
             return 4294967295 as Uint<64>;
-        } else if (radicand.low == 1000000 && radicand.high == 0) {
+        } else if (eqU128(radicand, U128 { low: 1000000, high: 0 })) {
             return 1000 as Uint<64>;
-        } else if (radicand.low == Max_U64() && radicand.high == Max_U64()) {
+        } else if (eqU128(radicand, MAX_U128())) {
             return Max_U64();
         } else {
             const radicandUint128 = fromU128(radicand);
@@ -863,15 +820,15 @@ module MathU128 {
             assert (rootSquareU256.high.low == 0 && rootSquareU256.high.high == 0) "MathU128: sqrt root^2 overflow";
             
             const rootSquareU128 = rootSquareU256.low; // U128
-            assert (!_gt(rootSquareU128, radicand)) "MathU128: sqrt overestimate";
+            assert (!gtU128(rootSquareU128, radicand)) "MathU128: sqrt overestimate";
             
             const next = root + 1 as Uint<64>;
             const nextU128 = U128 { low: next, high: 0 };
             const nextSquareU256 = _mul(nextU128, nextU128); // U256 { low: U128, high: U128 }
-            assert (nextSquareU256.high.low == 0 && nextSquareU256.high.high == 0) "MathU128: sqrt next overflow";
+            assert (eqU128(nextSquareU256.high, ZERO_U128())) "MathU128: sqrt next overflow";
             
             const nextSquareU128 = nextSquareU256.low; // U128
-            assert (_gt(nextSquareU128, radicand)) "MathU128: sqrt underestimate";
+            assert (gtU128(nextSquareU128, radicand)) "MathU128: sqrt underestimate";
             return root;
         }
     }
@@ -908,18 +865,6 @@ module MathU128 {
     }
 
     /**
-     * @description Returns the minimum of two U128 values.
-     * @description Returns the minimum of two U128 values.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     */
-    circuit _min(a: U128, b: U128): U128 {
-        return _le(a, b) ? a : b;
-    }
-
-
-    /**
      * @description Returns the minimum of two Uint<128> values.
      *
      * @param a The first Uint<128> value.
@@ -927,10 +872,7 @@ module MathU128 {
      * @returns Uint<128> The smaller of a and b.
      */
     export circuit min(a: Uint<128>, b: Uint<128>): Uint<128> {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        const minU128 = _min(aU128, bU128);
-        return fromU128(minU128);
+        return le(a, b) ? a : b;
     }
 
 
@@ -942,18 +884,7 @@ module MathU128 {
      * @returns U128 The smaller of a and b.
      */
     export circuit minU128(a: U128, b: U128): U128 {
-        return _min(a, b);
-    }
-
-    /**
-     * @description Returns the maximum of two U128 values.
-     * @description Returns the maximum of two U128 values.
-     *
-     * @param a The first U128 value.
-     * @param b The second U128 value.
-     */
-    circuit _max(a: U128, b: U128): U128 {
-        return _le(a, b) ? b : a;
+        return leU128(a, b) ? a : b;
     }
 
 
@@ -965,10 +896,7 @@ module MathU128 {
      * @returns Uint<128> The larger of a and b.
      */
     export circuit max(a: Uint<128>, b: Uint<128>): Uint<128> {
-        const aU128 = toU128(a);
-        const bU128 = toU128(b);
-        const maxU128 = _max(aU128, bU128);
-        return fromU128(maxU128);
+        return gt(a, b) ? a : b;
     }
 
 
@@ -980,7 +908,7 @@ module MathU128 {
      * @returns U128 The larger of a and b.
      */
     export circuit maxU128(a: U128, b: U128): U128 {
-        return _max(a, b);
+        return gtU128(a, b) ? a : b;
     }
 
     /**
@@ -992,28 +920,28 @@ module MathU128 {
      * (`{ low: Uint<64>, high: Uint<64> }`). It returns a Boolean indicating whether `a` is divisible
      * by `b` with no remainder (i.e., `a mod b = 0`).
      *
-     * **Theoretical Description**:
+     * Theoretical Description:
      * The circuit checks if a 128-bit unsigned integer a, represented as
      * a = a.high * 2^64 + a.low, is a multiple of another 128-bit unsigned integer b,
      * represented as b = b.high * 2^64 + b.low, where a.high, a.low, b.high, and b.low are in
      * [0, 2^64 - 1]. The result is true if there exists an integer k such that a = k * b,
      * equivalent to a mod b = 0, and false otherwise.
      *
-     * **Mathematical Steps**:
-     * 1. **Division by Zero Check**:
+     * Mathematical Steps:
+     * 1. Division by Zero Check:
      *    - Verify that b != 0, i.e., b.high > 0 or b.low > 0.
      *    - If b = 0, terminate with an error indicating division by zero.
-     * 2. **Division Computation**:
+     * 2. Division Computation:
      *    - Compute the quotient and remainder of a divided by b:
      *      - Let result = (quotient, remainder) such that a = quotient * b + remainder,
      *        where quotient and remainder are 128-bit unsigned integers, and
      *        0 <= remainder < b.
      *      - Here, quotient = floor(a / b) and remainder = a mod b.
-     * 3. **Remainder Check**:
+     * 3. Remainder Check:
      *    - Represent remainder as remainder = remainder.high * 2^64 + remainder.low, where
      *      remainder.high, remainder.low are in [0, 2^64 - 1].
      *    - Verify that remainder = 0, i.e., remainder.high = 0 and remainder.low = 0.
-     * 4. **Result**:
+     * 4. Result:
      *    - Return true if remainder = 0, indicating a is a multiple of b (a mod b = 0).
      *    - Return false otherwise, indicating a is not a multiple of b.
      *
@@ -1027,7 +955,7 @@ module MathU128 {
     circuit _isMultiple(a: U128, b: U128): Boolean {
         assert (b.high > 0 || b.low > 0) "MathU128: division by zero";
         const result = _div(a, b);
-        return result.remainder.high == 0 && result.remainder.low == 0;
+        return eqU128(result.remainder, ZERO_U128());
     }
 
 

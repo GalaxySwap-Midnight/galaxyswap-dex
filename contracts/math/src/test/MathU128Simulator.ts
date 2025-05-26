@@ -85,6 +85,33 @@ export class MathU128Simulator
     return result.result;
   }
 
+  public isZero(value: bigint): boolean {
+    const result = this.contract.circuits.isZero(this.circuitContext, value);
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public isZeroU128(value: U128): boolean {
+    const result = this.contract.circuits.isZeroU128(
+      this.circuitContext,
+      value,
+    );
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public eq(a: bigint, b: bigint): boolean {
+    const result = this.contract.circuits.eq(this.circuitContext, a, b);
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public eqU128(a: U128, b: U128): boolean {
+    const result = this.contract.circuits.eqU128(this.circuitContext, a, b);
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
   public le(a: bigint, b: bigint): boolean {
     const result = this.contract.circuits.le(this.circuitContext, a, b);
     this.circuitContext = result.context;
