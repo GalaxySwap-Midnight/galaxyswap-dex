@@ -168,7 +168,7 @@ module MathU128 {
     }
 
     /**
-     * @description Compares two U128 values for equality.
+     * @description Compares two Uint<128> values for equality.
      *
      * @param a The first Uint<128> value.
      * @param b The second Uint<128> value.
