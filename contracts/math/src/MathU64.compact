@@ -48,7 +48,7 @@ module MathU64 {
      * @throws If `b > a`, causing underflow.
      */
     export circuit sub(a: Uint<64>, b: Uint<64>): Uint<64> {
-        assert (a >= b) "Math: subtraction underflow";
+        assert (a >= b, "Math: subtraction underflow");
         return a - b;
     }
 
@@ -94,7 +94,7 @@ module MathU64 {
      * @throws Math: division invalid If quotient * b + remainder does not equal a.
      */
     circuit _div(a: Uint<64>, b: Uint<64>): DivResultU64 {
-        assert b != 0 "Math: division by zero";
+        assert (b != 0, "Math: division by zero");
         
         if (a == 0) {
             return DivResultU64 { quotient: 0 as Uint<64>, remainder: 0 as Uint<64> };
@@ -106,8 +106,8 @@ module MathU64 {
             return DivResultU64 { quotient: 0 as Uint<64>, remainder: a };
         } else {
             const result = divU64Locally(a, b);
-            assert (result.remainder < b) "Math: remainder error";
-            assert ((result.quotient * b + result.remainder) as Uint<64> == a) "Math: division invalid";
+            assert (result.remainder < b, "Math: remainder error");
+            assert ((result.quotient * b + result.remainder) as Uint<64> == a, "Math: division invalid");
             return result;
         }
     }
@@ -179,11 +179,11 @@ module MathU64 {
     export circuit sqrt(radicand: Uint<64>): Uint<32> {
         const root = sqrtU64Locally(radicand);
         const rootSquare = mul(root, root);
-        assert (rootSquare <= radicand) "Math: sqrt overestimate";
+        assert (rootSquare <= radicand, "Math: sqrt overestimate");
         
         const next = root + 1;
         const nextSquare = mul(next, next);
-        assert (nextSquare > radicand) "Math: sqrt underestimate";
+        assert (nextSquare > radicand, "Math: sqrt underestimate");
         
         return root;
     }

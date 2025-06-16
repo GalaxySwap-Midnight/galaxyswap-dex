@@ -99,7 +99,7 @@ module MathU128 {
         const reconstructed = highShifted + (low as Uint<128>); // high * 2^64 + low
 
         // Verify reconstruction matches value
-        assert (reconstructed == value) "MathU128: conversion invalid";
+        assert (reconstructed == value, "MathU128: conversion invalid");
 
         return U128 {
             low: low,
@@ -326,7 +326,7 @@ module MathU128 {
      * @throws MathU128: subtraction underflow If a < b.
      */
     export pure circuit sub(a: Uint<128>, b: Uint<128>): Uint<128> {
-        assert (a >= b) "MathU128: subtraction underflow";
+        assert (a >= b, "MathU128: subtraction underflow");
         return a - b;
     }
 
@@ -374,7 +374,7 @@ module MathU128 {
             return ZERO_U128();
         } else {
             // General case
-            assert (gtU128(a, b) || eqU128(a, b)) "MathU128: subtraction underflow";
+            assert (gtU128(a, b) || eqU128(a, b), "MathU128: subtraction underflow");
             
             const borrow = a.low < b.low ? 1 as Uint<64> : 0 as Uint<64>;
             const highWithBorrow = b.high + borrow;
@@ -563,7 +563,7 @@ module MathU128 {
     * @throws MathU128: division invalid If quotient * b + remainder does not equal a.
     */
     circuit _div(a: U128, b: U128): DivResultU128 {
-        assert !isZeroU128(b) "MathU128: division by zero";
+        assert (!isZeroU128(b), "MathU128: division by zero");
         
         if (isZeroU128(a)) {
             // Special case: dividend is zero
@@ -590,9 +590,9 @@ module MathU128 {
                 remainder: a
             };
         } else {
-            assert (gtU128(b, ZERO_U128())) "MathU128: division by zero";
+            assert (gtU128(b, ZERO_U128()), "MathU128: division by zero");
             const result = divU128Locally(a, b);
-            assert (leU128(result.remainder, b)) "MathU128: remainder error";
+            assert (leU128(result.remainder, b), "MathU128: remainder error");
             
             // quotient * b + remainder == a
             // Compute sumU256 = productU256 + remainderU256
@@ -602,11 +602,11 @@ module MathU128 {
             const highSumU256 = _add(productU256.high, lowSumU256.high); // Add carry to high part
 
             // Verify that sumU256.low == a and sumU256.high == 0
-            assert (
+            assert ((
                 eqU128(highSumU256.low, ZERO_U128()) && 
                 eqU128(highSumU256.high, ZERO_U128()) &&
                 eqU128(lowSumU256.low, a)
-            ) "MathU128: division invalid";
+            ), "MathU128: division invalid");
             
             return result;
         }
@@ -781,18 +781,18 @@ module MathU128 {
             const root = sqrtU128Locally(radicand);
             const rootU128 = U128 { low: root, high: 0 };
             const rootSquareU256 = _mul(rootU128, rootU128); // U256 { low: U128, high: U128 }
-            assert (eqU128(rootSquareU256.high, ZERO_U128())) "MathU128: sqrt root^2 overflow";
+            assert (eqU128(rootSquareU256.high, ZERO_U128()), "MathU128: sqrt root^2 overflow");
             
             const rootSquareU128 = rootSquareU256.low; // U128
-            assert (!gtU128(rootSquareU128, radicand)) "MathU128: sqrt overestimate";
+            assert (!gtU128(rootSquareU128, radicand), "MathU128: sqrt overestimate");
             
             const next = root + 1 as Uint<64>;
             const nextU128 = U128 { low: next, high: 0 };
             const nextSquareU256 = _mul(nextU128, nextU128); // U256 { low: U128, high: U128 }
-            assert (eqU128(nextSquareU256.high, ZERO_U128())) "MathU128: next sqrt overflow";
+            assert (eqU128(nextSquareU256.high, ZERO_U128()), "MathU128: next sqrt overflow");
             
             const nextSquareU128 = nextSquareU256.low; // U128
-            assert (gtU128(nextSquareU128, radicand)) "MathU128: sqrt underestimate";
+            assert (gtU128(nextSquareU128, radicand), "MathU128: sqrt underestimate");
             return root;
         }
     }
@@ -916,7 +916,7 @@ module MathU128 {
      * @returns Boolean True if a is a multiple of b, false otherwise.
      */
     circuit _isMultiple(a: U128, b: U128): Boolean {
-        assert (b.high > 0 || b.low > 0) "MathU128: division by zero";
+        assert (b.high > 0 || b.low > 0, "MathU128: division by zero");
         const result = _div(a, b);
         return eqU128(result.remainder, ZERO_U128());
     }

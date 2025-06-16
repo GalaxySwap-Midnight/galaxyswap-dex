@@ -157,7 +157,7 @@ module MathU256 {
      * @throws MathU256: addition overflow If the sum exceeds 2^256 - 1.
      */
     export circuit add(a: U256, b: U256): U256 {
-        assert !(eq(a, MAX_U256()) && !isZero(b)) "MathU256: addition overflow";
+        assert (!eq(a, MAX_U256()) && !isZero(b), "MathU256: addition overflow");
 
         // Special case: a = 0, return b
         if (isZero(a)) {
@@ -170,7 +170,7 @@ module MathU256 {
             const carry = lowSum.high.low; // 0 or 1
             const bHighCarrySum = MathU128_addU128(b.high, MathU128_toU128(carry));
             const highSum = MathU128_addU128(a.high, bHighCarrySum.low);
-            assert (MathU128_isZeroU128(highSum.high)) "MathU256: addition overflow";
+            assert (MathU128_isZeroU128(highSum.high), "MathU256: addition overflow");
             return U256 {
                 low: lowSum.low,
                 high: highSum.low
@@ -221,7 +221,7 @@ module MathU256 {
             return ZERO_U256();
         } else {
             // Check for underflow: a must be >= b
-            assert (gt(a, b) || eq(a, b)) "MathU256: subtraction underflow";
+            assert (gt(a, b) || eq(a, b), "MathU256: subtraction underflow");
             
             // Handle low part subtraction with borrow
             const borrow = MathU128_leU128(a.low, b.low) ? 1 : 0;
@@ -286,7 +286,7 @@ module MathU256 {
      * @throws MathU256: multiplication overflow If the product exceeds 2^256 - 1.
      */
     export circuit mul(a: U256, b: U256): U256 {
-        assert !(eq(a, MAX_U256()) && MathU128_gtU128(b.low, U128 { low: 1, high: 0 })) "MathU256: multiplication overflow";
+        assert (!eq(a, MAX_U256()) && !MathU128_gtU128(b.low, U128 { low: 1, high: 0 }), "MathU256: multiplication overflow");
 
         if (isZero(a) || isZero(b)) {
             // Special case: a = 0 or b = 0, return 0
@@ -313,7 +313,7 @@ module MathU256 {
             const hhShifted = add(high, crossCarry); // Align hh and add carry
 
             // Check that upper 256 bits from partial products are zero
-            assert (isZero(hhShifted)) "MathU256: multiplication overflow";
+            assert (isZero(hhShifted), "MathU256: multiplication overflow");
 
             return lowAndCross;
         }
@@ -358,7 +358,7 @@ module MathU256 {
      * @throws MathU256: division invalid If quotient * b + remainder does not equal a.
      */
     circuit _div(a: U256, b: U256): DivResultU256 {
-        assert !isZero(b) "MathU256: division by zero";
+        assert (!isZero(b), "MathU256: division by zero");
         
         if (isZero(a)) {
             // Dividend is zero: quotient = 0, remainder = 0
@@ -389,14 +389,14 @@ module MathU256 {
 
             // Verify remainder < b
             const remainderU256 = result.remainder;
-            assert(le(remainderU256, b)) "MathU256: remainder error";
+            assert (le(remainderU256, b), "MathU256: remainder error");
 
             // Verify: quotient * b + remainder == a
             const quotientU256 = result.quotient;
             const product = mul(quotientU256, b);
             const sum = add(product, remainderU256);
 
-            assert(eq(sum, a)) "MathU256: division invalid";
+            assert (eq(sum, a), "MathU256: division invalid");
 
             return result;
         } 
@@ -501,11 +501,11 @@ module MathU256 {
         } else {
             const root = sqrtU256Locally(radicand);
             const rootSquareU256 = MathU128_mul(root, root);
-            assert(!gt(rootSquareU256, radicand)) "MathU256: sqrt overestimate";
+            assert(!gt(rootSquareU256, radicand), "MathU256: sqrt overestimate");
 
             const next = MathU128_add(root, 1);
             const nextSquareU256 = mul(next, next);
-            assert(gt(nextSquareU256, radicand)) "MathU256: sqrt underestimate";
+            assert(gt(nextSquareU256, radicand), "MathU256: sqrt underestimate");
 
             return root;
         }
@@ -657,7 +657,7 @@ module MathU256 {
      * @returns Boolean True if value is a multiple of b, false otherwise.
      */
     export circuit isMultiple(value: U256, b: U256): Boolean {
-        assert !isZero(b) "MathU256: division by zero";
+        assert (!isZero(b), "MathU256: division by zero");
         const result = _div(value, b);
         return eq(result.remainder, ZERO_U256());
     }
