@@ -30,6 +30,8 @@ import "./interfaces/IUint256";
 import "./interfaces/IMathU64";
 import "./interfaces/IMathU128";
 import "./interfaces/IMathU256";
+import "./interfaces/ICoin";    
+import "./interfaces/IQualifiedCoin";
 
 import Max;
 
@@ -82,5 +84,7 @@ export {
 export {
     DivResultU64,
     DivResultU128,
-    DivResultU256
+    DivResultU256,
+    DivResultCoin,
+    DivResultQualifiedCoin
 };

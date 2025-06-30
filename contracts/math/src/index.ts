@@ -8,6 +8,10 @@ export {
   type MathU64ContractPrivateState,
   MathU64Witnesses,
 } from './witnesses/MathU64';
+export {
+  type CoinContractPrivateState,
+  CoinWitnesses,
+} from './witnesses/Coin';
 export { sqrtBigint } from './utils/sqrtBigint';
 export type { IContractSimulator } from './types/test';
 export type { EmptyState } from './types/state';

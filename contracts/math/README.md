@@ -1,6 +1,6 @@
 # `@midnight-dapps/math-contracts`
 
-A comprehensive mathematical operations library for Midnight Network smart contracts, providing efficient and secure arithmetic operations for various integer types.
+A comprehensive mathematical operations library for Midnight Network smart contracts, providing efficient and secure arithmetic operations for various integer types and coin operations.
 
 ## Overview
 
@@ -9,6 +9,7 @@ This package provides mathematical contract operations for the Midnight Network,
 - **Uint64, Uint128, and Uint256 arithmetic operations** with overflow protection
 - **Square root calculations** using efficient algorithms
 - **Division operations** with quotient and remainder results
+- **Coin operations** with arithmetic, comparison, and sorting capabilities
 - **Witness-based computations** for off-chain calculations
 - **Type-safe interfaces** for all mathematical operations
 
@@ -25,6 +26,26 @@ This package provides mathematical contract operations for the Midnight Network,
 - **Safe Operations**: All operations include overflow/underflow protection
 - **Witness Functions**: Off-chain computation capabilities for complex operations
 
+### Coin Operations
+- **Conversion Functions**: Convert between `CoinInfo` and `QualifiedCoinInfo` types
+- **Arithmetic Operations**: Perform mathematical operations on coins with the same color (add, sub, mul, div, divRem, rem, sqrt, min, max)
+- **Value-based Comparisons**: Compare coins based on their numeric values
+- **Color-based Comparisons**: Compare coins based on their color (Bytes<32>) using lexicographic ordering
+- **Sorting Operations**: Sort coins by color in ascending or descending order
+- **Complete Equality**: Check if two coins are identical across all fields
+- **Utility Functions**: Convenient aliases for common comparison operations
+- **Arithmetic Operations**: Perform mathematical operations on coins with the same color (add, sub, mul, div, divRem, rem, sqrt)
+
+### Qualified Coin Operations
+- **Conversion Functions**: Convert between regular coins and `QualifiedCoinInfo` types with merkle tree index
+- **Arithmetic Operations**: Perform mathematical operations on qualified coins with the same color (add, sub, mul, div, divRem, rem, sqrt, min, max)
+- **Value-based Comparisons**: Compare qualified coins based on their numeric values
+- **Color-based Comparisons**: Compare qualified coins based on their color (Bytes<32>) using lexicographic ordering
+- **Sorting Operations**: Sort qualified coins by color in ascending or descending order
+- **Complete Equality**: Check if two qualified coins are identical across all fields including mt_index
+- **Utility Functions**: Convenient aliases for common comparison operations
+- **Merkle Tree Integration**: Support for merkle tree index (mt_index) in qualified coin operations
+
 ### Key Components
 
 #### Core Contracts
@@ -33,6 +54,8 @@ This package provides mathematical contract operations for the Midnight Network,
 - `MathU256.compact` - 256-bit mathematical operations
 - `Field254.compact` - Field arithmetic operations
 - `Bytes32.compact` - Byte array operations
+- `Coin.compact` - CoinInfo operations and comparisons
+- `QualifiedCoinInfo.compact` - QualifiedCoinInfo operations and comparisons
 
 #### Utility Functions
 - `sqrtBigint()` - Efficient square root calculation using Newton-Raphson method
@@ -111,6 +134,36 @@ The following table shows the constraint counts and circuit sizes for each mathe
 | Greater Than or Equal | `gte` | 12 | 2,643 |
 | Less Than | `lt` | 12 | 2,639 |
 | Less Than or Equal | `lte` | 12 | 2,643 |
+
+### Coin Operations
+| Operation | Circuit Name | K (Constraint Degree) | Rows |
+|-----------|--------------|----------------------|------|
+| Division | `div` | 12 | 3,193 |
+| Division with Remainder | `divRem` | 12 | 3,324 |
+| Remainder | `rem` | 12 | 3,193 |
+| Multiplication | `mul` | 12 | 2,283 |
+| Square Root | `sqrt` | 12 | 3,746 |
+| Greater Than Color | `gtColor` | 12 | 2,903 |
+| Greater Than or Equal Color | `gteColor` | 12 | 2,907 |
+| Less Than Color | `ltColor` | 12 | 2,903 |
+| Less Than or Equal Color | `lteColor` | 12 | 2,907 |
+| Sort Greater Than by Color | `sortGtByColor` | 12 | 3,052 |
+| Sort Less Than by Color | `sortLtByColor` | 12 | 3,052 |
+
+### Qualified Coin Operations
+| Operation | Circuit Name | K (Constraint Degree) | Rows |
+|-----------|--------------|----------------------|------|
+| Division | `div` | 12 | 3,270 |
+| Division with Remainder | `divRem` | 12 | 3,402 |
+| Remainder | `rem` | 12 | 3,270 |
+| Multiplication | `mul` | 12 | 2,360 |
+| Square Root | `sqrt` | 12 | 3,785 |
+| Greater Than Color | `gtColor` | 12 | 2,959 |
+| Greater Than or Equal Color | `gteColor` | 12 | 2,963 |
+| Less Than Color | `ltColor` | 12 | 2,959 |
+| Less Than or Equal Color | `lteColor` | 12 | 2,963 |
+| Sort Greater Than by Color | `sortGtByColor` | 12 | 3,138 |
+| Sort Less Than by Color | `sortLtByColor` | 12 | 3,138 |
 
 ### Circuit Complexity Notes
 
