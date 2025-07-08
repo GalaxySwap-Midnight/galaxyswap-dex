@@ -70,26 +70,26 @@ export { Pair };
  * - LP token configuration (name, symbol, decimals, nonce)
  * - Fee setter address for protocol fee management
  *
- * @param {Opaque<"string">} lpTokenName     - The name of the LP token.
- * @param {Opaque<"string">} lpTokenSymbol   - The symbol of the LP token.
- * @param {Bytes<32>} lpTokenNonce           - The nonce for LP token generation.
- * @param {Uint<8>} lpTokenDecimals          - The number of decimals for LP tokens.
+ * @param {Opaque<"string">} liquidityTokenName     - The name of the LP token.
+ * @param {Opaque<"string">} liquidityTokenSymbol   - The symbol of the LP token.
+ * @param {Bytes<32>} liquidityTokenNonce           - The nonce for LP token generation.
+ * @param {Uint<8>} liquidityTokenDecimals          - The number of decimals for LP tokens.
  * @param {ZswapCoinPublicKey} feeToSetter   - The address that can set protocol fees.
  *
  * @returns [] - No return values.
  */
 constructor(
-    lpTokenName: Opaque<"string">,
-    lpTokenSymbol: Opaque<"string">,
-    lpTokenNonce: Bytes<32>,
-    lpTokenDecimals: Uint<8>,
+    liquidityTokenName: Opaque<"string">,
+    liquidityTokenSymbol: Opaque<"string">,
+    liquidityTokenNonce: Bytes<32>,
+    liquidityTokenDecimals: Uint<8>,
     feeToSetter: ZswapCoinPublicKey
 ) {
     return LunarswapRouter_initialize(
-        lpTokenNonce,
-        lpTokenName,
-        lpTokenSymbol,
-        lpTokenDecimals,
+        liquidityTokenNonce,
+        liquidityTokenName,
+        liquidityTokenSymbol,
+        liquidityTokenDecimals,
         feeToSetter
     );
 }
@@ -107,7 +107,7 @@ constructor(
  * - `tokenA` and `tokenB` must be different tokens
  * - The amounts must meet the minimum requirements specified
  *
- * @circuitInfo k=11, rows=2500
+ * @circuitInfo k=18, rows=216540
  *
  * @param {CoinInfo} tokenA - The first token to add liquidity for.
  * @param {CoinInfo} tokenB - The second token to add liquidity for.
@@ -151,7 +151,7 @@ export circuit addLiquidity(
  * This circuit sorts the tokens to ensure consistent pair identification and checks
  * if a pair exists in the factory for the sorted token combination.
  *
- * @circuitInfo k=11, rows=800
+ * @circuitInfo k=14, rows=14922
  *
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.
@@ -171,7 +171,7 @@ export circuit isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Boolean {
  * @remarks
  * This circuit provides a count of all registered trading pairs in the Lunarswap factory.
  *
- * @circuitInfo k=11, rows=200
+ * @circuitInfo k=10, rows=34
  *
  * @returns {Uint<64>} - The total number of trading pairs.
  */
@@ -187,7 +187,7 @@ export circuit getAllPairLength(): Uint<64> {
  * This circuit sorts the tokens and retrieves the pair data from the factory.
  * The pair must exist for this circuit to succeed.
  *
- * @circuitInfo k=11, rows=1000
+ * @circuitInfo k=14, rows=15119
  *
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.
@@ -210,7 +210,7 @@ export circuit getPair(tokenA: CoinInfo, tokenB: CoinInfo): Pair {
  * This circuit retrieves the reserves for a pair and returns them in the same order
  * as the input tokens, regardless of how they were sorted internally.
  *
- * @circuitInfo k=11, rows=1200
+ * @circuitInfo k=14, rows=14981
  *
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.
@@ -238,7 +238,7 @@ export circuit getPairReserves(tokenA: CoinInfo, tokenB: CoinInfo): [Uint<128>, 
  * This circuit creates a deterministic hash that uniquely identifies a trading pair
  * by sorting the tokens and computing a hash of their colors.
  *
- * @circuitInfo k=11, rows=600
+ * @circuitInfo k=14, rows=14936
  *
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.
@@ -257,7 +257,7 @@ export circuit getPairIdentity(tokenA: CoinInfo, tokenB: CoinInfo): Bytes<32> {
  * @remarks
  * This circuit retrieves the configured name for liquidity provider tokens.
  *
- * @circuitInfo k=11, rows=300
+ * @circuitInfo k=10, rows=34
  *
  * @returns {Opaque<"string">} - The LP token name.
  */
@@ -272,7 +272,7 @@ export circuit getLiquidityTokenName(): Opaque<"string"> {
  * @remarks
  * This circuit retrieves the configured symbol for liquidity provider tokens.
  *
- * @circuitInfo k=11, rows=300
+ * @circuitInfo k=10, rows=34
  *
  * @returns {Opaque<"string">} - The LP token symbol.
  */
@@ -287,7 +287,7 @@ export circuit getLiquidityTokenSymbol(): Opaque<"string"> {
  * @remarks
  * This circuit retrieves the configured decimal places for liquidity provider tokens.
  *
- * @circuitInfo k=11, rows=200
+ * @circuitInfo k=10, rows=33
  *
  * @returns {Uint<8>} - The number of decimal places for LP tokens.
  */
@@ -302,7 +302,7 @@ export circuit getLiquidityTokenDecimals(): Uint<8> {
  * @remarks
  * This circuit retrieves the total supply of liquidity provider tokens for a given trading pair.
  *
- * @circuitInfo k=11, rows=800
+ * @circuitInfo k=14, rows=14998
  *
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.

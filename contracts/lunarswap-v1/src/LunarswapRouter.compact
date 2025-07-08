@@ -33,22 +33,27 @@ module LunarswapRouter {
      * both the factory and fee management systems. It should only be called once
      * during contract deployment.
      *
-     * @param {Bytes<32>} lpTokenNonce      - The nonce for LP token generation.
-     * @param {Opaque<"string">} lpTokenName - The name of the LP token.
-     * @param {Opaque<"string">} lpTokenSymbol - The symbol of the LP token.
-     * @param {Uint<8>} lpTokenDecimals     - The number of decimals for LP tokens.
+     * @param {Bytes<32>} liquidityTokenNonce      - The nonce for LP token generation.
+     * @param {Opaque<"string">} liquidityTokenName - The name of the LP token.
+     * @param {Opaque<"string">} liquidityTokenSymbol - The symbol of the LP token.
+     * @param {Uint<8>} liquidityTokenDecimals     - The number of decimals for LP tokens.
      * @param {ZswapCoinPublicKey} feeToSetter_ - The address that can set protocol fees.
      *
      * @returns [] - No return values.
      */
     export circuit initialize(
-        lpTokenNonce: Bytes<32>,
-        lpTokenName: Opaque<"string">,
-        lpTokenSymbol: Opaque<"string">,
-        lpTokenDecimals: Uint<8>,
+        liquidityTokenNonce: Bytes<32>,
+        liquidityTokenName: Opaque<"string">,
+        liquidityTokenSymbol: Opaque<"string">,
+        liquidityTokenDecimals: Uint<8>,
         feeToSetter_: ZswapCoinPublicKey
     ): [] {
-        LunarswapFactory_initialize(lpTokenNonce, lpTokenName, lpTokenSymbol, lpTokenDecimals);
+        LunarswapFactory_initialize(
+            liquidityTokenNonce,
+            liquidityTokenName,
+            liquidityTokenSymbol,
+            liquidityTokenDecimals
+        );
         LunarswapFee_initialize(feeToSetter_);
         return [];
     }

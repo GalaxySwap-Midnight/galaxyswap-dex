@@ -2,6 +2,43 @@
 
 A decentralized exchange (DEX) protocol built on the Midnight Network using Compact smart contracts, implementing an automated market maker (AMM) with privacy-preserving features. **Based on Uniswap V2 architecture, adapted for privacy-first blockchain infrastructure.**
 
+## Table of Contents
+
+- [Overview](#overview)
+  - [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Smart Contracts](#smart-contracts)
+  - [Core Contracts](#core-contracts)
+  - [Supporting Contracts](#supporting-contracts)
+- [Supported Circuits](#supported-circuits)
+  - [Circuit Complexity Analysis](#circuit-complexity-analysis)
+  - [Performance Considerations](#performance-considerations)
+- [Development Setup](#development-setup)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Development Commands](#development-commands)
+- [Usage Examples](#usage-examples)
+  - [Adding Liquidity](#adding-liquidity)
+  - [Checking Pair Information](#checking-pair-information)
+  - [LP Token Operations](#lp-token-operations)
+- [Protocol Mechanics](#protocol-mechanics)
+  - [Constant Product Formula](#constant-product-formula)
+  - [Liquidity Provision](#liquidity-provision)
+  - [Fee Structure](#fee-structure)
+  - [Price Oracle](#price-oracle)
+    - [Why VWAP Instead of TWAP?](#why-vwap-instead-of-twap)
+- [Security Features](#security-features)
+- [Testing](#testing)
+  - [Running Tests](#running-tests)
+  - [Test Structure](#test-structure)
+- [Contributing](#contributing)
+  - [Development Workflow](#development-workflow)
+  - [Code Standards](#code-standards)
+  - [Commit Convention](#commit-convention)
+- [License](#license)
+- [Support](#support)
+- [Acknowledgments](#acknowledgments)
+
 ## Overview
 
 Lunarswap-V1 is a next-generation decentralized exchange that combines the efficiency of automated market making with the privacy and security features of the Midnight Network. Built using the Compact programming language and **based on the proven Uniswap V2 architecture**, it provides a robust foundation for decentralized trading with enhanced privacy through UTXO-based token management.
@@ -105,6 +142,47 @@ Handles protocol fee collection and distribution.
 
 #### `LunarswapLibrary.compact`
 Utility library for mathematical operations and token utilities.
+
+## Supported Circuits
+
+Lunarswap-V1 implements the following circuits with their respective complexity metrics:
+
+| Circuit | k | Rows | Description | Parameters | Returns |
+|---------|---|------|-------------|------------|---------|
+| **Core Trading Circuits** |
+| `addLiquidity` | 18 | 216,540 | Adds liquidity to a trading pair and mints LP tokens | `tokenA`, `tokenB`, `amountAMin`, `amountBMin`, `to` | `[Uint<128>, Uint<128>, Uint<128>]` |
+| **Pair Management Circuits** |
+| `isPairExists` | 14 | 14,922 | Checks if a trading pair exists for given tokens | `tokenA`, `tokenB` | `Boolean` |
+| `getPair` | 14 | 15,119 | Retrieves pair information for token combination | `tokenA`, `tokenB` | `Pair` |
+| `getPairReserves` | 14 | 14,981 | Returns current reserves for a trading pair | `tokenA`, `tokenB` | `[Uint<128>, Uint<128>]` |
+| `getPairIdentity` | 14 | 14,936 | Generates unique identity hash for token pair | `tokenA`, `tokenB` | `Bytes<32>` |
+| **Factory Management Circuits** |
+| `getAllPairLength` | 10 | 34 | Returns total number of trading pairs | None | `Uint<64>` |
+| **Liquidity Token Circuits** |
+| `getLiquidityTokenName` | 10 | 34 | Returns LP token name | None | `Opaque<"string">` |
+| `getLiquidityTokenSymbol` | 10 | 34 | Returns LP token symbol | None | `Opaque<"string">` |
+| `getLiquidityTokenDecimals` | 10 | 33 | Returns number of decimals for LP tokens | None | `Uint<8>` |
+| `getLiquidityTotalSupply` | 14 | 14,998 | Returns total supply of LP tokens for specific pair | `tokenA`, `tokenB` | `QualifiedCoinInfo` |
+
+### Circuit Complexity Analysis
+
+**High Complexity Circuits (k=18):**
+- `addLiquidity`: The most complex circuit due to optimal amount calculations, token sorting, and LP token minting operations
+
+**Medium Complexity Circuits (k=14):**
+- Pair management circuits: `isPairExists`, `getPair`, `getPairReserves`, `getPairIdentity`, `getLiquidityTotalSupply`
+- These involve token sorting, identity generation, and data retrieval operations
+
+**Low Complexity Circuits (k=10):**
+- Simple getter functions: `getAllPairLength`, `getLiquidityTokenName`, `getLiquidityTokenSymbol`, `getLiquidityTokenDecimals`
+- These perform basic data retrieval with minimal computation
+
+### Performance Considerations
+
+- **Gas Optimization**: Circuits are designed to minimize computational overhead
+- **Batch Operations**: Multiple operations can be batched for efficiency
+- **Caching**: Frequently accessed data is cached to reduce circuit complexity
+- **Lazy Loading**: Data is loaded only when needed to optimize performance
 
 ## Development Setup
 
