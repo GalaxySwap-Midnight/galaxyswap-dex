@@ -45,6 +45,7 @@ export interface IShieldedToken {
   symbol(): Promise<string>;
   decimals(): Promise<bigint>;
   totalSupply(): Promise<bigint>;
+  type(): Promise<Uint8Array>;
   mint(
     recipient: Either<ZswapCoinPublicKey, ContractAddress>,
     amount: bigint,
@@ -216,6 +217,11 @@ export class ShieldedToken implements IShieldedToken {
 
   async totalSupply(): Promise<bigint> {
     const txData = await this.deployedContract.callTx.totalSupply();
+    return txData.private.result;
+  }
+
+  async type(): Promise<Uint8Array> {
+    const txData = await this.deployedContract.callTx.type();
     return txData.private.result;
   }
 
