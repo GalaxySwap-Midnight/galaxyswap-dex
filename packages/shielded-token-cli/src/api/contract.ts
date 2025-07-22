@@ -6,7 +6,10 @@ import {
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { randomBytes } from './utils';
 
-export const deployContract = async (providers: ShieldedTokenProviders, logger: Logger): Promise<ShieldedToken> => {
+export const deployContract = async (
+  providers: ShieldedTokenProviders,
+  logger: Logger,
+): Promise<ShieldedToken> => {
   logger.info('Deploying Shielded Token contract...');
 
   // Generate random nonce and domain for deployment
@@ -21,7 +24,7 @@ export const deployContract = async (providers: ShieldedTokenProviders, logger: 
       providers,
       nonce,
       'MyShieldedToken', // name
-      'MST',            // symbol
+      'MST', // symbol
       domain,
       logger,
     );
@@ -30,7 +33,7 @@ export const deployContract = async (providers: ShieldedTokenProviders, logger: 
       logger.error('Failed to deploy Shielded Token contract:', error.message);
       logger.error('Failed to deploy Shielded Token contract:', error.stack);
       throw error;
-    } 
+    }
     logger.error('Failed to deploy Shielded Token contract:', error);
     throw new Error('Failed to deploy Shielded Token contract');
   }
@@ -49,11 +52,17 @@ export const joinContract = async (
   logger.info('Joining Shielded Token contract...');
 
   // Convert hex string to ContractAddress
-  const contractAddressBytes = new Uint8Array(Buffer.from(contractAddress, 'hex'));
-  const shieldedToken = await ShieldedToken.join(providers, { bytes: contractAddressBytes }, logger);
+  const contractAddressBytes = new Uint8Array(
+    Buffer.from(contractAddress, 'hex'),
+  );
+  const shieldedToken = await ShieldedToken.join(
+    providers,
+    { bytes: contractAddressBytes },
+    logger,
+  );
 
   logger.info('Successfully joined Shielded Token contract!');
   logger.info(`Contract Address: ${shieldedToken.deployedContractAddressHex}`);
 
   return shieldedToken;
-}; 
+};

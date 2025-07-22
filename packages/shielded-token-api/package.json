@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@midnight-dapps/compact-std": "workspace:*",
-    "@midnight-dapps/shielded-token-contract": "workspace:*",
+    "@midnight-dapps/shielded-token": "workspace:*",
     "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/ledger": "^4.0.0",
     "@midnight-ntwrk/midnight-js-contracts": "^2.0.2",
@@ -30,8 +30,9 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@midnight-dapps/biome-config": "workspace:*",
     "@types/node": "^24.0.7",
     "eslint": "^9.30.0",
     "typescript": "^5.8.3"
   }
-} 
+}

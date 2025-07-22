@@ -3,6 +3,7 @@ import type {
   ContractAddress,
   Either,
   ZswapCoinPublicKey,
+  QualifiedCoinInfo,
 } from '@midnight-dapps/compact-std';
 import {
   Contract,
@@ -10,10 +11,14 @@ import {
   LunarswapWitnesses,
   LunarswapPrivateState,
   type Ledger,
+  type Pair,
 } from '@midnight-dapps/lunarswap-v1';
 // TODO: Question: Why is ContractAddress exported differently in compact-std and compact-runtime?
 // TODO: Question: why is also the coinInfo type are different?
-import type { ContractAddress as ContractAddressRuntime, ContractState } from '@midnight-ntwrk/compact-runtime';
+import type {
+  ContractAddress as ContractAddressRuntime,
+  ContractState,
+} from '@midnight-ntwrk/compact-runtime';
 import type { ZswapChainState } from '@midnight-ntwrk/ledger';
 import { combineLatest, from, map, tap, type Observable } from 'rxjs';
 import type { Logger } from 'pino';
@@ -63,6 +68,22 @@ export interface ILunarswap {
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
   ): Promise<void>;
+  isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Promise<boolean>;
+  getAllPairLength(): Promise<bigint>;
+  getPair(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Pair>;
+  getPairReserves(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+  ): Promise<[bigint, bigint]>;
+  getPairIdentity(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Uint8Array>;
+  getLpTokenName(): Promise<string>;
+  getLpTokenSymbol(): Promise<string>;
+  getLpTokenDecimals(): Promise<bigint>;
+  getLpTokenType(): Promise<Uint8Array>;
+  getLpTokenTotalSupply(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+  ): Promise<QualifiedCoinInfo>;
 }
 
 export class Lunarswap implements ILunarswap {
@@ -72,7 +93,7 @@ export class Lunarswap implements ILunarswap {
   // Constructor arguments as constants
   public static readonly LP_TOKEN_NAME = 'Lunarswap LP';
   public static readonly LP_TOKEN_SYMBOL = 'LP';
-  public static readonly LP_TOKEN_DECIMALS = BigInt(18);  
+  public static readonly LP_TOKEN_DECIMALS = BigInt(18);
 
   private constructor(
     public readonly deployedContract: DeployedLunarswapContract,
@@ -80,7 +101,8 @@ export class Lunarswap implements ILunarswap {
     public lpTokenNonce: Uint8Array,
     private readonly logger?: Logger,
   ) {
-    this.deployedContractAddressHex = deployedContract.deployTxData.public.contractAddress;
+    this.deployedContractAddressHex =
+      deployedContract.deployTxData.public.contractAddress;
     this.state$ = combineLatest(
       [
         // Combine public (ledger) state with...
@@ -120,7 +142,9 @@ export class Lunarswap implements ILunarswap {
     logger?.info('Deploying Lunarswap contract...');
 
     // Create a fresh contract instance for each deployment
-    const lunarswapContractInstance: LunarswapContract = new Contract(LunarswapWitnesses());
+    const lunarswapContractInstance: LunarswapContract = new Contract(
+      LunarswapWitnesses(),
+    );
 
     const deployedContract = await deployContract<LunarswapContract>(
       providers,
@@ -129,10 +153,10 @@ export class Lunarswap implements ILunarswap {
         privateStateId: LunarswapPrivateStateId,
         initialPrivateState: await Lunarswap.getPrivateState(providers),
         args: [
-          Lunarswap.LP_TOKEN_NAME,      // lpTokenName
-          Lunarswap.LP_TOKEN_SYMBOL,    // lpTokenSymbol
-          lpTokenNonce,     // lpTokenNonce (32 bytes)
-          Lunarswap.LP_TOKEN_DECIMALS,  // lpTokenDecimals
+          Lunarswap.LP_TOKEN_NAME, // lpTokenName
+          Lunarswap.LP_TOKEN_SYMBOL, // lpTokenSymbol
+          lpTokenNonce, // lpTokenNonce (32 bytes)
+          Lunarswap.LP_TOKEN_DECIMALS, // lpTokenDecimals
         ],
       },
     );
@@ -149,7 +173,9 @@ export class Lunarswap implements ILunarswap {
     logger?.info('Joining Lunarswap contract...');
 
     // Convert contractAddress.bytes (Uint8Array) to hex string for findDeployedContract
-    const contractAddressHex = Buffer.from(contractAddress.bytes).toString('hex');
+    const contractAddressHex = Buffer.from(contractAddress.bytes).toString(
+      'hex',
+    );
 
     const deployedContract = await findDeployedContract(providers, {
       contractAddress: contractAddressHex,
@@ -172,26 +198,33 @@ export class Lunarswap implements ILunarswap {
 
   static async getPublicState(
     providers: LunarswapProviders,
-    contractAddress: ContractAddressRuntime
+    contractAddress: ContractAddressRuntime,
   ): Promise<Ledger | null> {
-    const contractState = await providers.publicDataProvider.queryContractState(contractAddress);
+    const contractState =
+      await providers.publicDataProvider.queryContractState(contractAddress);
     return contractState ? ledger(contractState.data) : null;
   }
 
   static async getZswapChainState(
     providers: LunarswapProviders,
-    contractAddress: ContractAddressRuntime
+    contractAddress: ContractAddressRuntime,
   ): Promise<ZswapChainState | null> {
     // TODO: Question: Why not just use queryContractState for zswap?
-    const result = await providers.publicDataProvider.queryZSwapAndContractState(contractAddress);
+    const result =
+      await providers.publicDataProvider.queryZSwapAndContractState(
+        contractAddress,
+      );
     return result ? result[0] : null;
   }
 
   static async getDeployedContractState(
     providers: LunarswapProviders,
-    contractAddress: ContractAddressRuntime
+    contractAddress: ContractAddressRuntime,
   ): Promise<ContractState | null> {
-    const deployedContract = await providers.publicDataProvider.queryDeployContractState(contractAddress);
+    const deployedContract =
+      await providers.publicDataProvider.queryDeployContractState(
+        contractAddress,
+      );
     return deployedContract ?? null;
   }
 
@@ -221,7 +254,7 @@ export class Lunarswap implements ILunarswap {
       amountBMin,
       to,
     );
-    
+
     this.logger?.trace({
       transactionAdded: {
         circuit: 'addLiquidity',
@@ -249,7 +282,7 @@ export class Lunarswap implements ILunarswap {
       amountBMin,
       to,
     );
-    
+
     this.logger?.trace({
       transactionAdded: {
         circuit: 'removeLiquidity',
@@ -275,7 +308,7 @@ export class Lunarswap implements ILunarswap {
       amountOutMin,
       to,
     );
-    
+
     this.logger?.trace({
       transactionAdded: {
         circuit: 'swapExactTokensForTokens',
@@ -293,7 +326,7 @@ export class Lunarswap implements ILunarswap {
     amountOut: bigint,
     amountInMax: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void> { 
+  ): Promise<void> {
     const txData = await this.deployedContract.callTx.swapTokensForExactTokens(
       tokenIn,
       tokenOut,
@@ -311,5 +344,76 @@ export class Lunarswap implements ILunarswap {
     });
 
     return;
+  }
+
+  async isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Promise<boolean> {
+    const txData = await this.deployedContract.callTx.isPairExists(
+      tokenA,
+      tokenB,
+    );
+    return txData.private.result;
+  }
+
+  async getAllPairLength(): Promise<bigint> {
+    const txData = await this.deployedContract.callTx.getAllPairLength();
+    return txData.private.result;
+  }
+
+  async getPair(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Pair> {
+    const txData = await this.deployedContract.callTx.getPair(tokenA, tokenB);
+    return txData.private.result;
+  }
+
+  async getPairReserves(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+  ): Promise<[bigint, bigint]> {
+    const txData = await this.deployedContract.callTx.getPairReserves(
+      tokenA,
+      tokenB,
+    );
+    return [txData.private.result[0], txData.private.result[1]];
+  }
+
+  async getPairIdentity(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+  ): Promise<Uint8Array> {
+    const txData = await this.deployedContract.callTx.getPairIdentity(
+      tokenA,
+      tokenB,
+    );
+    return txData.private.result;
+  }
+
+  async getLpTokenName(): Promise<string> {
+    const txData = await this.deployedContract.callTx.getLpTokenName();
+    return txData.private.result;
+  }
+
+  async getLpTokenSymbol(): Promise<string> {
+    const txData = await this.deployedContract.callTx.getLpTokenSymbol();
+    return txData.private.result;
+  }
+
+  async getLpTokenDecimals(): Promise<bigint> {
+    const txData = await this.deployedContract.callTx.getLpTokenDecimals();
+    return txData.private.result;
+  }
+
+  async getLpTokenType(): Promise<Uint8Array> {
+    const txData = await this.deployedContract.callTx.getLpTokenType();
+    return txData.private.result;
+  }
+
+  async getLpTokenTotalSupply(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+  ): Promise<QualifiedCoinInfo> {
+    const txData = await this.deployedContract.callTx.getLpTokenTotalSupply(
+      tokenA,
+      tokenB,
+    );
+    return txData.private.result;
   }
 }

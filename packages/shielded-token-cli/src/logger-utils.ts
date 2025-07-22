@@ -29,4 +29,4 @@ export const createLogger = async (logDir: string): Promise<pino.Logger> => {
     },
     pino.multistream(streams),
   );
-}; 
+};

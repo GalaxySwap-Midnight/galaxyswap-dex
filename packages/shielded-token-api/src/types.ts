@@ -1,9 +1,9 @@
-import type { 
-  Contract, 
-  ShieldedFungibleTokenPrivateState, 
-  Witnesses, 
-  Ledger 
-} from '@midnight-dapps/shielded-token-contract';
+import type {
+  Contract,
+  ShieldedFungibleTokenPrivateState,
+  Witnesses,
+  Ledger,
+} from '@midnight-dapps/shielded-token';
 import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import type { FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 
@@ -37,5 +37,5 @@ export type ShieldedTokenProviders = MidnightProviders<
   ShieldedFungibleTokenPrivateState
 >;
 
-export type DeployedShieldedTokenContract = FoundContract<ShieldedTokenContract>;
- 
+export type DeployedShieldedTokenContract =
+  FoundContract<ShieldedTokenContract>;

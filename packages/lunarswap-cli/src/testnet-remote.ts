@@ -6,4 +6,4 @@ import { TestnetRemoteConfig } from './config.js';
 
 const config = new TestnetRemoteConfig();
 const logger = await createLogger(config.logDir);
-await run(config, logger); 
+await run(config, logger);

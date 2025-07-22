@@ -1,3 +1,4 @@
+// biome-ignore lint/performance/noBarrelFile: entrypoint module
 export { Lunarswap, type ILunarswap } from './Lunarswap.js';
 export type {
   LunarswapPrivateStates,

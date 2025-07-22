@@ -21,12 +21,16 @@ const waitForSyncProgress = async (wallet: Wallet, logger: Logger) => {
       }),
       filter((state) => {
         return state.syncProgress !== undefined;
-      })
-    )
+      }),
+    ),
   );
 };
 
-const isAnotherChain = async (wallet: Wallet, offset: number, logger: Logger): Promise<boolean> => {
+const isAnotherChain = async (
+  wallet: Wallet,
+  offset: number,
+  logger: Logger,
+): Promise<boolean> => {
   await waitForSyncProgress(wallet, logger);
   const walletOffset = Number(JSON.parse(await wallet.serializeState()).offset);
   if (walletOffset < offset - 1) {
@@ -35,9 +39,7 @@ const isAnotherChain = async (wallet: Wallet, offset: number, logger: Logger): P
     );
     return true;
   }
-  logger.info(
-    `Your offset is ${walletOffset}, restored offset: ${offset} ok`,
-  );
+  logger.info(`Your offset is ${walletOffset}, restored offset: ${offset} ok`);
   return false;
 };
 
@@ -75,7 +77,9 @@ const waitForFunds = (wallet: Wallet, logger: Logger) =>
       map((s) => {
         const balance = s.balances;
         const nativeBalance = balance[nativeToken()];
-        logger.info(`Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`);
+        logger.info(
+          `Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`,
+        );
         if (nativeBalance === undefined || nativeBalance === 0n) {
           throw new Error('Balance is 0');
         }
@@ -93,17 +97,22 @@ export const buildWalletAndWaitForFunds = async (
   const { indexer, indexerWS, node, proofServer } = config;
   const directoryPath = process.env.SYNC_CACHE;
   let wallet: Wallet & Resource;
-  
+
   if (directoryPath !== undefined) {
     if (existsSync(`${directoryPath}/${filename}`)) {
-      logger.info(`Attempting to restore state from ${directoryPath}/${filename}`);
+      logger.info(
+        `Attempting to restore state from ${directoryPath}/${filename}`,
+      );
       try {
-        const serializedStream = createReadStream(`${directoryPath}/${filename}`, 'utf-8');
+        const serializedStream = createReadStream(
+          `${directoryPath}/${filename}`,
+          'utf-8',
+        );
         const serialized = await streamToString(serializedStream);
         serializedStream.on('finish', () => {
           serializedStream.close();
         });
-        
+
         wallet = await WalletBuilder.restore(
           indexer,
           indexerWS,
@@ -114,9 +123,12 @@ export const buildWalletAndWaitForFunds = async (
           'info',
         );
         wallet.start();
-        
+
         const stateObject = JSON.parse(serialized);
-        if ((await isAnotherChain(wallet, Number(stateObject.offset), logger)) === true) {
+        if (
+          (await isAnotherChain(wallet, Number(stateObject.offset), logger)) ===
+          true
+        ) {
           logger.warn('The chain was reset, building wallet from scratch');
           wallet = await WalletBuilder.buildFromSeed(
             indexer,
@@ -163,7 +175,9 @@ export const buildWalletAndWaitForFunds = async (
         } else {
           logger.error(error);
         }
-        logger.warn('Wallet was not able to restore using the stored state, building wallet from scratch');
+        logger.warn(
+          'Wallet was not able to restore using the stored state, building wallet from scratch',
+        );
         wallet = await WalletBuilder.buildFromSeed(
           indexer,
           indexerWS,
@@ -189,7 +203,9 @@ export const buildWalletAndWaitForFunds = async (
       wallet.start();
     }
   } else {
-    logger.info('File path for save file not found, building wallet from scratch');
+    logger.info(
+      'File path for save file not found, building wallet from scratch',
+    );
     wallet = await WalletBuilder.buildFromSeed(
       indexer,
       indexerWS,
@@ -215,9 +231,26 @@ export const buildWalletAndWaitForFunds = async (
   return wallet;
 };
 
-export const buildFreshWallet = async (config: Config, logger: Logger): Promise<Wallet & Resource> =>
-  await buildWalletAndWaitForFunds(config, toHex(randomBytes(32)), 'shielded-token-wallet.json', logger);
+export const buildFreshWallet = async (
+  config: Config,
+  logger: Logger,
+): Promise<Wallet & Resource> =>
+  await buildWalletAndWaitForFunds(
+    config,
+    toHex(randomBytes(32)),
+    'shielded-token-wallet.json',
+    logger,
+  );
 
-export const buildWalletFromSeed = async (config: Config, seed: string, logger: Logger): Promise<Wallet & Resource> => {
-  return await buildWalletAndWaitForFunds(config, seed, 'shielded-token-wallet.json', logger);
-}; 
+export const buildWalletFromSeed = async (
+  config: Config,
+  seed: string,
+  logger: Logger,
+): Promise<Wallet & Resource> => {
+  return await buildWalletAndWaitForFunds(
+    config,
+    seed,
+    'shielded-token-wallet.json',
+    logger,
+  );
+};

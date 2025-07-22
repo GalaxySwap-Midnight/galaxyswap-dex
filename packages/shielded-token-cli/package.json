@@ -21,7 +21,7 @@
     "@midnight-dapps/biome-config": "workspace:*",
     "@midnight-dapps/compact-std": "workspace:*",
     "@midnight-dapps/shielded-token-api": "workspace:*",
-    "@midnight-dapps/shielded-token-contract": "workspace:*",
+    "@midnight-dapps/shielded-token": "workspace:*",
     "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/ledger": "^4.0.0",
     "@midnight-ntwrk/midnight-js-contracts": "^2.0.2",
@@ -49,4 +49,4 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
-} 
+}

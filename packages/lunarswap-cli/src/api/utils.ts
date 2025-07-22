@@ -14,7 +14,9 @@ export const randomBytes = (length: number): Uint8Array => {
 };
 
 export const toHex = (bytes: Uint8Array): string => {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+    '',
+  );
 };
 
 export const streamToString = async (stream: ReadStream): Promise<string> => {
@@ -32,4 +34,4 @@ export const streamToString = async (stream: ReadStream): Promise<string> => {
       resolve(Buffer.concat(chunks).toString('utf8'));
     });
   });
-}; 
+};

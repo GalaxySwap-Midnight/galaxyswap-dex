@@ -5,10 +5,13 @@ import {
 } from '@midnight-dapps/lunarswap-api';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
-export const deployContract = async (providers: LunarswapProviders, logger: Logger): Promise<Lunarswap> => {
+export const deployContract = async (
+  providers: LunarswapProviders,
+  logger: Logger,
+): Promise<Lunarswap> => {
   logger.info('Deploying LunarSwap contract...');
 
-  const lpTokenNonce = new Uint8Array(32).fill(0x44); 
+  const lpTokenNonce = new Uint8Array(32).fill(0x44);
 
   let lunarswap: Lunarswap;
   try {
@@ -20,7 +23,7 @@ export const deployContract = async (providers: LunarswapProviders, logger: Logg
       logger.error('Failed to deploy LunarSwap contract:', error.message);
       logger.error('Failed to deploy LunarSwap contract:', error.stack);
       throw error;
-    } 
+    }
     logger.error('Failed to deploy LunarSwap contract:', error);
     throw new Error('Failed to deploy LunarSwap contract');
   }
@@ -39,11 +42,17 @@ export const joinContract = async (
   logger.info('Joining LunarSwap contract...');
 
   // Use the LunarSwap API to join the contract
-  const contractAddressBytes = new Uint8Array(Buffer.from(contractAddress, 'hex'));
-  const lunarswap = await Lunarswap.join(providers, { bytes: contractAddressBytes }, logger);
+  const contractAddressBytes = new Uint8Array(
+    Buffer.from(contractAddress, 'hex'),
+  );
+  const lunarswap = await Lunarswap.join(
+    providers,
+    { bytes: contractAddressBytes },
+    logger,
+  );
 
   logger.info('Successfully joined LunarSwap contract!');
   logger.info(`Contract Address: ${lunarswap.deployedContractAddressHex}`);
 
   return lunarswap;
-}; 
+};

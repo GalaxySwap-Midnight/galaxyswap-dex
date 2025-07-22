@@ -14,7 +14,9 @@ export const randomBytes = (length: number): Uint8Array => {
 };
 
 export const toHex = (bytes: Uint8Array): string => {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+    '',
+  );
 };
 
 // Helper function to serialize BigInt values for JSON
@@ -22,15 +24,15 @@ export const serializeBigInts = (obj: unknown): unknown => {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
+
   if (typeof obj === 'bigint') {
     return obj.toString();
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(serializeBigInts);
   }
-  
+
   if (typeof obj === 'object') {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
@@ -38,7 +40,7 @@ export const serializeBigInts = (obj: unknown): unknown => {
     }
     return result;
   }
-  
+
   return obj;
 };
 
@@ -57,4 +59,4 @@ export const streamToString = async (stream: ReadStream): Promise<string> => {
       resolve(Buffer.concat(chunks).toString('utf8'));
     });
   });
-}; 
+};

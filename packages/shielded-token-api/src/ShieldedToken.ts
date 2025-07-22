@@ -10,10 +10,10 @@ import {
   ShieldedFungibleTokenWitnesses,
   ShieldedFungibleTokenPrivateState,
   type Ledger,
-} from '@midnight-dapps/shielded-token-contract';
-import type { ContractAddress as ContractAddressRuntime, ContractState } from '@midnight-ntwrk/compact-runtime';
+} from '@midnight-dapps/shielded-token';
+import type { ContractState } from '@midnight-ntwrk/compact-runtime';
 import type { ZswapChainState } from '@midnight-ntwrk/ledger';
-import { async, combineLatest, from, map, tap, type Observable } from 'rxjs';
+import { combineLatest, from, map, tap, type Observable } from 'rxjs';
 import type { Logger } from 'pino';
 import {
   type ShieldedTokenProviders,
@@ -27,26 +27,29 @@ import {
   findDeployedContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 
-const shieldedTokenContractInstance: ShieldedTokenContract = new Contract(ShieldedFungibleTokenWitnesses());
+const shieldedTokenContractInstance: ShieldedTokenContract = new Contract(
+  ShieldedFungibleTokenWitnesses(),
+);
 
 export interface IShieldedToken {
   deployedContractAddressHex: string;
   state$: Observable<ShieldedTokenPublicState>;
-  getPublicState(providers: ShieldedTokenProviders): Promise<Ledger | null>,
-  getZswapChainState(providers: ShieldedTokenProviders): Promise<ZswapChainState | null>,
-  getDeployedContractState(providers: ShieldedTokenProviders): Promise<ContractState | null>,
+  getPublicState(providers: ShieldedTokenProviders): Promise<Ledger | null>;
+  getZswapChainState(
+    providers: ShieldedTokenProviders,
+  ): Promise<ZswapChainState | null>;
+  getDeployedContractState(
+    providers: ShieldedTokenProviders,
+  ): Promise<ContractState | null>;
   name(): Promise<string>;
   symbol(): Promise<string>;
   decimals(): Promise<bigint>;
   totalSupply(): Promise<bigint>;
   mint(
     recipient: Either<ZswapCoinPublicKey, ContractAddress>,
-    amount: bigint
+    amount: bigint,
   ): Promise<void>;
-  burn(
-    coin: CoinInfo,
-    amount: bigint
-  ): Promise<void>;
+  burn(coin: CoinInfo, amount: bigint): Promise<void>;
 }
 
 export class ShieldedToken implements IShieldedToken {
@@ -58,7 +61,8 @@ export class ShieldedToken implements IShieldedToken {
     providers: ShieldedTokenProviders,
     private readonly logger?: Logger,
   ) {
-    this.deployedContractAddressHex = deployedContract.deployTxData.public.contractAddress;
+    this.deployedContractAddressHex =
+      deployedContract.deployTxData.public.contractAddress;
     this.state$ = combineLatest(
       [
         // Combine public (ledger) state with...
@@ -76,7 +80,9 @@ export class ShieldedToken implements IShieldedToken {
               }),
             ),
           ),
-        from(providers.privateStateProvider.get('shieldedTokenPrivateState')).pipe(
+        from(
+          providers.privateStateProvider.get('shieldedTokenPrivateState'),
+        ).pipe(
           map((privateStates) => privateStates?.shieldedTokenPrivateState),
         ),
       ],
@@ -101,7 +107,7 @@ export class ShieldedToken implements IShieldedToken {
       name,
       symbol,
       nonce: Buffer.from(nonce).toString('hex'),
-      domain: Buffer.from(domain).toString('hex')
+      domain: Buffer.from(domain).toString('hex'),
     });
 
     const deployedContract = await deployContract<ShieldedTokenContract>(
@@ -111,10 +117,10 @@ export class ShieldedToken implements IShieldedToken {
         privateStateId: ShieldedTokenPrivateStateId,
         initialPrivateState: await ShieldedToken.getPrivateState(providers),
         args: [
-          nonce,      // nonce (32 bytes)
-          name,       // name
-          symbol,     // symbol
-          domain,     // domain (32 bytes)
+          nonce, // nonce (32 bytes)
+          name, // name
+          symbol, // symbol
+          domain, // domain (32 bytes)
         ],
       },
     );
@@ -131,7 +137,9 @@ export class ShieldedToken implements IShieldedToken {
     logger?.info('Joining Shielded Token contract...');
 
     // Convert contractAddress.bytes (Uint8Array) to hex string for findDeployedContract
-    const contractAddressHex = Buffer.from(contractAddress.bytes).toString('hex');
+    const contractAddressHex = Buffer.from(contractAddress.bytes).toString(
+      'hex',
+    );
 
     const deployedContract = await findDeployedContract(providers, {
       contractAddress: contractAddressHex,
@@ -139,7 +147,7 @@ export class ShieldedToken implements IShieldedToken {
       privateStateId: 'shieldedTokenPrivateState',
       initialPrivateState: await ShieldedToken.getPrivateState(providers),
     });
-    
+
     logger?.info('Shielded Token contract joined');
     logger?.trace({
       contractJoined: {
@@ -150,22 +158,38 @@ export class ShieldedToken implements IShieldedToken {
     return new ShieldedToken(deployedContract, providers, logger);
   }
 
-  async getPublicState(providers: ShieldedTokenProviders): Promise<Ledger | null> {
-    const contractState = await providers.publicDataProvider.queryContractState(this.deployedContractAddressHex);
+  async getPublicState(
+    providers: ShieldedTokenProviders,
+  ): Promise<Ledger | null> {
+    const contractState = await providers.publicDataProvider.queryContractState(
+      this.deployedContractAddressHex,
+    );
     return contractState ? ledger(contractState.data) : null;
   }
 
-  async getZswapChainState(providers: ShieldedTokenProviders): Promise<ZswapChainState | null> {
-    const result = await providers.publicDataProvider.queryZSwapAndContractState(this.deployedContractAddressHex);
+  async getZswapChainState(
+    providers: ShieldedTokenProviders,
+  ): Promise<ZswapChainState | null> {
+    const result =
+      await providers.publicDataProvider.queryZSwapAndContractState(
+        this.deployedContractAddressHex,
+      );
     return result ? result[0] : null;
   }
 
-  async getDeployedContractState(providers: ShieldedTokenProviders): Promise<ContractState | null> {
-    const deployedContract = await providers.publicDataProvider.queryDeployContractState(this.deployedContractAddressHex);
+  async getDeployedContractState(
+    providers: ShieldedTokenProviders,
+  ): Promise<ContractState | null> {
+    const deployedContract =
+      await providers.publicDataProvider.queryDeployContractState(
+        this.deployedContractAddressHex,
+      );
     return deployedContract ?? null;
   }
 
-  private static async getPrivateState(providers: ShieldedTokenProviders): Promise<ShieldedFungibleTokenPrivateState> {
+  private static async getPrivateState(
+    providers: ShieldedTokenProviders,
+  ): Promise<ShieldedFungibleTokenPrivateState> {
     const existingPrivateState = await providers.privateStateProvider.get(
       'shieldedTokenPrivateState',
     );
@@ -179,7 +203,7 @@ export class ShieldedToken implements IShieldedToken {
     const txData = await this.deployedContract.callTx.name();
     return txData.private.result;
   }
-  
+
   async symbol(): Promise<string> {
     const txData = await this.deployedContract.callTx.symbol();
     return txData.private.result;
@@ -199,11 +223,8 @@ export class ShieldedToken implements IShieldedToken {
     recipient: Either<ZswapCoinPublicKey, ContractAddress>,
     amount: bigint,
   ): Promise<void> {
-    const txData = await this.deployedContract.callTx.mint(
-      recipient,
-      amount,
-    );
-    
+    const txData = await this.deployedContract.callTx.mint(recipient, amount);
+
     this.logger?.trace({
       transactionAdded: {
         circuit: 'mint',
@@ -216,15 +237,9 @@ export class ShieldedToken implements IShieldedToken {
     return;
   }
 
-  async burn(
-    coin: CoinInfo,
-    amount: bigint,
-  ): Promise<void> {
-    const txData = await this.deployedContract.callTx.burn(
-      coin,
-      amount,
-    );
-    
+  async burn(coin: CoinInfo, amount: bigint): Promise<void> {
+    const txData = await this.deployedContract.callTx.burn(coin, amount);
+
     this.logger?.trace({
       transactionAdded: {
         circuit: 'burn',
@@ -237,4 +252,4 @@ export class ShieldedToken implements IShieldedToken {
 
     return;
   }
-} 
+}

@@ -8,19 +8,17 @@ import type {
 } from '@midnight-dapps/lunarswap-api';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
+import { buildFreshWallet, buildWalletFromSeed } from './api/wallet';
+import { configureProviders } from './api/providers';
+import { deployContract, joinContract } from './api/contract';
 import {
-  buildFreshWallet,
-  buildWalletFromSeed,
-  configureProviders,
-  deployContract,
-  joinContract,
   createCoinInfo,
   createRecipient,
   addLiquidity,
   removeLiquidity,
   swapExactTokensForTokens,
   swapTokensForExactTokens,
-} from './api';
+} from './api/swap';
 
 let logger: Logger;
 
@@ -52,9 +50,13 @@ You can do one of the following:
 Which would you like to do? `;
 
 const WALLET_QUESTION = 'Enter your wallet seed: ';
-const CONTRACT_ADDRESS_QUESTION = 'Enter the deployed LunarSwap contract address: ';
+const CONTRACT_ADDRESS_QUESTION =
+  'Enter the deployed LunarSwap contract address: ';
 
-const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Resource) | null> => {
+const buildWallet = async (
+  config: Config,
+  rli: Interface,
+): Promise<(Wallet & Resource) | null> => {
   // For now, always build a fresh wallet since we don't have StandaloneConfig
   while (true) {
     const choice = await rli.question(WALLET_LOOP_QUESTION);
@@ -70,8 +72,12 @@ const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Re
           logger.info('Using test seed from environment variable');
           return await buildWalletFromSeed(config, config.testSeed, logger);
         }
-        logger.error('No test seed found in environment variable LUNARSWAP_TEST_SEED');
-        logger.info('Please set LUNARSWAP_TEST_SEED environment variable or choose option 2 to enter seed manually');
+        logger.error(
+          'No test seed found in environment variable LUNARSWAP_TEST_SEED',
+        );
+        logger.info(
+          'Please set LUNARSWAP_TEST_SEED environment variable or choose option 2 to enter seed manually',
+        );
         break;
       }
       case '4':
@@ -83,7 +89,10 @@ const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Re
   }
 };
 
-const deployOrJoin = async (providers: LunarswapProviders, rli: Interface): Promise<Lunarswap | null> => {
+const deployOrJoin = async (
+  providers: LunarswapProviders,
+  rli: Interface,
+): Promise<Lunarswap | null> => {
   while (true) {
     const choice = await rli.question(DEPLOY_OR_JOIN_QUESTION);
     switch (choice) {
@@ -102,7 +111,10 @@ const deployOrJoin = async (providers: LunarswapProviders, rli: Interface): Prom
   }
 };
 
-const handleAddLiquidity = async (lunarswap: Lunarswap, rli: Interface): Promise<void> => {
+const handleAddLiquidity = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
   const tokenAColor = await rli.question('Enter token A color (hex): ');
   const tokenAValue = BigInt(await rli.question('Enter token A amount: '));
   const tokenBColor = await rli.question('Enter token B color (hex): ');
@@ -115,13 +127,26 @@ const handleAddLiquidity = async (lunarswap: Lunarswap, rli: Interface): Promise
   const tokenB = createCoinInfo(tokenBColor, tokenBValue);
   const to = createRecipient(recipient);
 
-  await addLiquidity(lunarswap, tokenA, tokenB, amountAMin, amountBMin, to, logger);
+  await addLiquidity(
+    lunarswap,
+    tokenA,
+    tokenB,
+    amountAMin,
+    amountBMin,
+    to,
+    logger,
+  );
 };
 
-const handleRemoveLiquidity = async (lunarswap: Lunarswap, rli: Interface): Promise<void> => {
+const handleRemoveLiquidity = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
   const tokenAColor = await rli.question('Enter token A color (hex): ');
   const tokenBColor = await rli.question('Enter token B color (hex): ');
-  const liquidityColor = await rli.question('Enter liquidity token color (hex): ');
+  const liquidityColor = await rli.question(
+    'Enter liquidity token color (hex): ',
+  );
   const liquidityValue = BigInt(await rli.question('Enter liquidity amount: '));
   const amountAMin = BigInt(await rli.question('Enter minimum amount A: '));
   const amountBMin = BigInt(await rli.question('Enter minimum amount B: '));
@@ -132,39 +157,77 @@ const handleRemoveLiquidity = async (lunarswap: Lunarswap, rli: Interface): Prom
   const liquidity = createCoinInfo(liquidityColor, liquidityValue);
   const to = createRecipient(recipient);
 
-  await removeLiquidity(lunarswap, tokenA, tokenB, liquidity, amountAMin, amountBMin, to, logger);
+  await removeLiquidity(
+    lunarswap,
+    tokenA,
+    tokenB,
+    liquidity,
+    amountAMin,
+    amountBMin,
+    to,
+    logger,
+  );
 };
 
-const handleSwapExactTokensForTokens = async (lunarswap: Lunarswap, rli: Interface): Promise<void> => {
+const handleSwapExactTokensForTokens = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
   const tokenInColor = await rli.question('Enter input token color (hex): ');
   const tokenInValue = BigInt(await rli.question('Enter input token amount: '));
   const tokenOutColor = await rli.question('Enter output token color (hex): ');
-  const amountOutMin = BigInt(await rli.question('Enter minimum output amount: '));
+  const amountOutMin = BigInt(
+    await rli.question('Enter minimum output amount: '),
+  );
   const recipient = await rli.question('Enter recipient address (hex): ');
 
   const tokenIn = createCoinInfo(tokenInColor, tokenInValue);
   const tokenOut = createCoinInfo(tokenOutColor, 0n);
   const to = createRecipient(recipient);
 
-  await swapExactTokensForTokens(lunarswap, tokenIn, tokenOut, tokenInValue, amountOutMin, to, logger);
+  await swapExactTokensForTokens(
+    lunarswap,
+    tokenIn,
+    tokenOut,
+    tokenInValue,
+    amountOutMin,
+    to,
+    logger,
+  );
 };
 
-const handleSwapTokensForExactTokens = async (lunarswap: Lunarswap, rli: Interface): Promise<void> => {
+const handleSwapTokensForExactTokens = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
   const tokenInColor = await rli.question('Enter input token color (hex): ');
   const tokenInValue = BigInt(await rli.question('Enter input token amount: '));
   const tokenOutColor = await rli.question('Enter output token color (hex): ');
   const amountOut = BigInt(await rli.question('Enter exact output amount: '));
-  const amountInMax = BigInt(await rli.question('Enter maximum input amount: '));
+  const amountInMax = BigInt(
+    await rli.question('Enter maximum input amount: '),
+  );
   const recipient = await rli.question('Enter recipient address (hex): ');
 
   const tokenIn = createCoinInfo(tokenInColor, tokenInValue);
   const tokenOut = createCoinInfo(tokenOutColor, 0n);
   const to = createRecipient(recipient);
 
-  await swapTokensForExactTokens(lunarswap, tokenIn, tokenOut, amountOut, amountInMax, to, logger);
+  await swapTokensForExactTokens(
+    lunarswap,
+    tokenIn,
+    tokenOut,
+    amountOut,
+    amountInMax,
+    to,
+    logger,
+  );
 };
 
-const mainLoop = async (providers: LunarswapProviders, rli: Interface): Promise<void> => {
+const mainLoop = async (
+  providers: LunarswapProviders,
+  rli: Interface,
+): Promise<void> => {
   const lunarswap = await deployOrJoin(providers, rli);
   if (lunarswap === null) {
     logger.error('Failed to deploy or join LunarSwap contract');
@@ -184,7 +247,7 @@ const mainLoop = async (providers: LunarswapProviders, rli: Interface): Promise<
         break;
       case '4':
         await handleSwapTokensForExactTokens(lunarswap, rli);
-        break; 
+        break;
       case '5':
         logger.info('Exiting...');
         return;
@@ -194,7 +257,11 @@ const mainLoop = async (providers: LunarswapProviders, rli: Interface): Promise<
   }
 };
 
-export const run = async (config: Config, _logger: Logger, dockerEnv?: unknown): Promise<void> => {
+export const run = async (
+  config: Config,
+  _logger: Logger,
+  dockerEnv?: unknown,
+): Promise<void> => {
   logger = _logger;
   const rli = createInterface({ input, output, terminal: true });
   let env: unknown;
@@ -237,4 +304,3 @@ export const run = async (config: Config, _logger: Logger, dockerEnv?: unknown):
     }
   }
 };
- 

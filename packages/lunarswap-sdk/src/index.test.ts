@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	calculateAddLiquidityAmounts,
 	SLIPPAGE_TOLERANCE,
+	calculateAddLiquidityAmounts,
 	calculateAmountOut,
 } from "./index";
 

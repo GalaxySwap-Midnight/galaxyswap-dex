@@ -4,8 +4,16 @@ import type { Resource } from '@midnight-ntwrk/wallet';
 import { firstValueFrom } from 'rxjs';
 import type { ShieldedToken } from '@midnight-dapps/shielded-token-api';
 import { encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
-import type { Either, ZswapCoinPublicKey, CoinInfo, ContractAddress } from '@midnight-dapps/compact-std';
-import { ShieldedAddress, MidnightBech32m } from '@midnight-ntwrk/wallet-sdk-address-format';
+import type {
+  Either,
+  ZswapCoinPublicKey,
+  CoinInfo,
+  ContractAddress,
+} from '@midnight-dapps/compact-std';
+import {
+  ShieldedAddress,
+  MidnightBech32m,
+} from '@midnight-ntwrk/wallet-sdk-address-format';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 // Helper function to create CoinInfo from user input
@@ -16,7 +24,9 @@ export const createCoinInfo = (color: string, value: bigint): CoinInfo => ({
 });
 
 // Helper function to create Either for recipient
-export const createRecipient = (address: string): Either<ZswapCoinPublicKey, ContractAddress> => {
+export const createRecipient = (
+  address: string,
+): Either<ZswapCoinPublicKey, ContractAddress> => {
   // For minting, we typically want to use the wallet's coin public key (left side)
   // rather than a contract address (right side)
   return {
@@ -39,17 +49,20 @@ export const mintTokens = async (
   });
 
   let recipient: Either<ZswapCoinPublicKey, ContractAddress>;
-  
+
   if (recipientCoinPublicKey) {
     // Parse the shielded address string to get the MidnightBech32m object
     const bech32mAddress = MidnightBech32m.parse(recipientCoinPublicKey);
-    
+
     // Decode the bech32m address to get the ShieldedAddress object
-    const shieldedAddress = ShieldedAddress.codec.decode(getZswapNetworkId(), bech32mAddress);
-    
+    const shieldedAddress = ShieldedAddress.codec.decode(
+      getZswapNetworkId(),
+      bech32mAddress,
+    );
+
     // Extract the coin public key from the shielded address
     const coinPublicKeyBytes = shieldedAddress.coinPublicKey.data;
-    
+
     // Use the provided recipient's coin public key
     recipient = {
       is_left: true,
@@ -105,4 +118,4 @@ export const getTokenInfo = async (
   logger.info(`Symbol: ${symbol}`);
   logger.info(`Decimals: ${decimals}`);
   logger.info(`Total Supply: ${totalSupply}`);
-}; 
+};

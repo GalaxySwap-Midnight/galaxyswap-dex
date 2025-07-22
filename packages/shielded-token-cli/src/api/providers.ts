@@ -1,19 +1,16 @@
-import type { Logger } from 'pino';
 import type { Config } from '../config';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
-import { type Resource, WalletBuilder } from '@midnight-ntwrk/wallet';
+import type { Resource } from '@midnight-ntwrk/wallet';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { firstValueFrom } from 'rxjs';
-import {
-  ShieldedToken,
-  type ShieldedTokenProviders,
-  type ShieldedTokenPrivateStateId,
+import type {
+  ShieldedTokenProviders,
+  ShieldedTokenPrivateStateId,
 } from '@midnight-dapps/shielded-token-api';
 import {
   Transaction,
   type TransactionId,
   type CoinInfo as LedgerCoinInfo,
-  encodeCoinPublicKey,
 } from '@midnight-ntwrk/ledger';
 import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import {
@@ -71,13 +68,20 @@ export const configureProviders = async (
     await createWalletAndMidnightProvider(wallet);
 
   return {
-    privateStateProvider: levelPrivateStateProvider<typeof ShieldedTokenPrivateStateId>({
+    privateStateProvider: levelPrivateStateProvider<
+      typeof ShieldedTokenPrivateStateId
+    >({
       privateStateStoreName: contractConfig.privateStateStoreName,
     }),
-    publicDataProvider: indexerPublicDataProvider(config.indexer, config.indexerWS),
-    zkConfigProvider: new NodeZkConfigProvider<'mint' | 'burn' | 'name' | 'symbol' | 'decimals' | 'totalSupply'>(contractConfig.zkConfigPath),
+    publicDataProvider: indexerPublicDataProvider(
+      config.indexer,
+      config.indexerWS,
+    ),
+    zkConfigProvider: new NodeZkConfigProvider<
+      'mint' | 'burn' | 'name' | 'symbol' | 'decimals' | 'totalSupply'
+    >(contractConfig.zkConfigPath),
     proofProvider: httpClientProofProvider(config.proofServer),
     walletProvider: walletAndMidnightProvider,
     midnightProvider: walletAndMidnightProvider,
   };
-}; 
+};

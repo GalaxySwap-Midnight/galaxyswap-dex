@@ -1,7 +1,7 @@
 import type { Logger } from 'pino';
-import {
+import type {
   ShieldedToken,
-  type ShieldedTokenProviders,
+  ShieldedTokenProviders,
 } from '@midnight-dapps/shielded-token-api';
 
 export const getPublicState = async (
@@ -11,14 +11,13 @@ export const getPublicState = async (
 ): Promise<void> => {
   logger.info('Getting public state...');
 
-  const publicState = await ShieldedToken.getPublicState(
-    providers,
-    shieldedToken.deployedContractAddressHex,
-  );
+  const publicState = await shieldedToken.getPublicState(providers);
 
   if (publicState) {
     logger.info('Public state retrieved successfully');
-    logger.info(`Contract Address: ${shieldedToken.deployedContractAddressHex}`);
+    logger.info(
+      `Contract Address: ${shieldedToken.deployedContractAddressHex}`,
+    );
     logger.info(`Public State: ${JSON.stringify(publicState, null, 2)}`);
   } else {
     logger.warn('No public state found for contract', {
@@ -34,15 +33,16 @@ export const getZswapChainState = async (
 ): Promise<void> => {
   logger.info('Getting ZSwap chain state...');
 
-  const zswapChainState = await ShieldedToken.getZswapChainState(
-    providers,
-    shieldedToken.deployedContractAddressHex,
-  );
+  const zswapChainState = await shieldedToken.getZswapChainState(providers);
 
   if (zswapChainState) {
     logger.info('ZSwap chain state retrieved successfully');
-    logger.info(`Contract Address: ${shieldedToken.deployedContractAddressHex}`);
-    logger.info(`ZSwap Chain State: ${JSON.stringify(zswapChainState, null, 2)}`);
+    logger.info(
+      `Contract Address: ${shieldedToken.deployedContractAddressHex}`,
+    );
+    logger.info(
+      `ZSwap Chain State: ${JSON.stringify(zswapChainState, null, 2)}`,
+    );
   } else {
     logger.warn('No ZSwap chain state found for contract', {
       contractAddress: shieldedToken.deployedContractAddressHex,
@@ -57,15 +57,17 @@ export const getDeployedContractState = async (
 ): Promise<void> => {
   logger.info('Getting deployed contract state...');
 
-  const deployedContractState = await ShieldedToken.getDeployedContractState(
-    providers,
-    shieldedToken.deployedContractAddressHex,
-  );
+  const deployedContractState =
+    await shieldedToken.getDeployedContractState(providers);
 
   if (deployedContractState) {
     logger.info('Deployed contract state retrieved successfully');
-    logger.info(`Contract Address: ${shieldedToken.deployedContractAddressHex}`);
-    logger.info(`Deployed Contract State: ${JSON.stringify(deployedContractState, null, 2)}`);
+    logger.info(
+      `Contract Address: ${shieldedToken.deployedContractAddressHex}`,
+    );
+    logger.info(
+      `Deployed Contract State: ${JSON.stringify(deployedContractState, null, 2)}`,
+    );
   } else {
     logger.warn('No deployed contract state found for contract', {
       contractAddress: shieldedToken.deployedContractAddressHex,
@@ -98,4 +100,4 @@ export const subscribeToState = async (
 
   // Return the subscription so it can be cleaned up later
   return subscription;
-}; 
+};

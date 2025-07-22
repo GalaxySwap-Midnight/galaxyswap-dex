@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+// biome-ignore lint/performance/noBarrelFile: entrypoint module
 export {
   currentDir,
   contractConfig,

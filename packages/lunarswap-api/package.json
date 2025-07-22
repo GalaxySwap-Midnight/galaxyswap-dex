@@ -30,6 +30,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@midnight-dapps/biome-config": "workspace:*",
     "@types/node": "^24.0.7",
     "eslint": "^9.30.0",
     "typescript": "^5.8.3"

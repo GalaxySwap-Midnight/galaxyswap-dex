@@ -285,6 +285,9 @@ importers:
       '@midnight-dapps/compact-std':
         specifier: workspace:^
         version: link:../../packages/compact-std
+      '@midnight-dapps/structs':
+        specifier: workspace:^
+        version: link:../structs
       '@midnight-ntwrk/compact-runtime':
         specifier: ^0.8.1
         version: 0.8.1
@@ -307,9 +310,6 @@ importers:
 
   contracts/lunarswap-v1:
     dependencies:
-      '@midnight-dapps/access-contract':
-        specifier: workspace:^
-        version: link:../access
       '@midnight-dapps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
@@ -319,12 +319,9 @@ importers:
       '@midnight-dapps/lunarswap-sdk':
         specifier: workspace:^
         version: link:../../packages/lunarswap-sdk
-      '@midnight-dapps/math-contracts':
+      '@midnight-dapps/math':
         specifier: workspace:^
         version: link:../math
-      '@midnight-dapps/structs-contracts':
-        specifier: workspace:^
-        version: link:../structs
       '@midnight-ntwrk/compact-runtime':
         specifier: ^0.8.0
         version: 0.8.1
@@ -335,6 +332,9 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
     devDependencies:
+      '@midnight-dapps/biome-config':
+        specifier: workspace:*
+        version: link:../../packages/biome-config
       '@types/node':
         specifier: ^22.13.10
         version: 22.15.29
@@ -390,6 +390,9 @@ importers:
       '@midnight-dapps/compact-std':
         specifier: workspace:^
         version: link:../../packages/compact-std
+      '@midnight-dapps/math':
+        specifier: workspace:^
+        version: link:../math
       '@midnight-ntwrk/compact-runtime':
         specifier: ^0.8.1
         version: 0.8.1
@@ -523,6 +526,9 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@midnight-dapps/biome-config':
+        specifier: workspace:*
+        version: link:../biome-config
       '@types/node':
         specifier: ^24.0.7
         version: 24.0.15
@@ -648,7 +654,7 @@ importers:
       '@midnight-dapps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
-      '@midnight-dapps/shielded-token-contract':
+      '@midnight-dapps/shielded-token':
         specifier: workspace:*
         version: link:../../contracts/shielded-token
       '@midnight-ntwrk/compact-runtime':
@@ -670,6 +676,9 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
+      '@midnight-dapps/biome-config':
+        specifier: workspace:*
+        version: link:../biome-config
       '@types/node':
         specifier: ^24.0.7
         version: 24.0.15
@@ -688,12 +697,12 @@ importers:
       '@midnight-dapps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
+      '@midnight-dapps/shielded-token':
+        specifier: workspace:*
+        version: link:../../contracts/shielded-token
       '@midnight-dapps/shielded-token-api':
         specifier: workspace:*
         version: link:../shielded-token-api
-      '@midnight-dapps/shielded-token-contract':
-        specifier: workspace:*
-        version: link:../../contracts/shielded-token
       '@midnight-ntwrk/compact-runtime':
         specifier: ^0.8.1
         version: 0.8.1

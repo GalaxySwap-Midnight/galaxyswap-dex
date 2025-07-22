@@ -11,8 +11,17 @@ import type { Resource } from '@midnight-ntwrk/wallet';
 import { buildFreshWallet, buildWalletFromSeed } from './api/wallet';
 import { configureProviders } from './api/providers';
 import { deployContract, joinContract } from './api/contract';
-import { createCoinInfo, mintTokens, burnTokens, getTokenInfo } from './api/token';
-import { getPublicState, getZswapChainState, getDeployedContractState } from './api/state';
+import {
+  createCoinInfo,
+  mintTokens,
+  burnTokens,
+  getTokenInfo,
+} from './api/token';
+import {
+  getPublicState,
+  getZswapChainState,
+  getDeployedContractState,
+} from './api/state';
 import { subscribeToState } from './api/state';
 
 let logger: Logger;
@@ -48,9 +57,13 @@ You can do one of the following:
 Which would you like to do? `;
 
 const WALLET_QUESTION = 'Enter your wallet seed: ';
-const CONTRACT_ADDRESS_QUESTION = 'Enter the deployed Shielded Token contract address: ';
+const CONTRACT_ADDRESS_QUESTION =
+  'Enter the deployed Shielded Token contract address: ';
 
-const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Resource) | null> => {
+const buildWallet = async (
+  config: Config,
+  rli: Interface,
+): Promise<(Wallet & Resource) | null> => {
   while (true) {
     const choice = await rli.question(WALLET_LOOP_QUESTION);
     switch (choice) {
@@ -66,7 +79,9 @@ const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Re
           return await buildWalletFromSeed(config, config.testSeed, logger);
         }
         logger.error('No test seed found in environment variable TEST_SEED');
-        logger.info('Please set TEST_SEED environment variable or choose option 2 to enter seed manually');
+        logger.info(
+          'Please set TEST_SEED environment variable or choose option 2 to enter seed manually',
+        );
         break;
       }
       case '4':
@@ -78,7 +93,10 @@ const buildWallet = async (config: Config, rli: Interface): Promise<(Wallet & Re
   }
 };
 
-const deployOrJoin = async (providers: ShieldedTokenProviders, rli: Interface): Promise<ShieldedToken | null> => {
+const deployOrJoin = async (
+  providers: ShieldedTokenProviders,
+  rli: Interface,
+): Promise<ShieldedToken | null> => {
   while (true) {
     const choice = await rli.question(DEPLOY_OR_JOIN_QUESTION);
     switch (choice) {
@@ -97,27 +115,46 @@ const deployOrJoin = async (providers: ShieldedTokenProviders, rli: Interface): 
   }
 };
 
-const handleGetTokenInfo = async (shieldedToken: ShieldedToken, rli: Interface): Promise<void> => {
+const handleGetTokenInfo = async (
+  shieldedToken: ShieldedToken,
+): Promise<void> => {
   await getTokenInfo(shieldedToken, logger);
 };
 
-const handleMintTokens = async (shieldedToken: ShieldedToken, wallet: Wallet & Resource, rli: Interface): Promise<void> => {
+const handleMintTokens = async (
+  shieldedToken: ShieldedToken,
+  wallet: Wallet & Resource,
+  rli: Interface,
+): Promise<void> => {
   const amount = BigInt(await rli.question('Enter amount to mint: '));
-  
-  const recipientChoice = await rli.question('Mint to:\n1. Yourself (wallet)\n2. Custom recipient\nEnter choice (1 or 2): ');
-  
+
+  const recipientChoice = await rli.question(
+    'Mint to:\n1. Yourself (wallet)\n2. Custom recipient\nEnter choice (1 or 2): ',
+  );
+
   let recipientCoinPublicKey: string | undefined;
-  
+
   if (recipientChoice === '2') {
-    recipientCoinPublicKey = await rli.question('Enter recipient coin public key (hex): ');
+    recipientCoinPublicKey = await rli.question(
+      'Enter recipient coin public key (hex): ',
+    );
   } else if (recipientChoice !== '1') {
     logger.error('Invalid choice, defaulting to mint to yourself');
   }
 
-  await mintTokens(shieldedToken, wallet, amount, logger, recipientCoinPublicKey);
+  await mintTokens(
+    shieldedToken,
+    wallet,
+    amount,
+    logger,
+    recipientCoinPublicKey,
+  );
 };
 
-const handleBurnTokens = async (shieldedToken: ShieldedToken, rli: Interface): Promise<void> => {
+const handleBurnTokens = async (
+  shieldedToken: ShieldedToken,
+  rli: Interface,
+): Promise<void> => {
   const coinColor = await rli.question('Enter coin color (hex): ');
   const coinValue = BigInt(await rli.question('Enter coin value: '));
   const burnAmount = BigInt(await rli.question('Enter amount to burn: '));
@@ -126,22 +163,33 @@ const handleBurnTokens = async (shieldedToken: ShieldedToken, rli: Interface): P
   await burnTokens(shieldedToken, coin, burnAmount, logger);
 };
 
-const handleGetPublicState = async (shieldedToken: ShieldedToken, providers: ShieldedTokenProviders, rli: Interface): Promise<void> => {
+const handleGetPublicState = async (
+  shieldedToken: ShieldedToken,
+  providers: ShieldedTokenProviders,
+): Promise<void> => {
   await getPublicState(shieldedToken, providers, logger);
 };
 
-const handleGetZswapChainState = async (shieldedToken: ShieldedToken, providers: ShieldedTokenProviders, rli: Interface): Promise<void> => {
+const handleGetZswapChainState = async (
+  shieldedToken: ShieldedToken,
+  providers: ShieldedTokenProviders,
+): Promise<void> => {
   await getZswapChainState(shieldedToken, providers, logger);
 };
 
-const handleGetDeployedContractState = async (shieldedToken: ShieldedToken, providers: ShieldedTokenProviders, rli: Interface): Promise<void> => {
+const handleGetDeployedContractState = async (
+  shieldedToken: ShieldedToken,
+  providers: ShieldedTokenProviders,
+): Promise<void> => {
   await getDeployedContractState(shieldedToken, providers, logger);
 };
 
-const handleSubscribeToState = async (shieldedToken: ShieldedToken, rli: Interface): Promise<void> => {
+const handleSubscribeToState = async (
+  shieldedToken: ShieldedToken,
+): Promise<void> => {
   logger.info('Starting state subscription. Press Ctrl+C to stop...');
   const subscription = await subscribeToState(shieldedToken, logger);
-  
+
   // Keep the subscription active for a while
   setTimeout(() => {
     subscription.unsubscribe();
@@ -149,7 +197,11 @@ const handleSubscribeToState = async (shieldedToken: ShieldedToken, rli: Interfa
   }, 30000); // Stop after 30 seconds
 };
 
-const mainLoop = async (providers: ShieldedTokenProviders, wallet: Wallet & Resource, rli: Interface): Promise<void> => {
+const mainLoop = async (
+  providers: ShieldedTokenProviders,
+  wallet: Wallet & Resource,
+  rli: Interface,
+): Promise<void> => {
   const shieldedToken = await deployOrJoin(providers, rli);
   if (shieldedToken === null) {
     logger.error('Failed to deploy or join Shielded Token contract');
@@ -159,7 +211,7 @@ const mainLoop = async (providers: ShieldedTokenProviders, wallet: Wallet & Reso
     const choice = await rli.question(MAIN_LOOP_QUESTION);
     switch (choice) {
       case '1':
-        await handleGetTokenInfo(shieldedToken, rli);
+        await handleGetTokenInfo(shieldedToken);
         break;
       case '2':
         await handleMintTokens(shieldedToken, wallet, rli);
@@ -168,16 +220,16 @@ const mainLoop = async (providers: ShieldedTokenProviders, wallet: Wallet & Reso
         await handleBurnTokens(shieldedToken, rli);
         break;
       case '4':
-        await handleGetPublicState(shieldedToken, providers, rli);
+        await handleGetPublicState(shieldedToken, providers);
         break;
       case '5':
-        await handleGetZswapChainState(shieldedToken, providers, rli);
+        await handleGetZswapChainState(shieldedToken, providers);
         break;
       case '6':
-        await handleGetDeployedContractState(shieldedToken, providers, rli);
+        await handleGetDeployedContractState(shieldedToken, providers);
         break;
       case '7':
-        await handleSubscribeToState(shieldedToken, rli);
+        await handleSubscribeToState(shieldedToken);
         break;
       case '8':
         logger.info('Exiting...');
@@ -188,7 +240,11 @@ const mainLoop = async (providers: ShieldedTokenProviders, wallet: Wallet & Reso
   }
 };
 
-export const run = async (config: Config, _logger: Logger, dockerEnv?: unknown): Promise<void> => {
+export const run = async (
+  config: Config,
+  _logger: Logger,
+  dockerEnv?: unknown,
+): Promise<void> => {
   logger = _logger;
   const rli = createInterface({ input, output, terminal: true });
   let env: unknown;
@@ -230,4 +286,4 @@ export const run = async (config: Config, _logger: Logger, dockerEnv?: unknown):
       }
     }
   }
-}; 
+};

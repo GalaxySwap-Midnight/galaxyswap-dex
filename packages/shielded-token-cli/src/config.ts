@@ -85,4 +85,4 @@ export class TestnetRemotePSConfig implements Config {
   constructor() {
     setNetworkId(NetworkId.TestNet);
   }
-} 
+}
