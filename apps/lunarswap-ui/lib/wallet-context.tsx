@@ -5,12 +5,12 @@ import type { Logger } from 'pino';
 import type { DAppConnectorWalletAPI, ServiceUriConfig } from '@midnight-ntwrk/dapp-connector-api';
 import type { LunarswapCircuitKeys, LunarswapPrivateStateId } from '@midnight-dapps/lunarswap-api';
 import type { LunarswapPrivateStates } from '@midnight-dapps/lunarswap-api';
-import type { PublicDataProvider, PrivateStateProvider, ProofProvider } from '@midnight-ntwrk/midnight-js-types';
-import type { CoinInfo, TransactionId, BalancedTransaction, UnbalancedTransaction } from '@midnight-ntwrk/ledger';
-import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import { type PublicDataProvider, type PrivateStateProvider, type ProofProvider, createBalancedTx } from '@midnight-ntwrk/midnight-js-types';
+import type { CoinInfo, TransactionId } from '@midnight-ntwrk/ledger';
+import type { BalancedTransaction, UnbalancedTransaction } from '@midnight-ntwrk/midnight-js-types';
+import { Transaction, Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { getLedgerNetworkId, getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import type { WalletProvider } from '@midnight-ntwrk/midnight-js-types/dist/wallet-provider';
-import type { MidnightProvider } from '@midnight-ntwrk/midnight-js-types/dist/midnight-provider';
+import type { WalletProvider, MidnightProvider } from '@midnight-ntwrk/midnight-js-types';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
@@ -21,6 +21,7 @@ import { proofClient, noopProofClient } from '@/providers/proof';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
 import { WalletConnect } from '@/components/wallet-connect';
 import { formatAddress } from '@/utils/wallet-utils';
+import { getErrorType } from '@/utils/wallet-utils';
 
 // Types for Lunarswap
 export interface WalletAPI {
@@ -40,7 +41,7 @@ export type ProviderCallbackAction =
   | 'watchForTxDataStarted'
   | 'watchForTxDataDone';
 
-export interface LunarswapWalletState {
+export interface MidnightWalletState {
   isConnected: boolean;
   proofServerIsOnline: boolean;
   address?: string;
@@ -54,19 +55,13 @@ export interface LunarswapWalletState {
   midnightProvider: MidnightProvider;
   shake: () => void;
   callback: (action: ProviderCallbackAction) => void;
+  walletError: string | null;
+  setWalletError: (err: string | null) => void;
 }
 
-const WalletContext = createContext<LunarswapWalletState | null>(null);
+export const WalletContext = createContext<MidnightWalletState | null>(null);
 
-export const useWallet = (): LunarswapWalletState => {
-  const walletState = useContext(WalletContext);
-  if (!walletState) {
-    throw new Error('WalletProvider not loaded');
-  }
-  return walletState;
-};
-
-interface WalletProviderProps {
+interface MidnightWalletProviderProps {
   children: React.ReactNode;
   logger?: Logger;
 }
@@ -82,7 +77,7 @@ const fallbackLogger: Logger = {
   silent: false,
 } as unknown as Logger;
 
-export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger }) => {
+export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ children, logger }) => {
   const config = useRuntimeConfiguration();
   // Fallback logger if not provided
   const log = logger || fallbackLogger;
@@ -94,7 +89,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
   const [snackBarText, setSnackBarText] = useState<string | undefined>(undefined);
   const [isRotate, setRotate] = useState(false);
   const [openWallet, setOpenWallet] = useState(false);
-  const [floatingOpen, setFloatingOpen] = useState(true);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   // Provider callback for UI feedback
   const providerCallback = useCallback((action: ProviderCallbackAction): void => {
@@ -171,23 +166,24 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
               ZswapTransaction.deserialize(tx.serialize(getLedgerNetworkId()), getZswapNetworkId()),
               newCoins,
             )
-            .then((zswapTx: any) =>
-              ZswapTransaction.deserialize(zswapTx.serialize(getZswapNetworkId()), getLedgerNetworkId())
-            )
+            .then((zswapTx) => {
+              const deserialized = Transaction.deserialize(zswapTx.serialize(getLedgerNetworkId()), getZswapNetworkId());
+              // @ts-expect-error: type mismatch, but this is required for compatibility
+              return createBalancedTx(deserialized);
+            })
             .finally(() => {
               providerCallback('balanceTxDone');
             });
         },
       };
-    } else {
-      return {
-        coinPublicKey: '',
-        encryptionPublicKey: '',
-        balanceTx() {
-          return Promise.reject(new Error('readonly'));
-        },
-      };
     }
+    return {
+      coinPublicKey: '',
+      encryptionPublicKey: '',
+      balanceTx() {
+        return Promise.reject(new Error('readonly'));
+      },
+    };
   }, [walletAPI, address, providerCallback]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
@@ -200,13 +196,12 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
           });
         },
       };
-    } else {
-      return {
-        submitTx() {
-          return Promise.reject(new Error('readonly'));
-        },
-      };
     }
+    return {
+      submitTx() {
+        return Promise.reject(new Error('readonly'));
+      },
+    };
   }, [walletAPI, providerCallback]);
 
   // Shake logic for UI
@@ -242,14 +237,17 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
       walletResult = await connectToWallet();
     } catch (e) {
       setIsConnecting(false);
+      setWalletError(getErrorType(e as Error));
       if (manual) setOpenWallet(true);
       return;
     }
     if (!walletResult) {
       setIsConnecting(false);
+      setWalletError('NO_WALLET_RESULT');
       if (manual) setOpenWallet(true);
       return;
     }
+    setWalletError(null);
     await checkProofServerStatus(walletResult.serviceUriConfig.proverServerUri);
     try {
       const reqState = await walletResult.wallet.state();
@@ -259,7 +257,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
         uris: walletResult.serviceUriConfig,
       });
     } catch (e) {
-      // ignore
+      setWalletError(getErrorType(e as Error));
     }
     setIsConnecting(false);
   }, [checkProofServerStatus]);
@@ -268,7 +266,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
   const widget = <WalletConnect />;
 
   // State object
-  const walletState: LunarswapWalletState = useMemo(
+  const walletState: MidnightWalletState = useMemo(
     () => ({
       isConnected: !!address,
       proofServerIsOnline,
@@ -283,8 +281,10 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children, logger
       midnightProvider,
       shake,
       callback: providerCallback,
+      walletError,
+      setWalletError,
     }),
-    [address, proofServerIsOnline, walletAPI, privateStateProvider, zkConfigProvider, proofProvider, publicDataProvider, walletProvider, midnightProvider, providerCallback, shake],
+    [address, proofServerIsOnline, walletAPI, privateStateProvider, zkConfigProvider, proofProvider, publicDataProvider, walletProvider, midnightProvider, providerCallback, shake, walletError],
   );
 
   // Auto-connect on mount

@@ -7,7 +7,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/hot-toast';
 import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
-import { WalletProvider } from '@/lib/wallet-context';
+import { MidnightWalletProvider } from '@/lib/wallet-context';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
 
@@ -61,9 +61,9 @@ export default function RootLayout({
         <RuntimeConfigurationProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <VersionProvider>
-              <WalletProvider>
+              <MidnightWalletProvider>
                 <NetworkProvider>{children}</NetworkProvider>
-              </WalletProvider>
+              </MidnightWalletProvider>
             </VersionProvider>
             <Toaster />
           </ThemeProvider>

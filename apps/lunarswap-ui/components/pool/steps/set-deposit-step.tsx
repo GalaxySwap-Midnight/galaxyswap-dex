@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useMidnightTransaction } from '@/hooks/use-midnight-transaction';
 import { useWallet } from '@/hooks/use-wallet';
 import { createContractIntegration } from '@/lib/contract-integration';
 import { Loader2 } from 'lucide-react';
@@ -12,13 +11,12 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
 interface SetDepositStepProps {
+  // TODO: Replace 'any' with a proper type for pairData
   pairData: any;
 }
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
-  const { isWalletConnected, walletState } = useWallet();
-  const { transactionState, executeTransaction, resetTransaction } =
-    useMidnightTransaction();
+  const wallet = useWallet();
   const [isHydrated, setIsHydrated] = useState(false);
 
   const [amountA, setAmountA] = useState('1');
@@ -34,7 +32,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const valueB = '$1,831.55';
 
   const handleAddLiquidity = async () => {
-    if (!isWalletConnected) {
+    if (!wallet.isConnected) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -42,63 +40,25 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     if (!amountA || !amountB) {
       toast.error('Please enter valid amounts');
       return;
-    }
-
-    try {
-      const result = await executeTransaction(async (providers, walletAPI) => {
-        // Create contract integration
-        const contractIntegration = createContractIntegration(
-          providers,
-          walletAPI,
-        );
-
-        // Execute the actual add liquidity transaction
-        const addLiquidityResult = await contractIntegration.addLiquidity({
-          tokenA: pairData.tokenA?.symbol || 'NIGHT',
-          tokenB: pairData.tokenB?.symbol || 'USDT',
-          amountADesired: amountA,
-          amountBDesired: amountB,
-          amountAMin: amountA, // In real implementation, calculate minimum based on slippage
-          amountBMin: amountB, // In real implementation, calculate minimum based on slippage
-          recipient: walletState?.address || '',
-          deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes from now
-        });
-
-        return addLiquidityResult;
-      });
-
-      if (result) {
-        toast.success('Liquidity added successfully!');
-        // Reset form
-        setAmountA('');
-        setAmountB('');
-        resetTransaction();
-      }
-    } catch (error) {
-      console.error('Add liquidity failed:', error);
-      toast.error('Failed to add liquidity. Please try again.');
-    }
+    } 
   };
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
-    if (!isWalletConnected) return 'Connect Wallet';
+    if (!wallet.isConnected) return 'Connect Wallet';
     if (!amountA || !amountB) return 'Enter amounts';
-    if (transactionState.status === 'preparing') return 'Preparing...';
-    if (transactionState.status === 'proving') return 'Generating Proof...';
-    if (transactionState.status === 'submitting') return 'Adding Liquidity...';
+    if (wallet.walletError === 'submitting') return 'Adding Liquidity...';
     return 'Add Liquidity';
   };
 
   const isButtonDisabled = () => {
     return (
       !isHydrated ||
-      !isWalletConnected ||
+      !wallet.isConnected ||
       !amountA ||
       !amountB ||
-      transactionState.status === 'preparing' ||
-      transactionState.status === 'proving' ||
-      transactionState.status === 'submitting'
+      wallet.walletError !== null ||
+      wallet.walletError !== 'NO_WALLET_RESULT'
     );
   };
 
@@ -186,7 +146,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
             </div>
           </div>
 
-          {transactionState.error && (
+          {/* {transactionState.error && (
             <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg mt-4">
               {transactionState.error}
             </div>
@@ -196,7 +156,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
             <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg mt-4">
               Liquidity added successfully! Hash: {transactionState.txHash}
             </div>
-          )}
+          )} */}
         </div>
       </CardContent>
       <CardFooter className="p-6 pt-0">
@@ -205,11 +165,11 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           disabled={isButtonDisabled()}
           onClick={handleAddLiquidity}
         >
-          {(transactionState.status === 'preparing' ||
+          {/* {(transactionState.status === 'preparing' ||
             transactionState.status === 'proving' ||
             transactionState.status === 'submitting') && (
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          )}
+          )} */}
           {getButtonText()}
         </Button>
       </CardFooter>
