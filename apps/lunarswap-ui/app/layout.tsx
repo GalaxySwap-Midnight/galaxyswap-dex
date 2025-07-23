@@ -9,6 +9,7 @@ import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
 import { WalletProvider } from '@/lib/wallet-context';
 import { ThemeProvider } from 'next-themes';
+import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -57,14 +58,16 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#3b82f6" />
       </head>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <VersionProvider>
-            <WalletProvider>
-              <NetworkProvider>{children}</NetworkProvider>
-            </WalletProvider>
-          </VersionProvider>
-          <Toaster />
-        </ThemeProvider>
+        <RuntimeConfigurationProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <VersionProvider>
+              <WalletProvider>
+                <NetworkProvider>{children}</NetworkProvider>
+              </WalletProvider>
+            </VersionProvider>
+            <Toaster />
+          </ThemeProvider>
+        </RuntimeConfigurationProvider>
       </body>
     </html>
   );
