@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { createContext, useEffect, useMemo, useState, useCallback } from 'react';
 import type { Logger } from 'pino';
 import type { DAppConnectorWalletAPI, ServiceUriConfig } from '@midnight-ntwrk/dapp-connector-api';
 import type { LunarswapCircuitKeys, LunarswapPrivateStateId } from '@midnight-dapps/lunarswap-api';
@@ -11,17 +11,16 @@ import type { BalancedTransaction, UnbalancedTransaction } from '@midnight-ntwrk
 import { Transaction, Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
 import { getLedgerNetworkId, getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import type { WalletProvider, MidnightProvider } from '@midnight-ntwrk/midnight-js-types';
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
 import { connectToWallet } from '@/utils/wallet-utils';
 import { PrivateDataProviderWrapper } from '@/providers/private';
-import { PublicDataProviderWrapper } from '@/providers/public';
 import { proofClient, noopProofClient } from '@/providers/proof';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
 import { WalletConnect } from '@/components/wallet-connect';
 import { formatAddress } from '@/utils/wallet-utils';
 import { getErrorType } from '@/utils/wallet-utils';
+import IndexerContext from './indexer-context';
 
 // Types for Lunarswap
 export interface WalletAPI {
@@ -49,9 +48,10 @@ export interface MidnightWalletState {
   walletAPI?: WalletAPI;
   privateStateProvider: PrivateStateProvider<typeof LunarswapPrivateStateId, LunarswapPrivateStates>;
   zkConfigProvider: ZkConfigProviderWrapper<LunarswapCircuitKeys>;
-  proofProvider: ProofProvider<string>;
-  publicDataProvider: PublicDataProvider;
-  walletProvider: WalletProvider;
+  // These are now provided by IndexerContext and may be injected via context/hooks
+  proofProvider?: ProofProvider<string>;
+  publicDataProvider?: PublicDataProvider;
+  walletProvider?: WalletProvider;
   midnightProvider: MidnightProvider;
   shake: () => void;
   callback: (action: ProviderCallbackAction) => void;
@@ -92,7 +92,8 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ 
   const [walletError, setWalletError] = useState<string | null>(null);
 
   // Provider callback for UI feedback
-  const providerCallback = useCallback((action: ProviderCallbackAction): void => {
+  const providerCallback = useCallback((...args: unknown[]): void => {
+    const action = args[0];
     if (action === 'proveTxStarted') {
       setSnackBarText('Proving transaction...');
     } else if (action === 'proveTxDone') {
@@ -134,16 +135,6 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ 
         providerCallback,
       ),
     [providerCallback],
-  );
-
-  const publicDataProvider = useMemo(
-    () =>
-      new PublicDataProviderWrapper(
-        indexerPublicDataProvider(config.INDEXER_URI, config.INDEXER_WS_URI),
-        providerCallback,
-        log,
-      ),
-    [config, log, providerCallback],
   );
 
   const proofProvider = useMemo(() => {
@@ -276,7 +267,6 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ 
       privateStateProvider,
       zkConfigProvider,
       proofProvider,
-      publicDataProvider,
       walletProvider,
       midnightProvider,
       shake,
@@ -284,7 +274,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ 
       walletError,
       setWalletError,
     }),
-    [address, proofServerIsOnline, walletAPI, privateStateProvider, zkConfigProvider, proofProvider, publicDataProvider, walletProvider, midnightProvider, providerCallback, shake, walletError],
+    [address, proofServerIsOnline, walletAPI, privateStateProvider, zkConfigProvider, proofProvider, walletProvider, midnightProvider, providerCallback, shake, walletError],
   );
 
   // Auto-connect on mount
@@ -294,5 +284,9 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({ 
     }
   }, [walletState.isConnected, isConnecting, connect]);
 
-  return <WalletContext.Provider value={walletState}>{children}</WalletContext.Provider>;
+  return (
+    <IndexerContext config={config} providerCallback={providerCallback} log={logger || fallbackLogger}>
+      {children}
+    </IndexerContext>
+  );
 };

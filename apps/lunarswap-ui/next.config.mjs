@@ -46,6 +46,7 @@ const nextConfig = {
         assert: false,
         os: false,
         path: false,
+        'isomorphic-ws': false,
       };
     }
 
