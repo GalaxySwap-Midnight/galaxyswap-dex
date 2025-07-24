@@ -2,31 +2,27 @@
 
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Logo } from './logo';
 import { VersionSwitcher } from './version-switcher';
 import { WalletConnect } from './wallet-connect';
 
 export function Header() {
-  const pathname = usePathname();
+  const location = useLocation();
   const [currentPath, setCurrentPath] = useState('/');
 
-  // Update current path when pathname changes
+  // Update current path when location changes
   useEffect(() => {
-    setCurrentPath(pathname);
-  }, [pathname]);
+    setCurrentPath(location.pathname);
+  }, [location.pathname]);
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white/70 dark:bg-transparent backdrop-blur-md z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link
-              href="/"
-              className="flex items-center gap-2 font-bold text-xl"
-            >
+            <Link to="/" className="flex items-center gap-2 font-bold text-xl">
               <Logo size={36} />
               <span className="bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-300 dark:to-blue-400 bg-clip-text text-transparent font-bold tracking-tight">
                 Lunarswap
@@ -34,7 +30,7 @@ export function Header() {
             </Link>
             <nav className="hidden md:flex items-center gap-6">
               <Link
-                href="/"
+                to="/"
                 className={`text-sm font-medium transition ${
                   currentPath === '/'
                     ? 'text-gray-900 dark:text-white font-semibold'
@@ -44,7 +40,7 @@ export function Header() {
                 Swap
               </Link>
               <Link
-                href="/pool"
+                to="/pool"
                 className={`text-sm font-medium transition ${
                   currentPath === '/pool' || currentPath.startsWith('/pool/')
                     ? 'text-gray-900 dark:text-white font-semibold'

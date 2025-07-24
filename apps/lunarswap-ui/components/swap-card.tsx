@@ -13,10 +13,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useMidnightTransaction } from '@/hooks/use-midnight-transaction';
 import { useWallet } from '@/hooks/use-wallet';
-import { createContractIntegration } from '@/lib/contract-integration';
-import { ArrowDown, Fuel, Info, Loader2, Settings } from 'lucide-react';
+import { ArrowDown, Fuel, Info, Settings } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { TokenInput } from './token-input';
@@ -30,9 +28,6 @@ interface Token {
 }
 
 export function SwapCard() {
-  const { isWalletConnected, walletState } = useWallet();
-  const { transactionState, executeTransaction, resetTransaction } =
-    useMidnightTransaction();
   const [isHydrated] = useState(false);
 
   const [showTokenModal, setShowTokenModal] = useState(false);
@@ -73,47 +68,14 @@ export function SwapCard() {
   };
 
   const handleSwap = async () => {
-    if (!isWalletConnected) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
+    // if (!isWalletConnected) {
+    //   toast.error('Please connect your wallet first');
+    //   return;
+    // }
 
     if (!fromAmount || !toAmount) {
       toast.error('Please enter valid amounts');
       return;
-    }
-
-    try {
-      const result = await executeTransaction(async (providers, walletAPI) => {
-        // Create contract integration
-        const contractIntegration = createContractIntegration(
-          providers,
-          walletAPI,
-        );
-
-        // Execute the actual swap transaction
-        const swapResult = await contractIntegration.executeSwap({
-          tokenIn: fromToken.symbol,
-          tokenOut: toToken.symbol,
-          amountIn: fromAmount,
-          amountOutMin: toAmount, // In real implementation, calculate minimum based on slippage
-          recipient: walletState?.address || '',
-          deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes from now
-        });
-
-        return swapResult;
-      });
-
-      if (result) {
-        toast.success('Swap completed successfully!');
-        // Reset form
-        setFromAmount('');
-        setToAmount('');
-        resetTransaction();
-      }
-    } catch (error) {
-      console.error('Swap failed:', error);
-      toast.error('Swap failed. Please try again.');
     }
   };
 
@@ -122,23 +84,13 @@ export function SwapCard() {
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
-    if (!isWalletConnected) return 'Connect Wallet';
+    // if (!isWalletConnected) return 'Connect Wallet';
     if (!fromAmount) return 'Enter an amount';
-    if (transactionState.status === 'preparing') return 'Preparing...';
-    if (transactionState.status === 'proving') return 'Generating Proof...';
-    if (transactionState.status === 'submitting') return 'Submitting...';
     return 'Swap';
   };
 
   const isButtonDisabled = () => {
-    return (
-      !isHydrated ||
-      !isWalletConnected ||
-      !fromAmount ||
-      transactionState.status === 'preparing' ||
-      transactionState.status === 'proving' ||
-      transactionState.status === 'submitting'
-    );
+    return !isHydrated || !fromAmount;
   };
 
   return (
@@ -207,7 +159,7 @@ export function SwapCard() {
             </div>
           )}
 
-          {transactionState.error && (
+          {/* {transactionState.error && (
             <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
               {transactionState.error}
             </div>
@@ -217,7 +169,7 @@ export function SwapCard() {
             <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
               Transaction successful! Hash: {transactionState.txHash}
             </div>
-          )}
+          )} */}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           <TooltipProvider>
@@ -249,11 +201,11 @@ export function SwapCard() {
             disabled={isButtonDisabled()}
             onClick={handleSwap}
           >
-            {(transactionState.status === 'preparing' ||
+            {/* {(transactionState.status === 'preparing' ||
               transactionState.status === 'proving' ||
               transactionState.status === 'submitting') && (
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            )}
+            )} */}
             {getButtonText()}
           </Button>
         </CardFooter>

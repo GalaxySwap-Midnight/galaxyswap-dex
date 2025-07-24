@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { useWallet } from '@/hooks/use-wallet';
 import { createContractIntegration } from '@/lib/contract-integration';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
@@ -40,7 +39,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     if (!amountA || !amountB) {
       toast.error('Please enter valid amounts');
       return;
-    } 
+    }
   };
 
   const getButtonText = () => {
@@ -70,7 +69,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
             <div className="flex items-center">
               <div className="relative h-8 w-8 mr-2">
                 <div className="absolute top-0 left-0 h-8 w-8 rounded-full overflow-hidden bg-blue-100 dark:bg-blue-900">
-                  <Image
+                  <img
                     src="/placeholder.svg?height=32&width=32"
                     alt=""
                     width={32}
@@ -108,7 +107,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 <span className="text-sm text-gray-500">{valueA}</span>
                 <div className="flex items-center">
                   <div className="relative h-5 w-5 mr-1">
-                    <Image
+                    <img
                       src="/placeholder.svg?height=20&width=20"
                       alt=""
                       width={20}
@@ -132,7 +131,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 <span className="text-sm text-gray-500">{valueB}</span>
                 <div className="flex items-center">
                   <div className="relative h-5 w-5 mr-1">
-                    <Image
+                    <img
                       src="/placeholder.svg?height=20&width=20"
                       alt=""
                       width={20}

@@ -178,12 +178,18 @@ export const formatAddress = (address: string | undefined) => {
 };
 
 export function getErrorType(error: Error): string {
-  if (error.message.includes('Midnight Lace wallet not found')) return 'WALLET_NOT_FOUND';
-  if (error.message.includes('Incompatible version of Midnight Lace wallet')) return 'INCOMPATIBLE_API_VERSION';
-  if (error.message.includes('Wallet connector API has failed to respond')) return 'TIMEOUT_API_RESPONSE';
-  if (error.message.includes('Could not find wallet connector API')) return 'TIMEOUT_FINDING_API';
-  if (error.message.includes('Unable to enable connector API')) return 'ENABLE_API_FAILED';
-  if (error.message.includes('Application is not authorized')) return 'UNAUTHORIZED';
+  if (error.message.includes('Midnight Lace wallet not found'))
+    return 'WALLET_NOT_FOUND';
+  if (error.message.includes('Incompatible version of Midnight Lace wallet'))
+    return 'INCOMPATIBLE_API_VERSION';
+  if (error.message.includes('Wallet connector API has failed to respond'))
+    return 'TIMEOUT_API_RESPONSE';
+  if (error.message.includes('Could not find wallet connector API'))
+    return 'TIMEOUT_FINDING_API';
+  if (error.message.includes('Unable to enable connector API'))
+    return 'ENABLE_API_FAILED';
+  if (error.message.includes('Application is not authorized'))
+    return 'UNAUTHORIZED';
   if (error.message.includes('Timeout')) return 'TIMEOUT';
   return 'UNKNOWN_ERROR';
 }

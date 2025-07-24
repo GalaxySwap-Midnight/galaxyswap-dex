@@ -1,0 +1,37 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from '@/components/ui/hot-toast';
+import { NetworkProvider } from '@/lib/network-context';
+import { VersionProvider } from '@/lib/version-context';
+import { MidnightWalletProvider } from '@/lib/wallet-context';
+import { ThemeProvider } from 'next-themes';
+import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
+import Home from '@/app/page';
+import PoolPage from '@/app/pool/page';
+import NewPositionPage from '@/app/pool/new/page';
+import '../app/globals.css';
+
+const App = () => {
+  return (
+    <RuntimeConfigurationProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <VersionProvider>
+          <MidnightWalletProvider>
+            <NetworkProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/pool" element={<PoolPage />} />
+                  <Route path="/pool/new" element={<NewPositionPage />} />
+                  {/* TODO: Add more routes as needed */}
+                </Routes>
+              </BrowserRouter>
+            </NetworkProvider>
+          </MidnightWalletProvider>
+        </VersionProvider>
+        <Toaster />
+      </ThemeProvider>
+    </RuntimeConfigurationProvider>
+  );
+};
+
+export default App;

@@ -2,7 +2,6 @@
 
 import { Input } from '@/components/ui/input';
 import { ChevronDown } from 'lucide-react';
-import Image from 'next/image';
 
 interface TokenInputProps {
   token: {
@@ -47,11 +46,10 @@ export function TokenInput({
           className="flex items-center gap-2 rounded-full bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 px-3 py-1.5 transition border border-gray-300/50 dark:border-blue-800/30"
         >
           <div className="relative h-6 w-6 rounded-full overflow-hidden">
-            <Image
+            <img
               src={token.logo || '/placeholder.svg'}
               alt={token.name}
-              fill
-              className="object-cover"
+              className="object-cover w-full h-full"
             />
           </div>
           <span className="font-medium">{token.symbol}</span>

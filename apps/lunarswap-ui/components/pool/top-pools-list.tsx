@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUpRight } from 'lucide-react';
-import Image from 'next/image';
 
 // Sample data for top pools
 const topPools = [
@@ -78,7 +77,7 @@ export function TopPoolsList() {
                     <div className="flex items-center">
                       <div className="relative h-8 w-8 mr-2">
                         <div className="absolute top-0 left-0 h-6 w-6 rounded-full overflow-hidden bg-blue-100 dark:bg-blue-900">
-                          <Image
+                          <img
                             src="/placeholder.svg?height=24&width=24"
                             alt=""
                             width={24}
@@ -86,7 +85,7 @@ export function TopPoolsList() {
                           />
                         </div>
                         <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full overflow-hidden bg-green-100 dark:bg-green-900">
-                          <Image
+                          <img
                             src="/placeholder.svg?height=24&width=24"
                             alt=""
                             width={24}

@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
 export function PoolPositions() {
@@ -19,7 +19,7 @@ export function PoolPositions() {
               View and manage your liquidity positions
             </p>
           </div>
-          <Link href="/pool/new">
+          <Link to="/pool/new">
             <Button variant="outline" size="sm" className="gap-1 rounded-full">
               <Plus className="h-4 w-4" />
               New Position

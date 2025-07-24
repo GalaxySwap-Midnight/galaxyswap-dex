@@ -1,6 +1,3 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Script from 'next/script';
 // layout.tsx
 import type React from 'react';
 import './globals.css';
@@ -11,9 +8,10 @@ import { MidnightWalletProvider } from '@/lib/wallet-context';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
 
-const inter = Inter({ subsets: ['latin'] });
+// Remove Inter font and Script usage
+// const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Lunarswap | Decentralized Exchange',
   description:
     'Swap tokens on the lunar surface with the most celestial DEX in the galaxy',
@@ -37,19 +35,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              const stored = localStorage.getItem('theme');
-              if (stored === 'dark' || (!stored && isDark)) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-            })();
-          `}
-        </Script>
         <link rel="icon" href="/logo.svg" type="image/svg+xml" />
         <link rel="icon" href="/logo.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/logo.svg" />
@@ -57,7 +42,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3b82f6" />
         <meta name="msapplication-TileColor" content="#3b82f6" />
       </head>
-      <body className={inter.className}>
+      <body>
         <RuntimeConfigurationProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <VersionProvider>

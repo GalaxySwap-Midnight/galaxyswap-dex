@@ -2,7 +2,7 @@ import { Header } from '@/components/header';
 import { NewPositionWizard } from '@/components/pool/new-position-wizard';
 import { StarsBackground } from '@/components/stars-background';
 import { ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 export const metadata = {
   title: 'Lunarswap | New Position',
@@ -19,7 +19,7 @@ export default function NewPositionPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center text-sm mb-4 text-gray-500 dark:text-gray-400">
             <Link
-              href="/pool"
+              to="/pool"
               className="hover:text-blue-500 dark:hover:text-blue-400"
             >
               Your positions

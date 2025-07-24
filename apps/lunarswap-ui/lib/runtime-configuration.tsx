@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 
 export interface RuntimeConfiguration {
   LOGGING_LEVEL: string;
@@ -11,7 +17,9 @@ export interface RuntimeConfiguration {
   LUNARSWAP_ADDRESS: string;
 }
 
-const RuntimeConfigurationContext = createContext<RuntimeConfiguration | null>(null);
+const RuntimeConfigurationContext = createContext<RuntimeConfiguration | null>(
+  null,
+);
 
 export const useRuntimeConfiguration = (): RuntimeConfiguration => {
   const configuration = useContext(RuntimeConfigurationContext);
@@ -28,23 +36,29 @@ interface RuntimeConfigurationProviderProps {
 /**
  * Loads runtime configuration from static file (in /public folder).
  */
-export const loadRuntimeConfiguration = async (): Promise<RuntimeConfiguration> => {
-  const response = await fetch('/config.json');
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const value: Record<string, string> = await response.json();
+export const loadRuntimeConfiguration =
+  async (): Promise<RuntimeConfiguration> => {
+    console.log('Fetching /config.json for runtime configuration...');
+    const response = await fetch('/config.json');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const value: Record<string, string> = await response.json();
+    console.log('Loaded runtime configuration:', value);
 
-  return {
-    LOGGING_LEVEL: value.LOGGING_LEVEL,
-    NETWORK_ID: value.NETWORK_ID,
-    PUBLIC_URL: value.PUBLIC_URL,
-    INDEXER_URI: value.INDEXER_URI,
-    INDEXER_WS_URI: value.INDEXER_WS_URI,
-    LUNARSWAP_ADDRESS: value.LUNARSWAP_ADDRESS,
+    return {
+      LOGGING_LEVEL: value.LOGGING_LEVEL,
+      NETWORK_ID: value.NETWORK_ID,
+      PUBLIC_URL: value.PUBLIC_URL,
+      INDEXER_URI: value.INDEXER_URI,
+      INDEXER_WS_URI: value.INDEXER_WS_URI,
+      LUNARSWAP_ADDRESS: value.LUNARSWAP_ADDRESS,
+    };
   };
-};
 
-export const RuntimeConfigurationProvider = ({ children }: RuntimeConfigurationProviderProps) => {
-  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfiguration | null>(null);
+export const RuntimeConfigurationProvider = ({
+  children,
+}: RuntimeConfigurationProviderProps) => {
+  const [runtimeConfig, setRuntimeConfig] =
+    useState<RuntimeConfiguration | null>(null);
 
   useEffect(() => {
     const loadConfig = async (): Promise<void> => {
@@ -59,4 +73,4 @@ export const RuntimeConfigurationProvider = ({ children }: RuntimeConfigurationP
       {runtimeConfig ? children : <div>Loading configuration...</div>}
     </RuntimeConfigurationContext.Provider>
   );
-}; 
+};

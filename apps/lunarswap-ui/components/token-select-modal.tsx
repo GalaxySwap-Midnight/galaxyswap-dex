@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 
 const popularTokens = [
@@ -92,10 +91,11 @@ export function TokenSelectModal({
               onClick={() => onSelect(token)}
             >
               <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                <Image
+                <img
                   src={token.logo || '/placeholder.svg'}
                   alt={token.name}
-                  fill
+                  width={32}
+                  height={32}
                   className="object-cover"
                 />
               </div>

@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ChevronDown, Search } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 
 // Sample token list - in a real app, this would come from an API
@@ -93,10 +92,11 @@ export function TokenSelector({
           <div className="flex items-center">
             {showTokenIcon && (
               <div className="relative h-6 w-6 mr-2">
-                <Image
+                <img
                   src={selectedToken.logo || '/placeholder.svg'}
                   alt={selectedToken.name}
-                  fill
+                  width={32}
+                  height={32}
                   className="rounded-full"
                 />
               </div>
@@ -136,10 +136,11 @@ export function TokenSelector({
                 onClick={() => handleSelectToken(token)}
               >
                 <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                  <Image
+                  <img
                     src={token.logo || '/placeholder.svg'}
                     alt={token.name}
-                    fill
+                    width={32}
+                    height={32}
                     className="object-cover"
                   />
                 </div>
