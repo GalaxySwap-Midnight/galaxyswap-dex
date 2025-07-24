@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["../../../../node_modules/.pnpm/vite-plugin-node-polyfills@0.24.0_rollup@4.41.1_vite@6.3.5_@types+node@22.15.29_jiti@2._f116be2c220db66d062d3e29a5881e26/node_modules/vite-plugin-node-polyfills/shims/global/index.ts"],
+  "sources": ["../../../../node_modules/.pnpm/vite-plugin-node-polyfills@0.24.0_rollup@4.41.1_vite@5.4.19_@types+node@22.15.29_lightningcss@1.30.1_/node_modules/vite-plugin-node-polyfills/shims/global/index.ts"],
   "sourcesContent": ["// eslint-disable-next-line @typescript-eslint/no-invalid-this\nconst global = globalThis || this || self\n\nexport { global }\nexport default global\n"],
   "mappings": ";;;;;;;;;;;;;;;AACM;IAAAA,eAAA;IAAAA,eAAA;IAAA,SAAS,cAAc,UAAQ;",
   "names": ["import_dist"]

@@ -7,6 +7,15 @@ import { VersionProvider } from '@/lib/version-context';
 import { MidnightWalletProvider } from '@/lib/wallet-context';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
+import pino from 'pino';
+
+// Create a logger instance
+const logger = pino({
+  level: 'info',
+  browser: {
+    asObject: true,
+  },
+});
 
 // Remove Inter font and Script usage
 // const inter = Inter({ subsets: ['latin'] });
@@ -46,7 +55,7 @@ export default function RootLayout({
         <RuntimeConfigurationProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <VersionProvider>
-              <MidnightWalletProvider>
+              <MidnightWalletProvider logger={logger}>
                 <NetworkProvider>{children}</NetworkProvider>
               </MidnightWalletProvider>
             </VersionProvider>

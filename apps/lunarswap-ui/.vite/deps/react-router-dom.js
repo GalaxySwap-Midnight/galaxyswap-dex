@@ -7,17 +7,17 @@ globalThis.process = globalThis.process || __process_polyfill
 
 import {
   require_react_dom
-} from "./chunk-UNKYST55.js";
+} from "./chunk-QDVKC3X4.js";
 import {
   require_react
-} from "./chunk-U5A52HJA.js";
+} from "./chunk-FDRUEEGN.js";
 import {
   __commonJS,
   __toESM,
   require_dist,
   require_dist2,
   require_dist3
-} from "./chunk-YEDOAZYA.js";
+} from "./chunk-F26S4VBV.js";
 
 // ../../node_modules/.pnpm/cookie@1.0.2/node_modules/cookie/dist/index.js
 var require_dist4 = __commonJS({
@@ -12617,7 +12617,7 @@ function writeChunk(chunk, controller) {
     encoder2.encode(
       `<script>${escapeScript(
         `(self.__FLIGHT_DATA||=[]).push(${chunk})`
-      )}</script>`
+      )}<\/script>`
     )
   );
 }
@@ -13189,8 +13189,41 @@ export {
 /*! Bundled license information:
 
 react-router/dist/development/chunk-EF7DTUVF.mjs:
+  (**
+   * react-router v7.7.0
+   *
+   * Copyright (c) Remix Software Inc.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE.md file in the root directory of this source tree.
+   *
+   * @license MIT
+   *)
+
 react-router/dist/development/chunk-T3VM44WY.mjs:
+  (**
+   * react-router v7.7.0
+   *
+   * Copyright (c) Remix Software Inc.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE.md file in the root directory of this source tree.
+   *
+   * @license MIT
+   *)
+
 react-router/dist/development/dom-export.mjs:
+  (**
+   * react-router v7.7.0
+   *
+   * Copyright (c) Remix Software Inc.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE.md file in the root directory of this source tree.
+   *
+   * @license MIT
+   *)
+
 react-router/dist/development/index.mjs:
   (**
    * react-router v7.7.0

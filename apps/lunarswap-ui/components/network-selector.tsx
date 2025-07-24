@@ -20,7 +20,7 @@ export function NetworkSelector() {
     isNetworkSynced,
     syncWithWallet,
   } = useNetwork();
-  const { isWalletConnected } = useWallet();
+  const { isConnected } = useWallet();
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Mark as hydrated after initial render
@@ -34,7 +34,7 @@ export function NetworkSelector() {
     setCurrentNetwork(network);
 
     // If wallet is connected, try to sync with the new network
-    if (isWalletConnected) {
+    if (isConnected) {
       await syncWithWallet();
     }
   };
@@ -52,7 +52,7 @@ export function NetworkSelector() {
               className={`w-2 h-2 rounded-full ${currentNetwork.type === 'mainnet' ? 'bg-green-500' : 'bg-yellow-500'}`}
             />
             {currentNetwork.name}
-            {isHydrated && isWalletConnected && (
+            {isHydrated && isConnected && (
               <div className="flex items-center">
                 {isNetworkSynced ? (
                   <Wifi className="h-3 w-3 text-green-500" />
@@ -67,7 +67,7 @@ export function NetworkSelector() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
         <div className="p-2">
-          {isHydrated && isWalletConnected && (
+          {isHydrated && isConnected && (
             <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-xs">
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">Wallet Sync:</span>

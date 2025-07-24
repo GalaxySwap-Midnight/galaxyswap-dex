@@ -10,10 +10,10 @@ import {
   Slottable,
   createSlot,
   createSlottable
-} from "./chunk-JCZVGNR3.js";
-import "./chunk-QP4VQXGB.js";
-import "./chunk-U5A52HJA.js";
-import "./chunk-YEDOAZYA.js";
+} from "./chunk-Y6HDUED3.js";
+import "./chunk-64MB6DLL.js";
+import "./chunk-FDRUEEGN.js";
+import "./chunk-F26S4VBV.js";
 export {
   Slot as Root,
   Slot,
@@ -21,3 +21,4 @@ export {
   createSlot,
   createSlottable
 };
+//# sourceMappingURL=@radix-ui_react-slot.js.map

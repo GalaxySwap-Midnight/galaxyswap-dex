@@ -7,14 +7,14 @@ globalThis.process = globalThis.process || __process_polyfill
 
 import {
   require_react
-} from "./chunk-U5A52HJA.js";
+} from "./chunk-FDRUEEGN.js";
 import {
   __commonJS,
   __toESM,
   require_dist,
   require_dist2,
   require_dist3
-} from "./chunk-YEDOAZYA.js";
+} from "./chunk-F26S4VBV.js";
 
 // ../../node_modules/.pnpm/boring-avatars@1.11.2/node_modules/boring-avatars/build/index.js
 var require_build = __commonJS({

@@ -18,7 +18,7 @@ export function Header() {
   }, [location.pathname]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/70 dark:bg-transparent backdrop-blur-md z-50">
+    <header className="fixed top-0 -0 right-0 bg-white/70 dark:bg-transparent backdrop-blur-md z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">

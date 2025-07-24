@@ -10,6 +10,7 @@ import { BalanceDisplay } from './balance-display';
 import { Identicon } from './identicon';
 import { NetworkSelector } from './network-selector';
 import { ThemeToggle } from './theme-toggle';
+import type { DAppConnectorWalletState } from '@midnight-ntwrk/dapp-connector-api';
 
 export function AccountPanel({
   isVisible,
@@ -20,7 +21,7 @@ export function AccountPanel({
   onClose: () => void;
   onDisconnect: () => void;
 }) {
-  const { walletAddress, walletState } = useWallet();
+  const { address, walletAPI, isConnected } = useWallet();
   const { refresh } = useWalletRx();
   const [view, setView] = useState<'main' | 'settings'>('main');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
@@ -32,7 +33,17 @@ export function AccountPanel({
     }
   }, [isVisible, refresh]);
 
-  const walletInfo = formatAddress(walletState?.address);
+  // Create a compatible wallet state object for the AccountDetailsModal
+  const walletState: DAppConnectorWalletState | null = walletAPI && address ? {
+    address,
+    addressLegacy: address, // Use the same address for legacy for now
+    coinPublicKey: walletAPI.coinPublicKey,
+    coinPublicKeyLegacy: walletAPI.coinPublicKey, // Use the same key for legacy for now
+    encryptionPublicKey: walletAPI.encryptionPublicKey,
+    encryptionPublicKeyLegacy: walletAPI.encryptionPublicKey, // Use the same key for legacy for now
+  } : null;
+
+  const walletInfo = formatAddress(address);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -86,7 +97,7 @@ export function AccountPanel({
       <div className="flex flex-col items-center text-center p-6 pt-0">
         <div className="relative mb-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden">
-            {walletAddress && <Identicon address={walletAddress} size={64} />}
+            {address && <Identicon address={address} size={64} />}
           </div>
         </div>
         <button
@@ -96,8 +107,8 @@ export function AccountPanel({
           title="Click to view account details"
         >
           <span className="font-mono text-muted-foreground">
-            {walletAddress
-              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-5)}`
+            {address
+              ? `${address.slice(0, 6)}...${address.slice(-5)}`
               : '...'}
           </span>
           <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors opacity-60">

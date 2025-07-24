@@ -15,12 +15,10 @@ import {
   networkIdToHex,
   setNetworkId,
   stringToNetworkId
-} from "./chunk-77QMCSBM.js";
-import "./chunk-VVLZNQWN.js";
-import "./chunk-DCR4CYXC.js";
-import "./chunk-OCNPWTNL.js";
-import "./chunk-WGYX3V4F.js";
-import "./chunk-YEDOAZYA.js";
+} from "./chunk-YUOMWMST.js";
+import "./chunk-T53552ZF.js";
+import "./chunk-3EUISLED.js";
+import "./chunk-F26S4VBV.js";
 export {
   NetworkId,
   NetworkIdTypeError,
@@ -32,3 +30,4 @@ export {
   setNetworkId,
   stringToNetworkId
 };
+//# sourceMappingURL=@midnight-ntwrk_midnight-js-network-id.js.map

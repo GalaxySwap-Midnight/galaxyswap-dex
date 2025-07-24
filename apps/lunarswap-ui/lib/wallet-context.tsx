@@ -80,6 +80,9 @@ interface MidnightWalletState {
   callback: (action: ProviderCallbackAction) => void;
 }
 
+// Export the interface for external use
+export type { MidnightWalletState };
+
 export interface WalletAPI {
   wallet: DAppConnectorWalletAPI;
   coinPublicKey: CoinPublicKey;

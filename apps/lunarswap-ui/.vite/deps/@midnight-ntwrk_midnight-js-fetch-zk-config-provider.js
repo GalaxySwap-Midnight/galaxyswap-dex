@@ -7,23 +7,21 @@ globalThis.process = globalThis.process || __process_polyfill
 
 import {
   require_browser_ponyfill
-} from "./chunk-QFZAAM7U.js";
+} from "./chunk-VAQZNNUG.js";
 import {
   InvalidProtocolSchemeError,
   ZKConfigProvider,
   createProverKey,
   createVerifierKey,
   createZKIR
-} from "./chunk-LUSGBNOB.js";
-import "./chunk-DCR4CYXC.js";
-import "./chunk-OCNPWTNL.js";
-import "./chunk-WGYX3V4F.js";
+} from "./chunk-JBSRDCWX.js";
+import "./chunk-3EUISLED.js";
 import {
   __toESM,
   require_dist,
   require_dist2,
   require_dist3
-} from "./chunk-YEDOAZYA.js";
+} from "./chunk-F26S4VBV.js";
 
 // ../../node_modules/.pnpm/@midnight-ntwrk+midnight-js-fetch-zk-config-provider@2.0.2/node_modules/@midnight-ntwrk/midnight-js-fetch-zk-config-provider/dist/index.mjs
 var import_dist = __toESM(require_dist(), 1);

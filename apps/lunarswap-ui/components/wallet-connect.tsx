@@ -11,11 +11,10 @@ import { Identicon } from './identicon';
 
 export function WalletConnect() {
   const {
-    walletAddress,
-    setWallet,
-    setWalletState,
-    walletConnectionStatus,
-    setWalletConnectionStatus,
+    isConnected,
+    address,
+    walletAPI,
+    shake,
   } = useWallet();
 
   const [isHydrated, setIsHydrated] = useState(false);
@@ -27,24 +26,6 @@ export function WalletConnect() {
     setIsHydrated(true);
   }, []);
 
-  // Reset stuck connecting state on mount
-  useEffect(() => {
-    if (isHydrated && walletConnectionStatus === 'connecting') {
-      setWalletConnectionStatus('disconnected');
-      setWallet(null);
-      setWalletState(null);
-
-      // Use the shared disconnect utility to clear localStorage
-      disconnectWallet();
-    }
-  }, [
-    isHydrated,
-    walletConnectionStatus,
-    setWallet,
-    setWalletConnectionStatus,
-    setWalletState,
-  ]);
-
   const connectWallet = async () => {
     // Prevent multiple clicks
     if (isConnecting) {
@@ -52,14 +33,9 @@ export function WalletConnect() {
     }
 
     setIsConnecting(true);
-    setWalletConnectionStatus('connecting');
 
     try {
-      const { wallet, state } = await connectToWallet();
-
-      setWallet(wallet);
-      setWalletState(state);
-      setWalletConnectionStatus('connected');
+      await connectToWallet();
 
       // Show success toast
       toast.success('Successfully connected to Midnight Lace wallet', {
@@ -71,20 +47,21 @@ export function WalletConnect() {
 
       console.error('Wallet connection failed:', errorMsg);
       toast.error(errorMsg, { duration: 5000 });
-
-      setWalletConnectionStatus('disconnected');
+    } finally {
       setIsConnecting(false);
     }
   };
 
   const handleDisconnect = () => {
-    setWalletConnectionStatus('disconnected');
-    setWallet(null);
-    setWalletState(null);
     setShowWalletInfo(false);
-
+    
     // Use the shared disconnect utility
     disconnectWallet();
+    
+    // Show success toast
+    toast.success('Wallet disconnected', {
+      duration: 2000,
+    });
   };
 
   const renderStatus = () => {
@@ -100,66 +77,53 @@ export function WalletConnect() {
       );
     }
 
-    switch (walletConnectionStatus) {
-      case 'disconnected':
-        return (
-          <Button
-            onClick={connectWallet}
-            disabled={isConnecting}
-            className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isConnecting ? 'Connecting...' : 'Connect'}
-          </Button>
-        );
-
-      case 'connecting':
-        return (
-          <Button
-            disabled
-            className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Connecting...
-            </div>
-          </Button>
-        );
-
-      case 'connected':
-        return (
-          <button
-            type="button"
-            onClick={() => setShowWalletInfo(true)}
-            className={cn(
-              'flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-muted transition-colors',
-              showWalletInfo && 'invisible',
-            )}
-            aria-hidden={showWalletInfo}
-          >
-            <div className="w-8 h-8 rounded-full overflow-hidden">
-              {walletAddress && <Identicon address={walletAddress} size={32} />}
-            </div>
-            <span className="font-medium text-sm text-muted-foreground">
-              {walletAddress
-                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-                : '...'}
-            </span>
-          </button>
-        );
-
-      case 'error':
-        return (
-          <Button
-            onClick={connectWallet}
-            className="rounded-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-sm font-medium text-white"
-          >
-            Retry
-          </Button>
-        );
-
-      default:
-        return null;
+    // Show connecting state while connecting
+    if (isConnecting) {
+      return (
+        <Button
+          disabled
+          className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Connecting...
+          </div>
+        </Button>
+      );
     }
+
+    // If connected, show wallet info
+    if (isConnected && address) {
+      return (
+        <button
+          type="button"
+          onClick={() => setShowWalletInfo(true)}
+          className={cn(
+            'flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-muted transition-colors',
+            showWalletInfo && 'invisible',
+          )}
+          aria-hidden={showWalletInfo}
+        >
+          <div className="w-8 h-8 rounded-full overflow-hidden">
+            <Identicon address={address} size={32} />
+          </div>
+          <span className="font-medium text-sm text-muted-foreground">
+            {`${address.slice(0, 6)}...${address.slice(-4)}`}
+          </span>
+        </button>
+      );
+    }
+
+    // If not connected, show connect button
+    return (
+      <Button
+        onClick={connectWallet}
+        disabled={isConnecting}
+        className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Connect
+      </Button>
+    );
   };
 
   return (

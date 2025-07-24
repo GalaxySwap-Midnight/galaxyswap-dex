@@ -10,9 +10,9 @@ import {
   require_dist,
   require_dist2,
   require_dist3
-} from "./chunk-YEDOAZYA.js";
+} from "./chunk-F26S4VBV.js";
 
-// ../../node_modules/.pnpm/vite-plugin-node-polyfills@0.24.0_rollup@4.41.1_vite@6.3.5_@types+node@22.15.29_jiti@2._f116be2c220db66d062d3e29a5881e26/node_modules/vite-plugin-node-polyfills/shims/global/dist/index.js
+// ../../node_modules/.pnpm/vite-plugin-node-polyfills@0.24.0_rollup@4.41.1_vite@5.4.19_@types+node@22.15.29_lightningcss@1.30.1_/node_modules/vite-plugin-node-polyfills/shims/global/dist/index.js
 var import_dist = __toESM(require_dist());
 var import_dist2 = __toESM(require_dist2());
 var import_dist3 = __toESM(require_dist3());

@@ -16,7 +16,7 @@ import {
 import { useWallet } from '@/hooks/use-wallet';
 import { ArrowDown, Fuel, Info, Settings } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { TokenInput } from './token-input';
 import { TokenSelectModal } from './token-select-modal';
 

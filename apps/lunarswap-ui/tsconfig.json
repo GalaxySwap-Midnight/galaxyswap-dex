@@ -1,21 +1,27 @@
-{
+{  
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "baseUrl": ".",
     "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
     "isolatedModules": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "skipLibCheck": true,
+    "useDefineForClassFields": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
+    "esModuleInterop": false,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
       "@/components/*": ["components/*"],
       "@/lib/*": ["lib/*"],
@@ -26,6 +32,8 @@
       "@/app/*": ["app/*"]
     }
   },
-  "include": ["src", "app", "components", "lib", "hooks", "providers", "utils", "types"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src",
+    ".eslintrc.cjs"
+  ]
 }

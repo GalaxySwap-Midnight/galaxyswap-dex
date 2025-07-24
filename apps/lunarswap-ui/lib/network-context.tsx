@@ -47,7 +47,7 @@ export interface NetworkProviderProps extends PropsWithChildren {
 export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
   children,
 }) => {
-  const { wallet, isWalletConnected } = useWallet();
+  const { walletAPI, isConnected } = useWallet();
   const [currentNetwork, setCurrentNetwork] = useState<Network>(
     availableNetworks[0],
   ); // Default to testnet
@@ -55,14 +55,14 @@ export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
 
   // Sync network with wallet
   const syncWithWallet = useCallback(async () => {
-    if (!isWalletConnected) {
+    if (!isConnected) {
       setIsNetworkSynced(false);
       return;
     }
 
     try {
       const walletNetwork = await detectWalletNetwork(
-        wallet,
+        walletAPI?.wallet || null,
         availableNetworks,
       );
       if (walletNetwork) {
@@ -79,16 +79,16 @@ export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
       console.error('Failed to sync network with wallet:', error);
       setIsNetworkSynced(false);
     }
-  }, [isWalletConnected, wallet]);
+  }, [isConnected, walletAPI]);
 
   // Auto-sync when wallet connects/disconnects
   useEffect(() => {
-    if (isWalletConnected) {
+    if (isConnected) {
       syncWithWallet();
     } else {
       setIsNetworkSynced(false);
     }
-  }, [isWalletConnected, syncWithWallet]);
+  }, [isConnected, syncWithWallet]);
 
   const contextValue: NetworkContextType = useMemo(
     () => ({

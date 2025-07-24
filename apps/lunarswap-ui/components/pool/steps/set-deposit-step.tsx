@@ -7,16 +7,21 @@ import { useWallet } from '@/hooks/use-wallet';
 import { createContractIntegration } from '@/lib/contract-integration';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
+
+interface PairData {
+  version: string;
+  fee: number;
+}
 
 interface SetDepositStepProps {
-  // TODO: Replace 'any' with a proper type for pairData
-  pairData: any;
+  pairData: PairData;
 }
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
-  const wallet = useWallet();
+  const { isConnected } = useWallet();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [amountA, setAmountA] = useState('1');
   const [amountB, setAmountB] = useState('1831.102949');
@@ -31,7 +36,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const valueB = '$1,831.55';
 
   const handleAddLiquidity = async () => {
-    if (!wallet.isConnected) {
+    if (!isConnected) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -40,24 +45,35 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       toast.error('Please enter valid amounts');
       return;
     }
+
+    setIsSubmitting(true);
+    try {
+      // TODO: Implement actual liquidity addition logic
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate API call
+      toast.success('Liquidity added successfully!');
+    } catch (error) {
+      toast.error('Failed to add liquidity');
+      console.error('Add liquidity error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
-    if (!wallet.isConnected) return 'Connect Wallet';
+    if (!isConnected) return 'Connect Wallet';
     if (!amountA || !amountB) return 'Enter amounts';
-    if (wallet.walletError === 'submitting') return 'Adding Liquidity...';
+    if (isSubmitting) return 'Adding Liquidity...';
     return 'Add Liquidity';
   };
 
   const isButtonDisabled = () => {
     return (
       !isHydrated ||
-      !wallet.isConnected ||
+      !isConnected ||
       !amountA ||
       !amountB ||
-      wallet.walletError !== null ||
-      wallet.walletError !== 'NO_WALLET_RESULT'
+      isSubmitting
     );
   };
 
@@ -164,11 +180,9 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           disabled={isButtonDisabled()}
           onClick={handleAddLiquidity}
         >
-          {/* {(transactionState.status === 'preparing' ||
-            transactionState.status === 'proving' ||
-            transactionState.status === 'submitting') && (
+          {isSubmitting && (
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-          )} */}
+          )}
           {getButtonText()}
         </Button>
       </CardFooter>

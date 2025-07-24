@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Toaster } from '@/components/ui/hot-toast';
+import { Toaster } from '@/components/ui/sonner';
 import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
 import { MidnightWalletProvider } from '@/lib/wallet-context';
@@ -9,13 +9,22 @@ import Home from '@/app/page';
 import PoolPage from '@/app/pool/page';
 import NewPositionPage from '@/app/pool/new/page';
 import '../app/globals.css';
+import pino from 'pino';
+
+// Create a logger instance
+const logger = pino({
+  level: 'info',
+  browser: {
+    asObject: true,
+  },
+});
 
 const App = () => {
   return (
     <RuntimeConfigurationProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <VersionProvider>
-          <MidnightWalletProvider>
+          <MidnightWalletProvider logger={logger}>
             <NetworkProvider>
               <BrowserRouter>
                 <Routes>
