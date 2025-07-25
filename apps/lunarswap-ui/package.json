@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.1",
   "private": true,
   "scripts": {
-    "start": "http-server --port 8080 ./dist --proxy 'http://127.0.0.1:8080?'",
+    "start": "pnpm build && http-server --port 8080 ./dist --proxy 'http://127.0.0.1:8080?'",
     "dev": "vite",
     "build": "tsc && vite build --mode testnet",
     "preview": "vite preview",
@@ -30,6 +30,7 @@
     "@midnight-dapps/compact-std": "workspace:*",
     "@midnight-dapps/lunarswap-api": "workspace:*",
     "@midnight-dapps/lunarswap-v1": "workspace:*",
+    "@midnight-dapps/lunarswap-sdk": "workspace:*",
     "@midnight-ntwrk/dapp-connector-api": "^3.0.0",
     "@midnight-ntwrk/ledger": "^4.0.0",
     "@midnight-ntwrk/midnight-js-contracts": "^2.0.2",

@@ -9,16 +9,30 @@ import { SetDepositStep } from './steps/set-deposit-step';
 
 type Step = 'select-pair' | 'set-deposit';
 
+interface PairSelectionData {
+  tokenA: string | null;
+  tokenB: string | null;
+  fee: number;
+  version: string;
+}
+
+interface CompletePairData {
+  tokenA: string;
+  tokenB: string;
+  fee: number;
+  version: string;
+}
+
 export function NewPositionWizard() {
   const [currentStep, setCurrentStep] = useState<Step>('select-pair');
-  const [pairData, setPairData] = useState({
+  const [pairData, setPairData] = useState<PairSelectionData>({
     tokenA: null,
     tokenB: null,
     fee: 0.3, // Default fee tier
-    version: 'v2', // Default version
+    version: 'v1', // Default to V1 since V2/V3 are coming soon
   });
 
-  const handlePairSubmit = (data: any) => {
+  const handlePairSubmit = (data: CompletePairData) => {
     setPairData(data);
     setCurrentStep('set-deposit');
   };
@@ -28,9 +42,14 @@ export function NewPositionWizard() {
       tokenA: null,
       tokenB: null,
       fee: 0.3,
-      version: 'v2',
+      version: 'v1', // Reset to V1 since V2/V3 are coming soon
     });
     setCurrentStep('select-pair');
+  };
+
+  // Type guard to check if pair data is complete
+  const isCompletePairData = (data: PairSelectionData): data is CompletePairData => {
+    return data.tokenA !== null && data.tokenB !== null;
   };
 
   return (
@@ -113,8 +132,18 @@ export function NewPositionWizard() {
               initialData={pairData}
             />
           )}
-          {currentStep === 'set-deposit' && (
+          {currentStep === 'set-deposit' && isCompletePairData(pairData) && (
             <SetDepositStep pairData={pairData} />
+          )}
+          {currentStep === 'set-deposit' && !isCompletePairData(pairData) && (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                Please select both tokens before proceeding to deposit step.
+              </p>
+              <Button onClick={() => setCurrentStep('select-pair')} variant="outline">
+                Back to Token Selection
+              </Button>
+            </div>
           )}
         </div>
       </div>

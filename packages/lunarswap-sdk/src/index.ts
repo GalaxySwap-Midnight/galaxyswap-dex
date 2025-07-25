@@ -282,6 +282,44 @@ export function calculateAmountOut(
 }
 
 /**
+ * Calculates the input amount required for a token swap to get a specific output amount
+ * This is similar to Uniswap V2's getAmountIn function
+ *
+ * @param amountOut - The desired output amount of tokens
+ * @param reserveIn - Current reserve of the input token
+ * @param reserveOut - Current reserve of the output token
+ * @param fee - Swap fee in basis points (e.g., 30 = 0.3%)
+ * @returns The required input amount of tokens
+ */
+export function calculateAmountIn(
+	amountOut: bigint,
+	reserveIn: bigint,
+	reserveOut: bigint,
+	fee = 30, // Default 0.3% fee
+): bigint {
+	if (amountOut <= 0n || reserveIn <= 0n || reserveOut <= 0n) {
+		throw new Error("Invalid amounts or reserves");
+	}
+
+	if (amountOut >= reserveOut) {
+		throw new Error("Insufficient liquidity for this trade");
+	}
+
+	if (fee < 0 || fee > 10000) {
+		throw new Error("Invalid fee. Must be between 0 and 10000 basis points");
+	}
+
+	// Calculate numerator: reserveIn * amountOut * 10000
+	const numerator = reserveIn * amountOut * 10000n;
+
+	// Calculate denominator: (reserveOut - amountOut) * (10000 - fee)
+	const denominator = (reserveOut - amountOut) * BigInt(10000 - fee);
+
+	// Input amount = numerator / denominator + 1 (add 1 for rounding)
+	return numerator / denominator + 1n;
+}
+
+/**
  * Calculates the minimum output amount (`amountOutMin`) for a swap, given an expected output and slippage tolerance.
  * This value is used in Uniswap V2's `swapExactTokensForTokens` to protect users from excessive slippage.
  *

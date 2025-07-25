@@ -42,6 +42,7 @@ export function TokenInput({
           readOnly={readonly}
         />
         <button
+          type="button"
           onClick={onSelectToken}
           className="flex items-center gap-2 rounded-full bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 px-3 py-1.5 transition border border-gray-300/50 dark:border-blue-800/30"
         >
@@ -54,15 +55,6 @@ export function TokenInput({
           </div>
           <span className="font-medium">{token.symbol}</span>
           <ChevronDown className="h-4 w-4 text-gray-400" />
-        </button>
-      </div>
-      <div className="flex justify-between mt-2 text-sm text-gray-500 dark:text-gray-400">
-        <span>Balance: {token.balance}</span>
-        <button
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-          onClick={() => onChange(token.balance)}
-        >
-          Max
         </button>
       </div>
     </div>

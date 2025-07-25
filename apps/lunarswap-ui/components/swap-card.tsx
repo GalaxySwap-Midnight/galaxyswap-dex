@@ -14,8 +14,16 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useWallet } from '@/hooks/use-wallet';
-import { ArrowDown, Fuel, Info, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { createContractIntegration, DEMO_TOKENS } from '@/lib/contract-integration';
+import { 
+  calculateAmountOut, 
+  calculateAmountIn,
+  computeAmountOutMin, 
+  computeAmountInMax,
+  SLIPPAGE_TOLERANCE 
+} from '@midnight-dapps/lunarswap-sdk';
+import { ArrowDown, Fuel, Info, Settings, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { TokenInput } from './token-input';
 import { TokenSelectModal } from './token-select-modal';
@@ -27,8 +35,13 @@ interface Token {
   balance: string;
 }
 
+type SwapType = 'EXACT_INPUT' | 'EXACT_OUTPUT';
+type ActiveField = 'from' | 'to' | null;
+
 export function SwapCard() {
-  const [isHydrated] = useState(false);
+  const { isConnected, address, providers, walletAPI } = useWallet();
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [contractReady, setContractReady] = useState(false);
 
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [selectingToken, setSelectingToken] = useState<'from' | 'to'>('from');
@@ -46,6 +59,146 @@ export function SwapCard() {
   });
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
+  const [activeField, setActiveField] = useState<ActiveField>(null);
+  const [swapType, setSwapType] = useState<SwapType>('EXACT_INPUT');
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [isSwapping, setIsSwapping] = useState(false);
+  const [slippageTolerance] = useState(SLIPPAGE_TOLERANCE.LOW); // 0.5% using SDK constant
+  const [poolReserves, setPoolReserves] = useState<[bigint, bigint] | null>(null);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Check contract status when wallet connects
+  useEffect(() => {
+    const checkContractStatus = async () => {
+      if (!walletAPI || !isConnected) {
+        setContractReady(false);
+        return;
+      }
+
+      try {
+        const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+        const status = await contractIntegration.initialize();
+        setContractReady(status.status === 'connected');
+      } catch (error) {
+        console.error('Contract status check failed:', error);
+        setContractReady(false);
+      }
+    };
+
+    checkContractStatus();
+  }, [walletAPI, providers, isConnected]);
+
+  // Fetch pool reserves when tokens change
+  useEffect(() => {
+    const fetchReserves = async () => {
+      if (!walletAPI || !fromToken || !toToken || fromToken.symbol === toToken.symbol) {
+        setPoolReserves(null);
+        return;
+      }
+
+      try {
+        const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+        await contractIntegration.initialize();
+        
+        const exists = await contractIntegration.isPairExists(fromToken.symbol, toToken.symbol);
+        if (exists) {
+          const reserves = await contractIntegration.getPairReserves(fromToken.symbol, toToken.symbol);
+          setPoolReserves(reserves);
+        } else {
+          setPoolReserves(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch pool reserves:', error);
+        setPoolReserves(null);
+      }
+    };
+
+    fetchReserves();
+  }, [fromToken, toToken, walletAPI, providers]);
+
+  // Calculate output amount for exact input using SDK
+  const calculateOutputAmount = useCallback((inputAmount: string): string => {
+    if (!inputAmount || !poolReserves || Number.parseFloat(inputAmount) <= 0) {
+      return '';
+    }
+
+    try {
+      const amountIn = BigInt(Math.floor(Number.parseFloat(inputAmount) * 1e18));
+      const [reserveIn, reserveOut] = poolReserves;
+      
+      // Use SDK function with default 0.3% fee
+      const amountOut = calculateAmountOut(amountIn, reserveIn, reserveOut);
+      
+      return (Number(amountOut) / 1e18).toFixed(6);
+    } catch (error) {
+      console.error('Error calculating output amount:', error);
+      return '';
+    }
+  }, [poolReserves]);
+
+  // Calculate input amount for exact output (reverse calculation)
+  const calculateInputAmount = useCallback((outputAmount: string): string => {
+    if (!outputAmount || !poolReserves || Number.parseFloat(outputAmount) <= 0) {
+      return '';
+    }
+
+    try {
+      const amountOut = BigInt(Math.floor(Number.parseFloat(outputAmount) * 1e18));
+      const [reserveIn, reserveOut] = poolReserves;
+      
+      // Use SDK function with default 0.3% fee
+      const amountIn = calculateAmountIn(amountOut, reserveIn, reserveOut);
+      
+      return (Number(amountIn) / 1e18).toFixed(6);
+    } catch (error) {
+      console.error('Error calculating input amount:', error);
+      return '';
+    }
+  }, [poolReserves]);
+
+  // Handle from amount change (exact input)
+  const handleFromAmountChange = useCallback(async (value: string) => {
+    setFromAmount(value);
+    setActiveField('from');
+    setSwapType('EXACT_INPUT');
+
+    if (!value || !poolReserves) {
+      setToAmount('');
+      return;
+    }
+
+    setIsCalculating(true);
+    try {
+      const calculatedToAmount = calculateOutputAmount(value);
+      setToAmount(calculatedToAmount);
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [calculateOutputAmount, poolReserves]);
+
+  // Handle to amount change (exact output)
+  const handleToAmountChange = useCallback(async (value: string) => {
+    setToAmount(value);
+    setActiveField('to');
+    setSwapType('EXACT_OUTPUT');
+
+    if (!value || !poolReserves) {
+      setFromAmount('');
+      return;
+    }
+
+    setIsCalculating(true);
+    try {
+      const calculatedFromAmount = calculateInputAmount(value);
+      setFromAmount(calculatedFromAmount);
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [calculateInputAmount, poolReserves]);
 
   const handleTokenSelect = (token: Token) => {
     if (selectingToken === 'from') {
@@ -54,6 +207,11 @@ export function SwapCard() {
       setToToken(token);
     }
     setShowTokenModal(false);
+    
+    // Clear amounts when tokens change
+    setFromAmount('');
+    setToAmount('');
+    setActiveField(null);
   };
 
   const openTokenModal = (type: 'from' | 'to') => {
@@ -61,36 +219,105 @@ export function SwapCard() {
     setShowTokenModal(true);
   };
 
-  const handleFromAmountChange = (value: string) => {
-    setFromAmount(value);
-    // In a real app, you would calculate the equivalent amount based on exchange rate
-    setToAmount(value ? (Number.parseFloat(value) * 1800).toString() : '');
-  };
-
   const handleSwap = async () => {
-    // if (!isWalletConnected) {
-    //   toast.error('Please connect your wallet first');
-    //   return;
-    // }
+    if (!isConnected || !walletAPI || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
 
     if (!fromAmount || !toAmount) {
       toast.error('Please enter valid amounts');
       return;
     }
+
+    if (!poolReserves) {
+      toast.error('Pool not found');
+      return;
+    }
+
+    setIsSwapping(true);
+    try {
+      const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+      await contractIntegration.initialize();
+
+      // Convert amounts to BigInt (assuming 18 decimals)
+      const fromAmountBigInt = BigInt(Math.floor(Number.parseFloat(fromAmount) * 1e18));
+      const toAmountBigInt = BigInt(Math.floor(Number.parseFloat(toAmount) * 1e18));
+
+      if (swapType === 'EXACT_INPUT') {
+        // User specified exact input amount, calculate minimum output with slippage using SDK
+        const amountOutMin = computeAmountOutMin(toAmountBigInt, slippageTolerance);
+        
+        await contractIntegration.swapExactTokensForTokens({
+          tokenIn: fromToken.symbol,
+          tokenOut: toToken.symbol,
+          amountIn: fromAmountBigInt.toString(),
+          amountOutMin: amountOutMin.toString(),
+          to: address,
+        });
+
+        toast.success(`Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`);
+      } else {
+        // User specified exact output amount, calculate maximum input with slippage using SDK
+        const amountInMax = computeAmountInMax(fromAmountBigInt, slippageTolerance);
+        
+        await contractIntegration.swapTokensForExactTokens({
+          tokenIn: fromToken.symbol,
+          tokenOut: toToken.symbol,
+          amountOut: toAmountBigInt.toString(),
+          amountInMax: amountInMax.toString(),
+          to: address,
+        });
+
+        toast.success(`Swapped ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`);
+      }
+
+      // Clear amounts after successful swap
+      setFromAmount('');
+      setToAmount('');
+      setActiveField(null);
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast.error(`Swap failed: ${errorMsg}`);
+      console.error('Swap error:', error);
+    } finally {
+      setIsSwapping(false);
+    }
   };
 
-  // Simulated gas price - in a real app, this would come from an API
-  const gasPrice = '$0.01234';
+  const getExchangeRate = () => {
+    if (!fromAmount || !toAmount || Number.parseFloat(fromAmount) === 0) return null;
+    const rate = Number.parseFloat(toAmount) / Number.parseFloat(fromAmount);
+    return `1 ${fromToken.symbol} = ${rate.toFixed(6)} ${toToken.symbol}`;
+  };
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
-    // if (!isWalletConnected) return 'Connect Wallet';
-    if (!fromAmount) return 'Enter an amount';
-    return 'Swap';
+    if (!isConnected) return 'Connect Wallet';
+    if (!contractReady) return 'Contract Not Available';
+    if (!fromAmount || !toAmount) return 'Enter amounts';
+    if (!poolReserves) return 'Pool not found';
+    if (isCalculating) return 'Calculating...';
+    if (isSwapping) return 'Swapping...';
+    
+    if (swapType === 'EXACT_INPUT') {
+      return `Swap ${fromAmount} ${fromToken.symbol}`;
+    }
+    return `Swap for ${toAmount} ${toToken.symbol}`;
   };
 
   const isButtonDisabled = () => {
-    return !isHydrated || !fromAmount;
+    return (
+      !isHydrated ||
+      !isConnected ||
+      !contractReady ||
+      !fromAmount ||
+      !toAmount ||
+      !poolReserves ||
+      isCalculating ||
+      isSwapping
+    );
   };
 
   return (
@@ -99,16 +326,6 @@ export function SwapCard() {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Swap</h2>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Swap settings</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -125,11 +342,24 @@ export function SwapCard() {
               size="icon"
               className="rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 z-10"
               onClick={() => {
-                const temp = fromToken;
+                // Swap tokens and amounts
+                const tempToken = fromToken;
                 setFromToken(toToken);
-                setToToken(temp);
-                setFromAmount(toAmount);
-                setToAmount(fromAmount);
+                setToToken(tempToken);
+                
+                // Swap amounts and maintain active field logic
+                if (activeField === 'from') {
+                  setToAmount(fromAmount);
+                  setFromAmount(toAmount);
+                  handleToAmountChange(fromAmount);
+                } else if (activeField === 'to') {
+                  setFromAmount(toAmount);
+                  setToAmount(fromAmount);
+                  handleFromAmountChange(toAmount);
+                } else {
+                  setFromAmount(toAmount);
+                  setToAmount(fromAmount);
+                }
               }}
             >
               <ArrowDown className="h-5 w-5" />
@@ -138,44 +368,35 @@ export function SwapCard() {
           <TokenInput
             token={toToken}
             amount={toAmount}
-            onChange={setToAmount}
+            onChange={handleToAmountChange}
             onSelectToken={() => openTokenModal('to')}
             label="To"
-            readonly
           />
 
-          {fromAmount && (
+          {(fromAmount && toAmount) && (
             <div className="text-sm text-gray-500 dark:text-gray-400 pt-2">
               <div className="flex justify-between">
                 <span>Rate</span>
-                <span>
-                  1 {fromToken.symbol} = 1,800 {toToken.symbol}
-                </span>
+                <span>{getExchangeRate()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Slippage Tolerance</span>
-                <span>0.5%</span>
+                <span>{slippageTolerance / 100}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Trade Type</span>
+                <span className="text-xs">
+                  {swapType === 'EXACT_INPUT' ? 'Exact Input' : 'Exact Output'}
+                </span>
               </div>
             </div>
           )}
-
-          {/* {transactionState.error && (
-            <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
-              {transactionState.error}
-            </div>
-          )}
-
-          {transactionState.txHash && (
-            <div className="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-              Transaction successful! Hash: {transactionState.txHash}
-            </div>
-          )} */}
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
           <TooltipProvider>
             <div className="flex items-center justify-center w-full text-xs text-gray-500 dark:text-gray-400">
               <Fuel className="h-3.5 w-3.5 mr-1 text-gray-400" />
-              <span>Average gas fee: {gasPrice}</span>
+              <span>Network fee applies</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -188,8 +409,10 @@ export function SwapCard() {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="w-[200px] text-xs">
-                    This is the estimated network fee to complete this
-                    transaction. Actual gas costs may vary.
+                    {swapType === 'EXACT_INPUT' 
+                      ? 'You will receive at least the calculated amount minus slippage.'
+                      : 'You will pay at most the calculated amount plus slippage.'
+                    }
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -201,11 +424,9 @@ export function SwapCard() {
             disabled={isButtonDisabled()}
             onClick={handleSwap}
           >
-            {/* {(transactionState.status === 'preparing' ||
-              transactionState.status === 'proving' ||
-              transactionState.status === 'submitting') && (
+            {(isCalculating || isSwapping) && (
               <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            )} */}
+            )}
             {getButtonText()}
           </Button>
         </CardFooter>

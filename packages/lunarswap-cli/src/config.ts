@@ -42,7 +42,7 @@ export class TestnetLocalConfig implements Config {
   indexerWS = 'ws://127.0.0.1:8088/api/v1/graphql/ws';
   node = 'http://127.0.0.1:9944';
   proofServer = 'http://127.0.0.1:6300';
-  testSeed = process.env.LUNARSWAP_TEST_SEED;
+  testSeed = process.env.TEST_SEED;
 
   constructor() {
     setNetworkId(NetworkId.Undeployed);
@@ -61,7 +61,7 @@ export class TestnetRemoteConfig implements Config {
   indexerWS = 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
   node = 'https://rpc.testnet-02.midnight.network';
   proofServer = 'http://127.0.0.1:6300';
-  testSeed = process.env.LUNARSWAP_TEST_SEED;
+  testSeed = process.env.TEST_SEED;
 
   constructor() {
     setNetworkId(NetworkId.TestNet);
@@ -80,7 +80,7 @@ export class TestnetRemotePSConfig implements Config {
   indexerWS = 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws';
   node = 'https://rpc.testnet-02.midnight.network';
   proofServer = 'https://proof-server.testnet-02.midnight.network';
-  testSeed = process.env.LUNARSWAP_TEST_SEED;
+  testSeed = process.env.TEST_SEED;
 
   constructor() {
     setNetworkId(NetworkId.TestNet);

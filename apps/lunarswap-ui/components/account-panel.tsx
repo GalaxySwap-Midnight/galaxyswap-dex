@@ -186,26 +186,85 @@ export function AccountPanel({
     </>
   );
 
-  const SettingsView = () => (
-    <>
-      <div className="flex items-center p-4">
-        <button
-          type="button"
-          onClick={() => setView('main')}
-          className="p-2 rounded-full hover:bg-muted"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <h3 className="text-lg font-semibold mx-auto">Settings</h3>
-      </div>
-      <div className="p-6">
-        <h4 className="text-sm font-medium text-muted-foreground mb-2">
-          Theme
-        </h4>
-        <ThemeToggle />
-      </div>
-    </>
-  );
+  const SettingsView = () => {
+    const [animationsEnabled, setAnimationsEnabledState] = useState(true);
+
+    // Load animation setting from localStorage
+    useEffect(() => {
+      try {
+        const stored = localStorage.getItem('lunarswap-animations-enabled');
+        if (stored !== null) {
+          setAnimationsEnabledState(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.warn('Failed to load animation settings:', error);
+      }
+    }, []);
+
+    // Save animation setting to localStorage
+    const toggleAnimations = (enabled: boolean) => {
+      setAnimationsEnabledState(enabled);
+      try {
+        localStorage.setItem('lunarswap-animations-enabled', JSON.stringify(enabled));
+        // Trigger a custom event to notify background components
+        window.dispatchEvent(new CustomEvent('animations-toggled', { detail: { enabled } }));
+      } catch (error) {
+        console.warn('Failed to save animation settings:', error);
+      }
+    };
+
+    return (
+      <>
+        <div className="flex items-center p-4">
+          <button
+            type="button"
+            onClick={() => setView('main')}
+            className="p-2 rounded-full hover:bg-muted"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h3 className="text-lg font-semibold mx-auto">Settings</h3>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+              Theme
+            </h4>
+            <ThemeToggle />
+          </div>
+          
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+              Background Animations
+            </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">
+                  {animationsEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Show floating particles and stars
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleAnimations(!animationsEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  animationsEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    animationsEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <>

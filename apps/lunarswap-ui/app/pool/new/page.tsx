@@ -1,19 +1,20 @@
 import { Header } from '@/components/header';
 import { NewPositionWizard } from '@/components/pool/new-position-wizard';
 import { StarsBackground } from '@/components/stars-background';
+import { MoonDustBackground } from '@/components/moon-dust-background';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const metadata = {
   title: 'Lunarswap | New Position',
-  description:
-    'Create a new liquidity position on the most celestial DEX in the galaxy',
+  description: 'Create a new liquidity position on Lunarswap',
 };
 
 export default function NewPositionPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] text-foreground">
       <StarsBackground />
+      <MoonDustBackground />
       <Header />
       <main className="container mx-auto px-4 py-8 relative z-0 pt-24">
         <div className="max-w-4xl mx-auto">

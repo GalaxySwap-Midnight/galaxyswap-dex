@@ -156,3 +156,5 @@ artifacts/
 
 # Midnight
 midnight-level-db/
+
+.vite

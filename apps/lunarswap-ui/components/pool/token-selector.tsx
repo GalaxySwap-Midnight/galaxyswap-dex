@@ -17,37 +17,29 @@ const popularTokens = [
     symbol: 'NIGHT',
     name: 'Midnight',
     logo: '/placeholder.svg?height=32&width=32',
-    balance: '1.56',
+    balance: '1000.00', // Static balance for demo
+    type: '0000000000000000000000000000000000000000000000000000000000000001', // NIGHT token address
   },
   {
     symbol: 'USDC',
     name: 'USD Coin',
     logo: '/placeholder.svg?height=32&width=32',
-    balance: '2,456.78',
+    balance: '2500.00', // Static balance for demo
+    type: '0000000000000000000000000000000000000000000000000000000000000002', // USDC token address
   },
   {
     symbol: 'USDT',
     name: 'Tether',
     logo: '/placeholder.svg?height=32&width=32',
-    balance: '1,245.00',
+    balance: '1500.00', // Static balance for demo
+    type: '0000000000000000000000000000000000000000000000000000000000000003', // USDT token address
   },
   {
     symbol: 'DAI',
     name: 'Dai Stablecoin',
     logo: '/placeholder.svg?height=32&width=32',
-    balance: '567.89',
-  },
-  {
-    symbol: 'WBTC',
-    name: 'Wrapped Bitcoin',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '0.05',
-  },
-  {
-    symbol: 'UNI',
-    name: 'Uniswap',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '125.45',
+    balance: '800.00', // Static balance for demo
+    type: '0000000000000000000000000000000000000000000000000000000000000004', // DAI token address
   },
 ];
 

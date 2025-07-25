@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Logo } from './logo';
 import { VersionSwitcher } from './version-switcher';
 import { WalletConnect } from './wallet-connect';
+import { ContractStatusIndicator } from './contract-status-indicator';
 
 export function Header() {
   const location = useLocation();
@@ -18,7 +19,7 @@ export function Header() {
   }, [location.pathname]);
 
   return (
-    <header className="fixed top-0 -0 right-0 bg-white/70 dark:bg-transparent backdrop-blur-md z-50">
+    <header className="fixed top-0 left-0 right-0 bg-white/30 dark:bg-gray-900/20 backdrop-blur-xl border-b border-white/20 dark:border-gray-800/30 z-50">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -52,6 +53,7 @@ export function Header() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <ContractStatusIndicator />
             <VersionSwitcher />
             <WalletConnect />
             <Button

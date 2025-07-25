@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-export function StarsBackground() {
+export function MoonDustBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
 
   // Listen for theme changes
   useEffect(() => {
     const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      const darkMode = document.documentElement.classList.contains('dark');
+      setIsDark(darkMode);
     };
 
     // Initial check
@@ -70,31 +71,36 @@ export function StarsBackground() {
     setCanvasDimensions();
     window.addEventListener('resize', setCanvasDimensions);
 
-    // Create stars
-    const stars: {
+    // Create floating dust particles
+    const particles: {
       x: number;
       y: number;
       radius: number;
       opacity: number;
       speed: number;
+      direction: number;
     }[] = [];
-    const createStars = () => {
-      stars.length = 0;
-      const starCount = Math.floor((canvas.width * canvas.height) / 3000);
-
-      for (let i = 0; i < starCount; i++) {
-        stars.push({
+    
+    const createParticles = () => {
+      particles.length = 0;
+      
+      // Moon dust particles for light mode
+      const dustCount = Math.floor((canvas.width * canvas.height) / 4000);
+      
+      for (let i = 0; i < dustCount; i++) {
+        particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          radius: Math.random() * 1.5,
-          opacity: Math.random() * 0.8 + 0.2,
-          speed: Math.random() * 0.05,
+          radius: Math.random() * 1.5 + 0.5, // Visible particles
+          opacity: Math.random() * 0.3 + 0.2, // More visible
+          speed: Math.random() * 0.05 + 0.01, // Gentle movement
+          direction: Math.random() * Math.PI * 2,
         });
       }
     };
 
-    createStars();
-    window.addEventListener('resize', createStars);
+    createParticles();
+    window.addEventListener('resize', createParticles);
 
     // Animation loop
     let animationFrame: number;
@@ -104,23 +110,31 @@ export function StarsBackground() {
 
       // Only animate if animations are enabled
       if (animationsEnabled) {
-        // Draw stars
-        for (const star of stars) {
+        // Animate particles
+        for (const dust of particles) {
           ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-          ctx.fillStyle = isDark
-            ? `rgba(255, 255, 255, ${star.opacity})`
-            : `rgba(0, 0, 50, ${star.opacity * 0.3})`;
+          ctx.arc(dust.x, dust.y, dust.radius, 0, Math.PI * 2);
+          
+          // Light particles with subtle blue/gray tint
+          ctx.fillStyle = `rgba(100, 116, 139, ${dust.opacity})`;
           ctx.fill();
 
-          // Move star
-          star.y += star.speed;
+          // Floating movement
+          dust.x += Math.cos(dust.direction) * dust.speed;
+          dust.y += Math.sin(dust.direction) * dust.speed;
+          
+          // Change direction for organic movement
+          dust.direction += (Math.random() - 0.5) * 0.02;
 
-          // Reset if off-screen
-          if (star.y > canvas.height) {
-            star.y = 0;
-            star.x = Math.random() * canvas.width;
-          }
+          // Wrap around screen edges
+          if (dust.x > canvas.width) dust.x = 0;
+          if (dust.x < 0) dust.x = canvas.width;
+          if (dust.y > canvas.height) dust.y = 0;
+          if (dust.y < 0) dust.y = canvas.height;
+          
+          // Fade in and out
+          dust.opacity += (Math.random() - 0.5) * 0.002;
+          dust.opacity = Math.max(0.1, Math.min(0.5, dust.opacity));
         }
       }
 
@@ -131,15 +145,18 @@ export function StarsBackground() {
 
     return () => {
       window.removeEventListener('resize', setCanvasDimensions);
-      window.removeEventListener('resize', createStars);
+      window.removeEventListener('resize', createParticles);
       cancelAnimationFrame(animationFrame);
     };
-  }, [isDark, animationsEnabled]);
+  }, [animationsEnabled]);
+
+  // Only render in light mode
+  if (isDark) return null;
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0 opacity-10 dark:opacity-40"
+      className="fixed inset-0 pointer-events-none z-0 opacity-50"
     />
   );
-}
+} 

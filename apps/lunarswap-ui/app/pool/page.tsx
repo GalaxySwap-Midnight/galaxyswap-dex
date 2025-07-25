@@ -4,6 +4,7 @@ import { PoolPositions } from '@/components/pool/pool-positions';
 import { TokenRewards } from '@/components/pool/token-rewards';
 import { TopPoolsList } from '@/components/pool/top-pools-list';
 import { StarsBackground } from '@/components/stars-background';
+import { MoonDustBackground } from '@/components/moon-dust-background';
 
 export const metadata = {
   title: 'Lunarswap | Pool',
@@ -15,6 +16,7 @@ export default function PoolPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] text-foreground">
       <StarsBackground />
+      <MoonDustBackground />
       <Header />
       <main className="container mx-auto px-4 py-8 relative z-0 pt-24">
         <div className="max-w-4xl mx-auto">

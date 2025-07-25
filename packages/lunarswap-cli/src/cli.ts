@@ -73,10 +73,10 @@ const buildWallet = async (
           return await buildWalletFromSeed(config, config.testSeed, logger);
         }
         logger.error(
-          'No test seed found in environment variable LUNARSWAP_TEST_SEED',
+          'No test seed found in environment variable TEST_SEED',
         );
         logger.info(
-          'Please set LUNARSWAP_TEST_SEED environment variable or choose option 2 to enter seed manually',
+          'Please set TEST_SEED environment variable or choose option 2 to enter seed manually',
         );
         break;
       }
