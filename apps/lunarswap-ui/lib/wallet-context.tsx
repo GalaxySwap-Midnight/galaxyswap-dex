@@ -63,6 +63,7 @@ function isChromeBrowser(): boolean {
 
 interface MidnightWalletState {
   isConnected: boolean;
+  isConnecting: boolean;
   proofServerIsOnline: boolean;
   address?: Address;
   walletAPI?: WalletAPI;
@@ -322,6 +323,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
   const [walletState, setWalletState] = React.useState<MidnightWalletState>({
     isConnected: false,
+    isConnecting: false,
     proofServerIsOnline: false,
     address: undefined,
     walletAPI,
@@ -430,11 +432,12 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     setWalletState((state) => ({
       ...state,
       isConnected: !!address,
+      isConnecting,
       proofServerIsOnline,
       address,
       shake,
     }));
-  }, [address, proofServerIsOnline, shake]);
+  }, [address, isConnecting, proofServerIsOnline, shake]);
 
   const connectMemo = useCallback(connect, []);
 

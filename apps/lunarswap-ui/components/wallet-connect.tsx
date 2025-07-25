@@ -12,9 +12,14 @@ import { Download, ExternalLink } from 'lucide-react';
 
 type BrowserType = 'chrome' | 'firefox' | 'other';
 
-export function WalletConnect() {
+interface WalletConnectProps {
+  onAccountPanelStateChange?: (isOpen: boolean) => void;
+}
+
+export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps = {}) {
   const {
     isConnected,
+    isConnecting: walletContextConnecting,
     address,
     walletAPI,
     shake,
@@ -22,10 +27,12 @@ export function WalletConnect() {
 
   const [isHydrated, setIsHydrated] = useState(false);
   const [showWalletInfo, setShowWalletInfo] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [isManuallyConnecting, setIsManuallyConnecting] = useState(false);
   const [walletAvailable, setWalletAvailable] = useState<boolean | null>(null);
   const [browserType, setBrowserType] = useState<BrowserType>('other');
-  const [shouldAutoConnect, setShouldAutoConnect] = useState<boolean | null>(null);
+
+  // Combined connecting state (either auto-connect from context or manual connect)
+  const isConnecting = walletContextConnecting || isManuallyConnecting;
 
   // Detect browser type
   useEffect(() => {
@@ -43,20 +50,16 @@ export function WalletConnect() {
     setBrowserType(detectBrowser());
   }, []);
 
-  // Early detection of auto-connect condition
+  // Notify parent about account panel state changes
   useEffect(() => {
-    if (isHydrated && !isConnected) {
-      const wasConnected = localStorage.getItem('lunarswap-wallet-connected');
-      setShouldAutoConnect(wasConnected === 'true');
-    }
-  }, [isHydrated, isConnected]);
+    onAccountPanelStateChange?.(showWalletInfo);
+  }, [showWalletInfo, onAccountPanelStateChange]);
 
-  // Check wallet availability and auto-connect
+  // Check wallet availability (without auto-connect)
   useEffect(() => {
-    const checkWalletAvailability = async () => {
+    const checkWalletAvailability = () => {
       try {
         // Check if the Midnight Lace wallet is available
-        // Try multiple detection methods for better compatibility across browsers
         const isAvailable = !!(
           (typeof window !== 'undefined') && (
             // Check for midnight.mnLace (correct property name)
@@ -67,34 +70,16 @@ export function WalletConnect() {
         );
         
         setWalletAvailable(isAvailable);
-        
-        // Auto-connect if wallet is available and user was previously connected
-        if (isAvailable && !isConnected && !isConnecting && shouldAutoConnect) {
-          setIsConnecting(true);
-          try {
-            await connectToWallet();
-            toast.success('Auto-connected to Midnight Lace wallet', {
-              duration: 2000,
-            });
-          } catch (error) {
-            // Auto-connect failed, remove the stored preference
-            localStorage.removeItem('lunarswap-wallet-connected');
-            setShouldAutoConnect(false);
-            console.warn('Auto-connect failed:', error);
-          } finally {
-            setIsConnecting(false);
-          }
-        }
       } catch (error) {
         console.warn('Error checking wallet availability:', error);
         setWalletAvailable(false);
       }
     };
 
-    if (isHydrated && shouldAutoConnect !== null) {
+    if (isHydrated) {
       checkWalletAvailability();
     }
-  }, [isHydrated, isConnected, isConnecting, shouldAutoConnect]);
+  }, [isHydrated]);
 
   // Mark as hydrated after initial render
   useEffect(() => {
@@ -107,12 +92,12 @@ export function WalletConnect() {
       return;
     }
 
-    setIsConnecting(true);
+    setIsManuallyConnecting(true);
 
     try {
       await connectToWallet();
       
-      // Store connection preference for auto-connect
+      // Store connection preference for future auto-connect (handled by wallet context)
       localStorage.setItem('lunarswap-wallet-connected', 'true');
 
       // Show success toast
@@ -126,7 +111,7 @@ export function WalletConnect() {
       console.error('Wallet connection failed:', errorMsg);
       toast.error(errorMsg, { duration: 5000 });
     } finally {
-      setIsConnecting(false);
+      setIsManuallyConnecting(false);
     }
   };
 
@@ -135,7 +120,6 @@ export function WalletConnect() {
     
     // Remove auto-connect preference
     localStorage.removeItem('lunarswap-wallet-connected');
-    setShouldAutoConnect(false);
     
     // Use the shared disconnect utility
     disconnectWallet();
@@ -165,36 +149,7 @@ export function WalletConnect() {
   };
 
   const renderStatus = () => {
-    // Don't render anything until hydrated to prevent hydration mismatch
-    if (!isHydrated || shouldAutoConnect === null) {
-      return (
-        <Button
-          disabled
-          className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
-        >
-          Loading...
-        </Button>
-      );
-    }
-
-    // Show connecting state if:
-    // 1. Currently connecting (manual or auto-connect in progress)
-    // 2. Should auto-connect (show connecting immediately, don't wait for wallet availability)
-    if (isConnecting || (shouldAutoConnect && !isConnected)) {
-      return (
-        <Button
-          disabled
-          className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Connecting...
-          </div>
-        </Button>
-      );
-    }
-
-    // If connected, show wallet info
+    // If wallet is connected and we have an address, show it immediately (skip hydration check)
     if (isConnected && address) {
       return (
         <button
@@ -213,6 +168,33 @@ export function WalletConnect() {
             {`${address.slice(0, 6)}...${address.slice(-4)}`}
           </span>
         </button>
+      );
+    }
+
+    // Show loading only if not hydrated AND not connected
+    if (!isHydrated) {
+      return (
+        <Button
+          disabled
+          className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
+        >
+          Loading...
+        </Button>
+      );
+    }
+
+    // Show connecting state if manually connecting
+    if (isConnecting) {
+      return (
+        <Button
+          disabled
+          className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-medium text-white opacity-70"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Connecting...
+          </div>
+        </Button>
       );
     }
 
