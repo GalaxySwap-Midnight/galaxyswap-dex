@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUpRight } from 'lucide-react';
 
-// Sample data for top pools
+// Sample data for top pools with deployed testnet tokens
 const topPools = [
   {
     id: 1,
-    pair: 'USDC/USDT',
+    pair: 'TUSD/TEURO',
     version: 'v4',
     fee: '0.01%',
     tvl: '$126.1M',
@@ -18,7 +18,7 @@ const topPools = [
   },
   {
     id: 2,
-    pair: 'WBTC/USDC',
+    pair: 'TUSD/TJPY',
     version: 'v3',
     fee: '0.3%',
     tvl: '$125.9M',
@@ -28,7 +28,7 @@ const topPools = [
   },
   {
     id: 3,
-    pair: 'USDC/NIGHT',
+    pair: 'TEURO/TJPY',
     version: 'v3',
     fee: '0.05%',
     tvl: '$110.5M',
@@ -38,7 +38,7 @@ const topPools = [
   },
   {
     id: 4,
-    pair: 'NIGHT/wstETH',
+    pair: 'TJPY/TCNY',
     version: 'v4',
     fee: '0.01%',
     tvl: '$106.4M',

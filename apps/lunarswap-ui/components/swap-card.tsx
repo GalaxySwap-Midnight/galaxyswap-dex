@@ -31,8 +31,7 @@ import { TokenSelectModal } from './token-select-modal';
 interface Token {
   symbol: string;
   name: string;
-  logo: string;
-  balance: string;
+  address: string;
 }
 
 type SwapType = 'EXACT_INPUT' | 'EXACT_OUTPUT';
@@ -46,16 +45,14 @@ export function SwapCard() {
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [selectingToken, setSelectingToken] = useState<'from' | 'to'>('from');
   const [fromToken, setFromToken] = useState<Token>({
-    symbol: 'NIGHT',
-    name: 'Midnight',
-    logo: '/placeholder.svg?height=24&width=24',
-    balance: '1.56',
+    symbol: 'TUSD',
+    name: 'Test USD',
+    address: '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
   });
   const [toToken, setToToken] = useState<Token>({
-    symbol: 'USDC',
-    name: 'USD Coin',
-    logo: '/placeholder.svg?height=24&width=24',
-    balance: '2,456.78',
+    symbol: 'TEURO',
+    name: 'Test Euro',
+    address: '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a',
   });
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
@@ -248,26 +245,26 @@ export function SwapCard() {
         // User specified exact input amount, calculate minimum output with slippage using SDK
         const amountOutMin = computeAmountOutMin(toAmountBigInt, slippageTolerance);
         
-        await contractIntegration.swapExactTokensForTokens({
-          tokenIn: fromToken.symbol,
-          tokenOut: toToken.symbol,
-          amountIn: fromAmountBigInt.toString(),
-          amountOutMin: amountOutMin.toString(),
-          to: address,
-        });
+        await contractIntegration.swapExactTokensForTokens(
+          fromToken.symbol,
+          toToken.symbol,
+          fromAmountBigInt.toString(),
+          amountOutMin.toString(),
+          address
+        );
 
         toast.success(`Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`);
       } else {
         // User specified exact output amount, calculate maximum input with slippage using SDK
         const amountInMax = computeAmountInMax(fromAmountBigInt, slippageTolerance);
         
-        await contractIntegration.swapTokensForExactTokens({
-          tokenIn: fromToken.symbol,
-          tokenOut: toToken.symbol,
-          amountOut: toAmountBigInt.toString(),
-          amountInMax: amountInMax.toString(),
-          to: address,
-        });
+        await contractIntegration.swapTokensForExactTokens(
+          fromToken.symbol,
+          toToken.symbol,
+          toAmountBigInt.toString(),
+          amountInMax.toString(),
+          address
+        );
 
         toast.success(`Swapped ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`);
       }

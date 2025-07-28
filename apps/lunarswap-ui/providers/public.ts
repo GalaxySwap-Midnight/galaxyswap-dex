@@ -68,11 +68,17 @@ export class PublicDataProviderWrapper implements PublicDataProvider {
   watchForDeployTxData(
     contractAddress: ContractAddress,
   ): Promise<FinalizedTxData> {
-    return retry(
-      () => this.wrapped.watchForDeployTxData(contractAddress),
-      'watchForDeployTxData',
-      this.logger,
-    );
+    // Check if the wrapped provider has this method
+    if (typeof (this.wrapped as any).watchForDeployTxData === 'function') {
+      return retry(
+        () => (this.wrapped as any).watchForDeployTxData(contractAddress),
+        'watchForDeployTxData',
+        this.logger,
+      );
+    }
+    
+    // Fallback: This method is not available in the current provider version
+    throw new Error('watchForDeployTxData is not available in this provider version. Contract may already be deployed.');
   }
 
   watchForTxData(txId: TransactionId): Promise<FinalizedTxData> {

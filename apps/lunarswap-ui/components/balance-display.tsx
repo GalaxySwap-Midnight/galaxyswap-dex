@@ -62,13 +62,8 @@ export function BalanceDisplay({
             Token Balances
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between items-center py-1">
-              <span className="text-sm text-muted-foreground">NIGHT</span>
-              <span className="font-mono text-sm font-medium">0.00</span>
-            </div>
-            <div className="flex justify-between items-center py-1">
-              <span className="text-sm text-muted-foreground">USDC</span>
-              <span className="font-mono text-sm font-medium">0.00</span>
+            <div className="text-sm text-muted-foreground text-center py-2">
+              Token balances will be displayed when wallet is connected
             </div>
           </div>
         </div>

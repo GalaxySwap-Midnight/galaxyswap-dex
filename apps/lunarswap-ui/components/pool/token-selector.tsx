@@ -10,36 +10,33 @@ import {
 import { Input } from '@/components/ui/input';
 import { ChevronDown, Search } from 'lucide-react';
 import { useState } from 'react';
+import { Identicon } from '@/components/identicon';
 
-// Sample token list - in a real app, this would come from an API
+// Deployed testnet tokens
 const popularTokens = [
   {
-    symbol: 'NIGHT',
-    name: 'Midnight',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '1000.00', // Static balance for demo
-    type: '0000000000000000000000000000000000000000000000000000000000000001', // NIGHT token address
+    symbol: 'TUSD',
+    name: 'Test USD',
+    type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c', // TUSD token type
+    address: '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959', // TUSD contract address
   },
   {
-    symbol: 'USDC',
-    name: 'USD Coin',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '2500.00', // Static balance for demo
-    type: '0000000000000000000000000000000000000000000000000000000000000002', // USDC token address
+    symbol: 'TEURO',
+    name: 'Test Euro',
+    type: '02003af426c10783ffe699149c2ef39edb7a6e05e2a2bfe1c3a90e1add8a9d6e2dac', // TEURO token type
+    address: '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a', // TEURO contract address
   },
   {
-    symbol: 'USDT',
-    name: 'Tether',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '1500.00', // Static balance for demo
-    type: '0000000000000000000000000000000000000000000000000000000000000003', // USDT token address
+    symbol: 'TJPY',
+    name: 'Test Japanese Yen',
+    type: '020011a6de51d7633b00f9c5f9408c836a5566870f9366f14022814735eec0663a0b', // TJPY token type
+    address: '02003854ada114516d9ebe65061da7c3f9f00830afdd47c749ed9e2836d36a026d01', // TJPY contract address
   },
   {
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
-    logo: '/placeholder.svg?height=32&width=32',
-    balance: '800.00', // Static balance for demo
-    type: '0000000000000000000000000000000000000000000000000000000000000004', // DAI token address
+    symbol: 'TCNY',
+    name: 'Test Chinese Yuan',
+    type: '0200e6b100604d6e10e080948e43cfc4aa1646e32d972d4aada3ac36ce430443911d', // TCNY token type
+    address: '02001e10cca412097c53af918b4532865823e3850fbaf2f66203036acfab324df5c9', // TCNY contract address
   },
 ];
 
@@ -84,13 +81,7 @@ export function TokenSelector({
           <div className="flex items-center">
             {showTokenIcon && (
               <div className="relative h-6 w-6 mr-2">
-                <img
-                  src={selectedToken.logo || '/placeholder.svg'}
-                  alt={selectedToken.name}
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
+                <Identicon address={selectedToken.address} size={24} />
               </div>
             )}
             <span>{selectedToken.symbol}</span>
@@ -128,13 +119,7 @@ export function TokenSelector({
                 onClick={() => handleSelectToken(token)}
               >
                 <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                  <img
-                    src={token.logo || '/placeholder.svg'}
-                    alt={token.name}
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
+                  <Identicon address={token.address} size={32} />
                 </div>
                 <div className="flex flex-col items-start">
                   <span className="font-medium">{token.symbol}</span>
@@ -142,9 +127,6 @@ export function TokenSelector({
                     {token.name}
                   </span>
                 </div>
-                <span className="ml-auto text-gray-500 dark:text-gray-400">
-                  {token.balance}
-                </span>
               </button>
             ))}
 

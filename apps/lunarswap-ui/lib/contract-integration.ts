@@ -1,9 +1,10 @@
+import { Buffer } from 'buffer';
 import type {
   MidnightProviders,
   UnprovenTransaction,
 } from '@midnight-ntwrk/midnight-js-types';
 import type { DAppConnectorWalletAPI } from '@midnight-ntwrk/dapp-connector-api';
-import type { LunarswapProviders } from '@midnight-dapps/lunarswap-api';
+import { Lunarswap, type LunarswapProviders } from '@midnight-dapps/lunarswap-api';
 import type { CoinInfo, Either, ZswapCoinPublicKey, ContractAddress } from '@midnight-dapps/compact-std';
 import { deployContract, findDeployedContract, type FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { 
@@ -15,39 +16,7 @@ import {
   type Pair
 } from '@midnight-dapps/lunarswap-v1';
 
-// Predefined tokens for the demo (4 coins that can generate pairs)
-export const DEMO_TOKENS = {
-  NIGHT: {
-    symbol: 'NIGHT',
-    name: 'Midnight',
-    address: '0000000000000000000000000000000000000000000000000000000000000001',
-  },
-  USDC: {
-    symbol: 'USDC', 
-    name: 'USD Coin',
-    address: '0000000000000000000000000000000000000000000000000000000000000002',
-  },
-  USDT: {
-    symbol: 'USDT',
-    name: 'Tether', 
-    address: '0000000000000000000000000000000000000000000000000000000000000003',
-  },
-  DAI: {
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
-    address: '0000000000000000000000000000000000000000000000000000000000000004',
-  },
-} as const;
-
-// Contract addresses for Lunarswap (you'll need to replace these with actual deployed contract addresses)
-export const LUNARSWAP_CONTRACTS = {
-  SWAP_ROUTER: '0x...', // Replace with actual swap router contract address
-  FACTORY: '0x...', // Replace with actual factory contract address
-  WNIGHT: '0x...', // Replace with actual wrapped NIGHT token address
-  // Add the main Lunarswap contract address here when deployed
-  LUNARSWAP_CONTRACT: process.env.NEXT_PUBLIC_LUNARSWAP_CONTRACT_ADDRESS || '', 
-} as const;
-
+// Contract status types
 export type ContractStatus = 
   | 'not-configured'    // No contract address configured
   | 'connecting'        // Attempting to connect
@@ -65,11 +34,13 @@ export interface ContractStatusInfo {
 type LunarswapContract = Contract<LunarswapPrivateState, Witnesses<LunarswapPrivateState>>;
 type DeployedLunarswap = FoundContract<LunarswapContract>;
 
+
+
 // Contract interaction utilities
 export class LunarswapContractIntegration {
   private providers: LunarswapProviders;
   private walletAPI: DAppConnectorWalletAPI;
-  private deployedContract: DeployedLunarswap | null = null;
+  private lunarswap: Lunarswap | null = null;
   private poolData: Ledger | null = null;
   private _status: ContractStatus = 'not-configured';
   private _statusInfo: ContractStatusInfo = { status: 'not-configured' };
@@ -100,21 +71,20 @@ export class LunarswapContractIntegration {
    * Check if contract is ready for operations
    */
   get isReady(): boolean {
-    return this._status === 'connected' && this.deployedContract !== null;
+    return this._status === 'connected' && this.lunarswap !== null;
   }
 
   /**
-   * Connect to deployed Lunarswap contract with graceful error handling
+   * Initialize contract connection
    */
   async initialize(contractAddress?: string): Promise<ContractStatusInfo> {
     const targetAddress = contractAddress || LUNARSWAP_CONTRACTS.LUNARSWAP_CONTRACT;
     
-    // Check if address is configured
-    if (!targetAddress || targetAddress === '0x...' || targetAddress === '') {
+    if (!targetAddress) {
       this._status = 'not-configured';
       this._statusInfo = {
         status: 'not-configured',
-        message: 'Contract address not configured. Please deploy the contract first or set NEXT_PUBLIC_LUNARSWAP_CONTRACT_ADDRESS.',
+        message: 'No contract address configured',
       };
       return this._statusInfo;
     }
@@ -127,18 +97,13 @@ export class LunarswapContractIntegration {
     };
 
     try {
-      // Set up private state like in MintButton
-      await this.providers.privateStateProvider.set('lunarswapPrivateState', {});
+      // Use Lunarswap.join() like the CLI does
+      const contractAddressBytes = new Uint8Array(Buffer.from(targetAddress, 'hex'));
       
-      // Create contract instance with proper witnesses
-      const contract: LunarswapContract = new Contract(LunarswapWitnesses());
-
-      // Find deployed contract (following MintButton pattern)
-      this.deployedContract = await findDeployedContract(this.providers, {
-        privateStateId: 'lunarswapPrivateState',
-        contractAddress: targetAddress,
-        contract,
-      });
+      this.lunarswap = await Lunarswap.join(
+        this.providers,
+        { bytes: contractAddressBytes },
+      );
       
       this._status = 'connected';
       this._statusInfo = {
@@ -156,26 +121,13 @@ export class LunarswapContractIntegration {
     } catch (error) {
       console.error('Failed to connect to Lunarswap contract:', error);
       
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
-      // Determine if it's a deployment issue or connection issue
-      if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
-        this._status = 'not-deployed';
-        this._statusInfo = {
-          status: 'not-deployed',
-          contractAddress: targetAddress,
-          error: errorMessage,
-          message: 'Contract address configured but contract not found on network. Contract may not be deployed yet.',
-        };
-      } else {
-        this._status = 'error';
-        this._statusInfo = {
-          status: 'error',
-          contractAddress: targetAddress,
-          error: errorMessage,
-          message: 'Failed to connect to contract due to network or configuration error.',
-        };
-      }
+      this._status = 'error';
+      this._statusInfo = {
+        status: 'error',
+        contractAddress: targetAddress,
+        error: error instanceof Error ? error.message : String(error),
+        message: 'Failed to connect to Lunarswap contract',
+      };
       
       return this._statusInfo;
     }
@@ -185,27 +137,16 @@ export class LunarswapContractIntegration {
    * Fetch the public ledger pool data
    */
   async fetchPoolData(): Promise<Ledger | null> {
-    if (!this.deployedContract) {
+    if (!this.lunarswap) {
       throw new Error('Contract not initialized');
     }
 
     try {
-      // Get the contract address for querying public state
-      const contractAddress = this.deployedContract.deployTxData.public.contractAddress;
-      
-      // Query the public contract state using getPublicState pattern
-      const contractState = await this.providers.publicDataProvider.queryContractState(contractAddress);
-      
-      if (contractState?.data) {
-        // Import the ledger function from lunarswap-v1 to decode the state
-        const { ledger } = await import('@midnight-dapps/lunarswap-v1');
-        this.poolData = ledger(contractState.data);
-        console.log('Pool data fetched:', {
-          poolSize: this.poolData.pool.size(),
-          isEmpty: this.poolData.pool.isEmpty()
-        });
-      }
-      
+      // Use the Lunarswap API to get public state
+      this.poolData = await Lunarswap.getPublicState(
+        this.providers,
+        this.lunarswap.deployedContractAddressHex
+      );
       return this.poolData;
     } catch (error) {
       console.error('Failed to fetch pool data:', error);
@@ -247,7 +188,7 @@ export class LunarswapContractIntegration {
       await this.fetchPoolData();
     }
 
-    if (!this.poolData || !this.deployedContract) {
+    if (!this.poolData || !this.lunarswap) {
       return false;
     }
 
@@ -255,9 +196,8 @@ export class LunarswapContractIntegration {
       const tokenAInfo = this.createCoinInfo(tokenA, '0');
       const tokenBInfo = this.createCoinInfo(tokenB, '0');
       
-      // Get pair identity using the circuit
-      const txData = await this.deployedContract.callTx.getPairIdentity(tokenAInfo, tokenBInfo);
-      const pairIdentity = txData.private.result as Uint8Array;
+      // Use the Lunarswap API method
+      const pairIdentity = await this.lunarswap.getPairIdentity(tokenAInfo, tokenBInfo);
       
       // Check if this identity exists in the pool
       return this.poolData.pool.member(pairIdentity);
@@ -280,7 +220,7 @@ export class LunarswapContractIntegration {
       await this.fetchPoolData();
     }
 
-    if (!this.poolData || !this.deployedContract) {
+    if (!this.poolData || !this.lunarswap) {
       return null;
     }
 
@@ -288,9 +228,8 @@ export class LunarswapContractIntegration {
       const tokenAInfo = this.createCoinInfo(tokenA, '0');
       const tokenBInfo = this.createCoinInfo(tokenB, '0');
       
-      // Use the contract circuit to get reserves
-      const txData = await this.deployedContract.callTx.getPairReserves(tokenAInfo, tokenBInfo);
-      const reserves = txData.private.result as [bigint, bigint];
+      // Use the Lunarswap API method
+      const reserves = await this.lunarswap.getPairReserves(tokenAInfo, tokenBInfo);
       
       return reserves;
     } catch (error) {
@@ -300,208 +239,144 @@ export class LunarswapContractIntegration {
   }
 
   /**
-   * Execute exact input swap (swapExactTokensForTokens)
+   * Swap exact input tokens for output tokens
    */
-  async swapExactTokensForTokens(params: {
-    tokenIn: string;
-    tokenOut: string;
-    amountIn: string;
-    amountOutMin: string;
-    to: string;
-  }) {
-    if (!this.isReady) {
-      throw new Error('Contract not ready. Please ensure contract is deployed and connected.');
-    }
-    
-    if (!this.deployedContract) {
-      throw new Error('Lunarswap contract not initialized');
-    }
-    
-    try {
-      const tokenInInfo = this.createCoinInfo(params.tokenIn, params.amountIn);
-      const tokenOutInfo = this.createCoinInfo(params.tokenOut, '0');
-      const recipientAddr = this.createRecipient(params.to);
-
-      // Call the contract method directly
-      await this.deployedContract.callTx.swapExactTokensForTokens(
-        tokenInInfo,
-        tokenOutInfo,
-        BigInt(params.amountIn),
-        BigInt(params.amountOutMin),
-        recipientAddr
-      );
-
-      return {
-        success: true,
-        txHash: 'placeholder-hash',
-      };
-    } catch (error) {
-      console.error('Exact input swap execution failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Execute exact output swap (swapTokensForExactTokens)
-   */
-  async swapTokensForExactTokens(params: {
-    tokenIn: string;
-    tokenOut: string;
-    amountOut: string;
-    amountInMax: string;
-    to: string;
-  }) {
-    if (!this.isReady) {
-      throw new Error('Contract not ready. Please ensure contract is deployed and connected.');
-    }
-    
-    if (!this.deployedContract) {
-      throw new Error('Lunarswap contract not initialized');
-    }
-    
-    try {
-      const tokenInInfo = this.createCoinInfo(params.tokenIn, params.amountInMax);
-      const tokenOutInfo = this.createCoinInfo(params.tokenOut, params.amountOut);
-      const recipientAddr = this.createRecipient(params.to);
-
-      // Call the contract method directly
-      await this.deployedContract.callTx.swapTokensForExactTokens(
-        tokenInInfo,
-        tokenOutInfo,
-        BigInt(params.amountOut),
-        BigInt(params.amountInMax),
-        recipientAddr
-      );
-
-      return {
-        success: true,
-        txHash: 'placeholder-hash',
-      };
-    } catch (error) {
-      console.error('Exact output swap execution failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Execute a token swap using Midnight.js (legacy method)
-   */
-  async executeSwap(params: {
-    tokenIn: string;
-    tokenOut: string;
-    amountIn: string;
-    amountOutMin: string;
-    recipient: string;
-    deadline: number;
-  }) {
+  async swapExactTokensForTokens(
+    tokenIn: string,
+    tokenOut: string,
+    amountIn: string,
+    amountOutMin: string,
+    recipient: string,
+  ): Promise<void> {
     await this.ensureInitialized();
     
-    if (!this.deployedContract) {
-      throw new Error('Lunarswap contract not initialized');
+    if (!this.lunarswap) {
+      throw new Error('Contract not initialized');
     }
-    
-    try {
-      const tokenInInfo = this.createCoinInfo(params.tokenIn, params.amountIn);
-      const tokenOutInfo = this.createCoinInfo(params.tokenOut, '0');
-      const recipientAddr = this.createRecipient(params.recipient);
 
-      // Call the contract method directly (like mint() in MintButton)
-      await this.deployedContract.callTx.swapExactTokensForTokens(
-        tokenInInfo,
-        tokenOutInfo,
-        BigInt(params.amountIn),
-        BigInt(params.amountOutMin),
-        recipientAddr
-      );
+    const tokenInInfo = this.createCoinInfo(tokenIn, amountIn);
+    const tokenOutInfo = this.createCoinInfo(tokenOut, '0');
+    const recipientAddress = this.createRecipient(recipient);
 
-      return {
-        success: true,
-        txHash: 'placeholder-hash', // The actual hash would come from the transaction
-      };
-    } catch (error) {
-      console.error('Swap execution failed:', error);
-      throw error;
-    }
+    // Use the Lunarswap API method
+    await this.lunarswap.swapExactTokensForTokens(
+      tokenInInfo,
+      tokenOutInfo,
+      BigInt(amountIn),
+      BigInt(amountOutMin),
+      recipientAddress,
+    );
   }
 
   /**
-   * Add liquidity to a pool (following MintButton pattern)
+   * Swap tokens for exact output tokens
    */
-  async addLiquidity(params: {
-    tokenA: string;
-    tokenB: string;
-    amountADesired: string;
-    amountBDesired: string;
-    amountAMin: string;
-    amountBMin: string;
-    recipient: string;
-    deadline: number;
-  }) {
-    if (!this.isReady) {
-      throw new Error('Contract not ready. Please ensure contract is deployed and connected.');
-    }
+  async swapTokensForExactTokens(
+    tokenIn: string,
+    tokenOut: string,
+    amountOut: string,
+    amountInMax: string,
+    recipient: string,
+  ): Promise<void> {
+    await this.ensureInitialized();
     
-    if (!this.deployedContract) {
-      throw new Error('Lunarswap contract not initialized');
+    if (!this.lunarswap) {
+      throw new Error('Contract not initialized');
     }
-    
-    try {
-      // Create CoinInfo objects for the tokens
-      const tokenAInfo = this.createCoinInfo(params.tokenA, params.amountADesired);
-      const tokenBInfo = this.createCoinInfo(params.tokenB, params.amountBDesired);
-      const recipientAddr = this.createRecipient(params.recipient);
 
-      // Call the contract method directly (like found.callTx.mint() in MintButton)
-      await this.deployedContract.callTx.addLiquidity(
-        tokenAInfo,
-        tokenBInfo,
-        BigInt(params.amountAMin),
-        BigInt(params.amountBMin),
-        recipientAddr
-      );
+    const tokenInInfo = this.createCoinInfo(tokenIn, '0');
+    const tokenOutInfo = this.createCoinInfo(tokenOut, '0');
+    const recipientAddress = this.createRecipient(recipient);
 
-      return {
-        success: true,
-        txHash: 'placeholder-hash', // The actual hash would come from the transaction result
-        poolAddress: await this.calculatePoolAddress(params.tokenA, params.tokenB),
-      };
-    } catch (error) {
-      console.error('Add liquidity execution failed:', error);
-      throw error;
-    }
+    // Use the Lunarswap API method
+    await this.lunarswap.swapTokensForExactTokens(
+      tokenInInfo,
+      tokenOutInfo,
+      BigInt(amountOut),
+      BigInt(amountInMax),
+      recipientAddress,
+    );
   }
 
   /**
-   * Deploy a new Lunarswap contract (for development/testing)
+   * Add liquidity to a pool
+   */
+  async addLiquidity(
+    tokenA: string,
+    tokenB: string,
+    amountA: string,
+    amountB: string,
+    minAmountA: string,
+    minAmountB: string,
+    recipient: string,
+  ): Promise<void> {
+    await this.ensureInitialized();
+    
+    if (!this.lunarswap) {
+      throw new Error('Contract not initialized');
+    }
+
+    const tokenAInfo = this.createCoinInfo(tokenA, amountA);
+    const tokenBInfo = this.createCoinInfo(tokenB, amountB);
+    const recipientAddress = this.createRecipient(recipient);
+
+    // Use the Lunarswap API method
+    await this.lunarswap.addLiquidity(
+      tokenAInfo,
+      tokenBInfo,
+      BigInt(minAmountA),
+      BigInt(minAmountB),
+      recipientAddress,
+    );
+  }
+
+  /**
+   * Remove liquidity from a pool
+   */
+  async removeLiquidity(
+    tokenA: string,
+    tokenB: string,
+    liquidity: string,
+    minAmountA: string,
+    minAmountB: string,
+    recipient: string,
+  ): Promise<void> {
+    await this.ensureInitialized();
+    
+    if (!this.lunarswap) {
+      throw new Error('Contract not initialized');
+    }
+
+    const tokenAInfo = this.createCoinInfo(tokenA, '0');
+    const tokenBInfo = this.createCoinInfo(tokenB, '0');
+    const liquidityInfo = this.createCoinInfo('LP', liquidity);
+    const recipientAddress = this.createRecipient(recipient);
+
+    // Use the Lunarswap API method
+    await this.lunarswap.removeLiquidity(
+      tokenAInfo,
+      tokenBInfo,
+      liquidityInfo,
+      BigInt(minAmountA),
+      BigInt(minAmountB),
+      recipientAddress,
+    );
+  }
+
+  /**
+   * Deploy a new contract
    */
   async deployNewContract(): Promise<string> {
     try {
-      // Set up private state
-      await this.providers.privateStateProvider.set('lunarswapPrivateState', {});
-      
-      // Create contract instance with proper witnesses
-      const contract: LunarswapContract = new Contract(LunarswapWitnesses());
-      
-      // Deploy contract with proper arguments (following lunarswap-api pattern)
-      const deployedContract = await deployContract(this.providers, {
-        privateStateId: 'lunarswapPrivateState',
-        contract,
-        initialPrivateState: {},
-        args: [
-          'Lunarswap LP', // lpTokenName
-          'LP', // lpTokenSymbol
-          crypto.getRandomValues(new Uint8Array(32)), // lpTokenNonce
-          BigInt(18) // lpTokenDecimals
-        ],
-      });
+      // Use the Lunarswap API to deploy
+      const lpTokenNonce = new Uint8Array(32).fill(0x44);
+      this.lunarswap = await Lunarswap.deploy(this.providers, lpTokenNonce);
+      const contractAddress = this.lunarswap.deployedContractAddressHex;
 
-      this.deployedContract = deployedContract;
-      const contractAddress = deployedContract.deployTxData.public.contractAddress;
-      
       console.log('Deployed new Lunarswap contract at:', contractAddress);
       return contractAddress;
     } catch (error) {
-      console.error('Failed to deploy Lunarswap contract:', error);
+      console.error('Failed to deploy new contract:', error);
       throw error;
     }
   }
@@ -510,64 +385,84 @@ export class LunarswapContractIntegration {
    * Ensure the contract is initialized
    */
   private async ensureInitialized(): Promise<void> {
-    if (!this.deployedContract) {
-      await this.initialize();
+    if (!this.lunarswap) {
+      const status = await this.initialize();
+      if (status.status !== 'connected') {
+        throw new Error(`Contract not ready: ${status.message}`);
+      }
     }
   }
 
   /**
-   * Create a CoinInfo object for a token using the predefined addresses
+   * Create CoinInfo from token symbol/address and amount
    */
   private createCoinInfo(tokenSymbolOrAddress: string, amount: string): CoinInfo {
-    let tokenAddress: string;
-    
-    // Check if it's a symbol from our demo tokens
-    const demoToken = Object.values(DEMO_TOKENS).find(token => token.symbol === tokenSymbolOrAddress);
-    if (demoToken) {
-      tokenAddress = demoToken.address;
-    } else {
-      // Assume it's already an address
-      tokenAddress = tokenSymbolOrAddress.replace('0x', '');
+
+    // Check if it's a token address (hex string)
+    if (tokenSymbolOrAddress.startsWith('0x') || tokenSymbolOrAddress.length === 64) {
+      const address = tokenSymbolOrAddress.startsWith('0x') 
+        ? tokenSymbolOrAddress.slice(2) 
+        : tokenSymbolOrAddress;
+      
+      return {
+        color: new Uint8Array(Buffer.from(address, 'hex')),
+        value: BigInt(amount),
+        nonce: new Uint8Array(32),
+      };
     }
-    
-    // Create a proper CoinInfo object with all required fields
-    return {
-      color: new Uint8Array(Buffer.from(tokenAddress, 'hex')),
-      value: BigInt(amount),
-      nonce: new Uint8Array(32), // Generate a new nonce (or use existing one)
-    };
+
+    // Handle native token
+    if (tokenSymbolOrAddress === 'NIGHT') {
+      return {
+        color: new Uint8Array(32), // Native token has zero color
+        value: BigInt(amount),
+        nonce: new Uint8Array(32),
+      };
+    }
+
+    // For other tokens, try to find in DEMO_TOKENS
+    const tokenDetails = Object.values(DEMO_TOKENS).find(
+      token => token.symbol === tokenSymbolOrAddress
+    );
+
+    if (tokenDetails) {
+      return {
+        color: new Uint8Array(Buffer.from(tokenDetails.type, 'hex')),
+        value: BigInt(amount),
+        nonce: new Uint8Array(32),
+      };
+    }
+
+    throw new Error(`Unknown token: ${tokenSymbolOrAddress}`);
   }
 
   /**
-   * Create recipient address (Either<ZswapCoinPublicKey, ContractAddress>)
+   * Create recipient address
    */
   private createRecipient(recipient: string): Either<ZswapCoinPublicKey, ContractAddress> {
-    // This is a simplified implementation - you would need to determine
-    // whether the recipient is a wallet address or contract address
+
     if (recipient.startsWith('0x')) {
-      // Contract address (right side of Either)
+      // Contract address
       return {
         is_left: false,
         left: { bytes: new Uint8Array(32) },
-        right: {
-          bytes: new Uint8Array(Buffer.from(recipient.replace('0x', ''), 'hex'))
-        }
+        right: { bytes: new Uint8Array(Buffer.from(recipient.slice(2), 'hex')) }
+      };
+    } else {
+      // Public key
+      return {
+        is_left: true,
+        left: { bytes: new Uint8Array(Buffer.from(recipient, 'hex')) },
+        right: { bytes: new Uint8Array(32) }
       };
     }
-    
-    // Wallet public key (left side of Either)
-    return {
-      is_left: true,
-      left: { bytes: new Uint8Array(Buffer.from(recipient, 'hex')) },
-      right: { bytes: new Uint8Array(32) }
-    };
   }
 
   /**
    * Calculate pool address for token pair using the actual getPairIdentity circuit
    */
   private async calculatePoolAddress(tokenA: string, tokenB: string): Promise<string> {
-    if (!this.deployedContract) {
+    if (!this.lunarswap) {
       throw new Error('Contract not initialized');
     }
 
@@ -575,24 +470,37 @@ export class LunarswapContractIntegration {
       const tokenAInfo = this.createCoinInfo(tokenA, '0');
       const tokenBInfo = this.createCoinInfo(tokenB, '0');
       
-      // Use the actual getPairIdentity circuit from the contract
-      const txData = await this.deployedContract.callTx.getPairIdentity(tokenAInfo, tokenBInfo);
-      const pairIdentity = txData.private.result as Uint8Array;
+      // Use the Lunarswap API method
+      const pairIdentity = await this.lunarswap.getPairIdentity(tokenAInfo, tokenBInfo);
       
       return `0x${Buffer.from(pairIdentity).toString('hex')}`;
     } catch (error) {
-      console.error('Failed to calculate pool address using getPairIdentity circuit:', error); 
+      console.error('Failed to calculate pool address using getPairIdentity:', error); 
       throw error;
     }
   }
 }
 
-/**
- * Create a contract integration instance
- */
+// Factory function to create contract integration
 export const createContractIntegration = (
   providers: LunarswapProviders,
   walletAPI: DAppConnectorWalletAPI,
 ) => {
   return new LunarswapContractIntegration(providers, walletAPI);
 };
+
+// Token configuration
+export const DEMO_TOKENS = {
+  TUSD: { symbol: 'TUSD', name: 'Test USD', address: '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959', type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c' },
+  TEURO: { symbol: 'TEURO', name: 'Test Euro', address: '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a', type: '02003af426c10783ffe699149c2ef39edb7a6e05e2a2bfe1c3a90e1add8a9d6e2dac' },
+  TJPY: { symbol: 'TJPY', name: 'Test Japanese Yen', address: '02003854ada114516d9ebe65061da7c3f9f00830afdd47c749ed9e2836d36a026d01', type: '020011a6de51d7633b00f9c5f9408c836a5566870f9366f14022814735eec0663a0b' },
+  TCNY: { symbol: 'TCNY', name: 'Test Chinese Yuan', address: '02001e10cca412097c53af918b4532865823e3850fbaf2f66203036acfab324df5c9', type: '0200e6b100604d6e10e080948e43cfc4aa1646e32d972d4aada3ac36ce430443911d' },
+} as const;
+
+// Contract addresses
+export const LUNARSWAP_CONTRACTS = {
+  LUNARSWAP_CONTRACT: '0200dcfe6c1e64d00a50ca69d0b1dbccac0c07107bed69d81c6c63afae0d50ce1123',
+  SWAP_ROUTER: '0200dcfe6c1e64d00a50ca69d0b1dbccac0c07107bed69d81c6c63afae0d50ce1123',
+  FACTORY: '0200dcfe6c1e64d00a50ca69d0b1dbccac0c07107bed69d81c6c63afae0d50ce1123',
+  ENVIRONMENT_OVERRIDE: process.env.NEXT_PUBLIC_LUNARSWAP_CONTRACT_ADDRESS || '',
+} as const;

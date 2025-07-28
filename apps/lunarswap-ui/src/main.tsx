@@ -1,3 +1,6 @@
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
+
 import React, { lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';

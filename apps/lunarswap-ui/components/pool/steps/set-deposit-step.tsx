@@ -43,8 +43,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const [amountB, setAmountB] = useState('1831.102949');
 
   // Get token details from DEMO_TOKENS
-  const tokenADetails = Object.values(DEMO_TOKENS).find(token => token.symbol === pairData.tokenA) || DEMO_TOKENS.NIGHT;
-  const tokenBDetails = Object.values(DEMO_TOKENS).find(token => token.symbol === pairData.tokenB) || DEMO_TOKENS.USDT;
+  const tokenADetails = Object.values(DEMO_TOKENS).find(token => token.symbol === pairData.tokenA) || DEMO_TOKENS.TUSD;
+  const tokenBDetails = Object.values(DEMO_TOKENS).find(token => token.symbol === pairData.tokenB) || DEMO_TOKENS.TEURO;
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -188,24 +188,28 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       };
 
       // Execute the add liquidity transaction
-      const result = await contractIntegration.addLiquidity(liquidityParams);
+      await contractIntegration.addLiquidity(
+        liquidityParams.tokenA,
+        liquidityParams.tokenB,
+        liquidityParams.amountADesired,
+        liquidityParams.amountBDesired,
+        liquidityParams.amountAMin,
+        liquidityParams.amountBMin,
+        liquidityParams.recipient
+      );
 
-      if (result.success) {
-        toast.success(`Liquidity added successfully! Pool: ${result.poolAddress}`);
+      toast.success('Liquidity added successfully!');
         
-        // Update the input amounts to reflect what was actually used
-        setAmountA((Number(amountAOptimal) / 1e18).toString());
-        setAmountB((Number(amountBOptimal) / 1e18).toString());
+      // Update the input amounts to reflect what was actually used
+      setAmountA((Number(amountAOptimal) / 1e18).toString());
+      setAmountB((Number(amountBOptimal) / 1e18).toString());
         
-        // Refresh pool data after successful transaction
-        const exists = await contractIntegration.isPairExists(pairData.tokenA, pairData.tokenB);
-        setPoolExists(exists);
-        if (exists) {
-          const reserves = await contractIntegration.getPairReserves(pairData.tokenA, pairData.tokenB);
-          setPoolReserves(reserves);
-        }
-      } else {
-        toast.error('Failed to add liquidity');
+      // Refresh pool data after successful transaction
+      const exists = await contractIntegration.isPairExists(pairData.tokenA, pairData.tokenB);
+      setPoolExists(exists);
+      if (exists) {
+        const reserves = await contractIntegration.getPairReserves(pairData.tokenA, pairData.tokenB);
+        setPoolReserves(reserves);
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add liquidity';

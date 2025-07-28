@@ -17,9 +17,11 @@ export default defineConfig({
     esbuildOptions: {
       target: 'esnext',
     },
+    include: ['buffer'],
   },
   resolve: {
     alias: {
+      buffer: 'buffer',
       '@/components': resolve(__dirname, './components'),
       '@/lib': resolve(__dirname, './lib'),
       '@/hooks': resolve(__dirname, './hooks'),
@@ -29,5 +31,7 @@ export default defineConfig({
       '@/app': resolve(__dirname, './app'),
     },
   },
-  define: {},
+  define: {
+    global: 'globalThis',
+  },
 });

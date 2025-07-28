@@ -98,10 +98,8 @@ export function ContractStatusIndicator() {
       case 'not-configured':
         return (
           <div className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-            <p className="mb-2">To deploy a contract:</p>
-            <code className="block p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
-              pnpm run deploy:local
-            </code>
+            <p className="mb-2">Contract address not configured.</p>
+            <p className="text-xs">The LunarSwap contract should be deployed and configured in the application settings.</p>
           </div>
         );
       case 'not-deployed':

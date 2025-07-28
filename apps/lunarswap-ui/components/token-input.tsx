@@ -2,13 +2,13 @@
 
 import { Input } from '@/components/ui/input';
 import { ChevronDown } from 'lucide-react';
+import { Identicon } from '@/components/identicon';
 
 interface TokenInputProps {
   token: {
     symbol: string;
     name: string;
-    logo: string;
-    balance: string;
+    address: string;
   };
   amount: string;
   onChange: (value: string) => void;
@@ -47,11 +47,7 @@ export function TokenInput({
           className="flex items-center gap-2 rounded-full bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 px-3 py-1.5 transition border border-gray-300/50 dark:border-blue-800/30"
         >
           <div className="relative h-6 w-6 rounded-full overflow-hidden">
-            <img
-              src={token.logo || '/placeholder.svg'}
-              alt={token.name}
-              className="object-cover w-full h-full"
-            />
+            <Identicon address={token.address} size={24} />
           </div>
           <span className="font-medium">{token.symbol}</span>
           <ChevronDown className="h-4 w-4 text-gray-400" />

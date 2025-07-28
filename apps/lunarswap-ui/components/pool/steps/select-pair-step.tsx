@@ -68,7 +68,7 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
               <TokenSelector
                 selectedToken={tokenA}
                 onSelectToken={handleTokenASelect}
-                placeholder="NIGHT"
+                placeholder="TUSD"
                 showTokenIcon={true}
               />
             </div>
