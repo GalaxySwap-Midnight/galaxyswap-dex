@@ -8,9 +8,11 @@ import { randomBytes } from './utils';
 
 export const deployContract = async (
   providers: ShieldedTokenProviders,
+  name: string,
+  symbol: string,
   logger: Logger,
 ): Promise<ShieldedToken> => {
-  logger.info('Deploying Shielded Token contract...');
+  logger.info(`Deploying Shielded Token contract with name: "${name}" and symbol: "${symbol}"...`);
 
   // Generate random nonce and domain for deployment
   const nonce = randomBytes(32);
@@ -23,8 +25,8 @@ export const deployContract = async (
     shieldedToken = await ShieldedToken.deploy(
       providers,
       nonce,
-      'MyShieldedToken', // name
-      'MST', // symbol
+      name,
+      symbol,
       domain,
       logger,
     );

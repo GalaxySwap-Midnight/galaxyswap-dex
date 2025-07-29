@@ -107,15 +107,31 @@ export const getTokenInfo = async (
 ): Promise<void> => {
   logger.info('Getting token information...');
 
-  const name = await shieldedToken.name();
-  const symbol = await shieldedToken.symbol();
-  const decimals = await shieldedToken.decimals();
-  const totalSupply = await shieldedToken.totalSupply();
+  try {
+    const name = await shieldedToken.name();
+    const symbol = await shieldedToken.symbol();
+    const decimals = await shieldedToken.decimals();
+    const totalSupply = await shieldedToken.totalSupply();
+    const type = await shieldedToken.type();
 
-  logger.info('Token information retrieved successfully');
-  logger.info(`Contract Address: ${shieldedToken.deployedContractAddressHex}`);
-  logger.info(`Name: ${name}`);
-  logger.info(`Symbol: ${symbol}`);
-  logger.info(`Decimals: ${decimals}`);
-  logger.info(`Total Supply: ${totalSupply}`);
+    logger.info('Token information retrieved successfully');
+    logger.info('');
+    logger.info('📊 Token Information:');
+    logger.info(`   Contract Address: ${shieldedToken.deployedContractAddressHex}`);
+    logger.info(`   Name: ${name}`);
+    logger.info(`   Symbol: ${symbol}`);
+    logger.info(`   Decimals: ${decimals}`);
+    logger.info(`   Total Supply: ${totalSupply}`);
+    logger.info(`   Type: ${Buffer.from(type).toString('hex')}`);
+    logger.info('');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Not sufficient funds')) {
+      logger.error('❌ Cannot retrieve token information: Token balance error');
+      logger.error('💡 This may be a temporary wallet sync issue. Try again in a moment.');
+    } else {
+      logger.error('❌ Failed to retrieve token information:', error instanceof Error ? error.message : error);
+    }
+    // Don't throw - just return gracefully to the menu
+    logger.info('Returning to main menu...');
+  }
 };

@@ -67,23 +67,37 @@ const waitForFunds = (wallet: Wallet, logger: Logger) =>
       tap((state) => {
         const applyGap = state.syncProgress?.lag.applyGap ?? 0n;
         const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
-        logger.info(
-          `Waiting for funds. Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
-        );
+        const balance = state.balances;
+        const nativeBalance = balance[nativeToken()];
+        
+        if (state.syncProgress?.synced === true) {
+          if (nativeBalance === undefined || nativeBalance === 0n) {
+            logger.warn(
+              `⚠️  Wallet is synced but balance is 0. Please fund your wallet or wait for transactions to process.`
+            );
+            logger.info(
+              `💰 Current balances: ${JSON.stringify(serializeBigInts(balance))}`
+            );
+          } else {
+            logger.info(
+              `✅ Wallet funded! Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`
+            );
+          }
+        } else {
+          logger.info(
+            `🔄 Wallet syncing... Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`
+          );
+        }
       }),
       filter((state) => {
-        return state.syncProgress?.synced === true;
+        const balance = state.balances;
+        const nativeBalance = balance[nativeToken()];
+        return state.syncProgress?.synced === true && nativeBalance !== undefined && nativeBalance > 0n;
       }),
       map((s) => {
         const balance = s.balances;
         const nativeBalance = balance[nativeToken()];
-        logger.info(
-          `Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`,
-        );
-        if (nativeBalance === undefined || nativeBalance === 0n) {
-          throw new Error('Balance is 0');
-        }
-        return nativeBalance;
+        return nativeBalance!;
       }),
     ),
   );

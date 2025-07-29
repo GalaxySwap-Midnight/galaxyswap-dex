@@ -6,6 +6,7 @@ import type {
   LunarswapProviders,
   Lunarswap,
 } from '@midnight-dapps/lunarswap-api';
+import type { CoinInfo } from '@midnight-dapps/compact-std';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
 import { buildFreshWallet, buildWalletFromSeed } from './api/wallet';
@@ -19,6 +20,15 @@ import {
   swapExactTokensForTokens,
   swapTokensForExactTokens,
 } from './api/swap';
+import {
+  checkPairExists,
+  getAllPairsLength,
+  getPairInfo,
+  getPairReservesInfo,
+  getPairIdentityInfo,
+  getLpTokenInfo,
+  getLpTokenTotalSupplyInfo,
+} from './api/pair-info';
 
 let logger: Logger;
 
@@ -45,7 +55,14 @@ You can do one of the following:
 2. Remove liquidity from a pair
 3. Swap tokens (exact input)
 4. Swap tokens (exact output)
-5. Exit
+5. Check if pair exists
+6. Get total number of pairs
+7. Get pair information
+8. Get pair reserves
+9. Get pair identity
+10. Get LP token information
+11. Get LP token total supply
+12. Exit
 
 Which would you like to do? `;
 
@@ -224,6 +241,69 @@ const handleSwapTokensForExactTokens = async (
   );
 };
 
+// Helper function to get token input from user
+const getTokenInput = async (rli: Interface, tokenLabel: string): Promise<CoinInfo> => {
+  const color = await rli.question(`Enter ${tokenLabel} color (hex): `);
+  return createCoinInfo(color, 0n);
+};
+
+const handleCheckPairExists = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
+  const tokenA = await getTokenInput(rli, 'Token A');
+  const tokenB = await getTokenInput(rli, 'Token B');
+  await checkPairExists(lunarswap, tokenA, tokenB, logger);
+};
+
+const handleGetAllPairsLength = async (
+  lunarswap: Lunarswap,
+): Promise<void> => {
+  await getAllPairsLength(lunarswap, logger);
+};
+
+const handleGetPairInfo = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
+  const tokenA = await getTokenInput(rli, 'Token A');
+  const tokenB = await getTokenInput(rli, 'Token B');
+  await getPairInfo(lunarswap, tokenA, tokenB, logger);
+};
+
+const handleGetPairReserves = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
+  const tokenA = await getTokenInput(rli, 'Token A');
+  const tokenB = await getTokenInput(rli, 'Token B');
+  await getPairReservesInfo(lunarswap, tokenA, tokenB, logger);
+};
+
+const handleGetPairIdentity = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
+  const tokenA = await getTokenInput(rli, 'Token A');
+  const tokenB = await getTokenInput(rli, 'Token B');
+  await getPairIdentityInfo(lunarswap, tokenA, tokenB, logger);
+};
+
+const handleGetLpTokenInfo = async (
+  lunarswap: Lunarswap,
+): Promise<void> => {
+  await getLpTokenInfo(lunarswap, logger);
+};
+
+const handleGetLpTokenTotalSupply = async (
+  lunarswap: Lunarswap,
+  rli: Interface,
+): Promise<void> => {
+  const tokenA = await getTokenInput(rli, 'Token A');
+  const tokenB = await getTokenInput(rli, 'Token B');
+  await getLpTokenTotalSupplyInfo(lunarswap, tokenA, tokenB, logger);
+};
+
 const mainLoop = async (
   providers: LunarswapProviders,
   rli: Interface,
@@ -249,6 +329,27 @@ const mainLoop = async (
         await handleSwapTokensForExactTokens(lunarswap, rli);
         break;
       case '5':
+        await handleCheckPairExists(lunarswap, rli);
+        break;
+      case '6':
+        await handleGetAllPairsLength(lunarswap);
+        break;
+      case '7':
+        await handleGetPairInfo(lunarswap, rli);
+        break;
+      case '8':
+        await handleGetPairReserves(lunarswap, rli);
+        break;
+      case '9':
+        await handleGetPairIdentity(lunarswap, rli);
+        break;
+      case '10':
+        await handleGetLpTokenInfo(lunarswap);
+        break;
+      case '11':
+        await handleGetLpTokenTotalSupply(lunarswap, rli);
+        break;
+      case '12':
         logger.info('Exiting...');
         return;
       default:

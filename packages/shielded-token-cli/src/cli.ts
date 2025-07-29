@@ -100,8 +100,32 @@ const deployOrJoin = async (
   while (true) {
     const choice = await rli.question(DEPLOY_OR_JOIN_QUESTION);
     switch (choice) {
-      case '1':
-        return await deployContract(providers, logger);
+      case '1': {
+        const tokenName = await rli.question('Enter token name (e.g., "My Awesome Token"): ');
+        if (!tokenName.trim()) {
+          logger.error('Token name cannot be empty. Please try again.');
+          continue;
+        }
+        
+        const tokenSymbol = await rli.question('Enter token symbol (e.g., "MAT"): ');
+        if (!tokenSymbol.trim()) {
+          logger.error('Token symbol cannot be empty. Please try again.');
+          continue;
+        }
+        
+        logger.info(`📋 Token Details:`);
+        logger.info(`   Name: ${tokenName}`);
+        logger.info(`   Symbol: ${tokenSymbol}`);
+        logger.info(''); // Empty line for better spacing
+        
+        const confirm = await rli.question('Deploy with these details? (Y/n): ');
+        if (confirm.trim() !== '' && confirm.toLowerCase() !== 'y' && confirm.toLowerCase() !== 'yes') {
+          logger.info('Deployment cancelled. Please try again.');
+          continue;
+        }
+        
+        return await deployContract(providers, tokenName.trim(), tokenSymbol.trim(), logger);
+      }
       case '2': {
         const contractAddress = await rli.question(CONTRACT_ADDRESS_QUESTION);
         return await joinContract(providers, contractAddress, logger);
