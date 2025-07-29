@@ -1,10 +1,11 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { useWallet } from '@/hooks/use-wallet';
-import { createContractIntegration, DEMO_TOKENS } from '@/lib/contract-integration';
+import { Button } from '../../ui/button';
+import { CardContent, CardFooter } from '../../ui/card';
+import { Input } from '../../ui/input';
+import { useWallet } from '../../../hooks/use-wallet';
+import { createContractIntegration, DEMO_TOKENS } from '../../../lib/contract-integration';
+import { useRuntimeConfiguration } from '../../../lib/runtime-configuration';
 import { 
   calculateAddLiquidityAmounts, 
   SLIPPAGE_TOLERANCE,
@@ -27,6 +28,7 @@ interface SetDepositStepProps {
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const walletContext = useWallet();
+  const runtimeConfig = useRuntimeConfiguration();
   const { isConnected, address, providers } = walletContext;
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,10 +56,14 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   // Fetch pool data when component mounts
   useEffect(() => {
     const fetchPoolInfo = async () => {
-      if (!walletContext.walletAPI || !isConnected) return;
+      if (!walletContext.walletAPI || !isConnected || !runtimeConfig) return;
 
       try {
-        const contractIntegration = createContractIntegration(providers, walletContext.walletAPI.wallet);
+        const contractIntegration = createContractIntegration(
+          providers, 
+          walletContext.walletAPI.wallet, 
+          runtimeConfig.LUNARSWAP_ADDRESS
+        );
         await contractIntegration.initialize();
 
         // Check if pair exists
@@ -75,7 +81,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     };
 
     fetchPoolInfo();
-  }, [isConnected, walletContext.walletAPI, providers, pairData.tokenA, pairData.tokenB]);
+  }, [isConnected, walletContext.walletAPI, providers, pairData.tokenA, pairData.tokenB, runtimeConfig]);
 
   // Calculate optimal amounts when inputs change
   useEffect(() => {
@@ -131,6 +137,11 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       return;
     }
 
+    if (!runtimeConfig) {
+      toast.error('Runtime configuration not available');
+      return;
+    }
+
     if (!amountA || !amountB) {
       toast.error('Please enter valid amounts');
       return;
@@ -144,7 +155,11 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     setIsSubmitting(true);
     try {
       // Create contract integration instance
-      const contractIntegration = createContractIntegration(providers, walletContext.walletAPI.wallet);
+      const contractIntegration = createContractIntegration(
+        providers, 
+        walletContext.walletAPI.wallet, 
+        runtimeConfig.LUNARSWAP_ADDRESS
+      );
 
       // Initialize the contract
       await contractIntegration.initialize();

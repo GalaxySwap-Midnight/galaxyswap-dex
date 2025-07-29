@@ -181,7 +181,7 @@ export function AccountPanel({
       <button
         type="button"
         onClick={isVisible ? onClose : () => onOpen()}
-        className="fixed top-4 right-84 h-12 w-8 bg-background dark:bg-gray-900 border border-border border-r-0 rounded-l-lg shadow-lg z-[10001] flex items-center justify-center hover:bg-muted transition-colors"
+        className="fixed top-4 right-80 h-12 w-8 bg-background dark:bg-gray-900 border border-border border-r-0 rounded-l-lg z-[10001] flex items-center justify-center hover:bg-muted transition-colors"
         title={isVisible ? "Close account panel" : "Open account panel"}
       >
         <ChevronsRight className={`h-5 w-5 transition-transform ${isVisible ? 'rotate-180' : ''}`} />

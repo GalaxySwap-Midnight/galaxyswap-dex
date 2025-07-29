@@ -68,25 +68,24 @@ export class PublicDataProviderWrapper implements PublicDataProvider {
   watchForDeployTxData(
     contractAddress: ContractAddress,
   ): Promise<FinalizedTxData> {
-    // Check if the wrapped provider has this method
-    if (typeof (this.wrapped as any).watchForDeployTxData === 'function') {
-      return retry(
-        () => (this.wrapped as any).watchForDeployTxData(contractAddress),
-        'watchForDeployTxData',
-        this.logger,
-      );
-    }
-    
-    // Fallback: This method is not available in the current provider version
-    throw new Error('watchForDeployTxData is not available in this provider version. Contract may already be deployed.');
+    return retry(
+      () => this.wrapped.watchForDeployTxData(contractAddress),
+      'watchForDeployTxData',
+      this.logger,
+    );
   }
 
   watchForTxData(txId: TransactionId): Promise<FinalizedTxData> {
+    // calling a callback is a workaround to show in the UI when the watchForTxData is called
+    this.callback('watchForTxDataStarted');
     return retry(
       () => this.wrapped.watchForTxData(txId),
-      'watchForTxData',
+      'watchForTxDataStarted',
       this.logger,
-    );
+      1000, // we keep retrying long enough
+    ).finally(() => {
+      this.callback('watchForTxDataDone');
+    });
   }
 
   contractStateObservable(

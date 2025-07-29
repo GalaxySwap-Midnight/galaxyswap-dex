@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createContractIntegration, DEMO_TOKENS, LunarswapContractIntegration } from './contract-integration';
-import { useWallet } from '@/hooks/use-wallet';
+import { useWallet } from '../hooks/use-wallet';
+import { useRuntimeConfiguration } from './runtime-configuration';
 import type { Ledger, Pair } from '@midnight-dapps/lunarswap-v1';
 
 interface PoolData {
@@ -30,6 +31,7 @@ interface PoolProviderProps {
 
 export const PoolProvider: React.FC<PoolProviderProps> = ({ children }) => {
   const { isConnected, providers, walletAPI } = useWallet();
+  const runtimeConfig = useRuntimeConfiguration();
   const [isLoading, setIsLoading] = useState(false);
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [allPairs, setAllPairs] = useState<Array<{ identity: string; pair: Pair }>>([]);
@@ -38,13 +40,17 @@ export const PoolProvider: React.FC<PoolProviderProps> = ({ children }) => {
   // Initialize contract integration
   useEffect(() => {
     const initializeContract = async () => {
-      if (!isConnected || !walletAPI) {
+      if (!isConnected || !walletAPI || !runtimeConfig) {
         setContractIntegration(null);
         return;
       }
 
       try {
-        const integration = createContractIntegration(providers, walletAPI.wallet);
+        const integration = createContractIntegration(
+          providers, 
+          walletAPI.wallet, 
+          runtimeConfig.LUNARSWAP_ADDRESS
+        );
         await integration.initialize();
         setContractIntegration(integration);
       } catch (error) {
@@ -54,7 +60,7 @@ export const PoolProvider: React.FC<PoolProviderProps> = ({ children }) => {
     };
 
     initializeContract();
-  }, [isConnected, walletAPI, providers]);
+  }, [isConnected, walletAPI, providers, runtimeConfig]);
 
   // Fetch pool data when contract is ready
   const refreshPoolData = useCallback(async () => {

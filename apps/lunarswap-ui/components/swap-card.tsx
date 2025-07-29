@@ -1,20 +1,21 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from '@/components/ui/card';
+} from './ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useWallet } from '@/hooks/use-wallet';
-import { createContractIntegration, DEMO_TOKENS } from '@/lib/contract-integration';
+} from './ui/tooltip';
+import { useWallet } from '../hooks/use-wallet';
+import { createContractIntegration, DEMO_TOKENS } from '../lib/contract-integration';
+import { useRuntimeConfiguration } from '../lib/runtime-configuration';
 import { 
   calculateAmountOut, 
   calculateAmountIn,
@@ -39,6 +40,7 @@ type ActiveField = 'from' | 'to' | null;
 
 export function SwapCard() {
   const { isConnected, address, providers, walletAPI } = useWallet();
+  const runtimeConfig = useRuntimeConfiguration();
   const [isHydrated, setIsHydrated] = useState(false);
   const [contractReady, setContractReady] = useState(false);
 
@@ -71,13 +73,17 @@ export function SwapCard() {
   // Check contract status when wallet connects
   useEffect(() => {
     const checkContractStatus = async () => {
-      if (!walletAPI || !isConnected) {
+      if (!walletAPI || !isConnected || !runtimeConfig) {
         setContractReady(false);
         return;
       }
 
       try {
-        const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+        const contractIntegration = createContractIntegration(
+          providers, 
+          walletAPI.wallet, 
+          runtimeConfig.LUNARSWAP_ADDRESS
+        );
         const status = await contractIntegration.initialize();
         setContractReady(status.status === 'connected');
       } catch (error) {
@@ -87,18 +93,22 @@ export function SwapCard() {
     };
 
     checkContractStatus();
-  }, [walletAPI, providers, isConnected]);
+  }, [walletAPI, providers, isConnected, runtimeConfig]);
 
   // Fetch pool reserves when tokens change
   useEffect(() => {
     const fetchReserves = async () => {
-      if (!walletAPI || !fromToken || !toToken || fromToken.symbol === toToken.symbol) {
+      if (!walletAPI || !fromToken || !toToken || fromToken.symbol === toToken.symbol || !runtimeConfig) {
         setPoolReserves(null);
         return;
       }
 
       try {
-        const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+        const contractIntegration = createContractIntegration(
+          providers, 
+          walletAPI.wallet, 
+          runtimeConfig.LUNARSWAP_ADDRESS
+        );
         await contractIntegration.initialize();
         
         const exists = await contractIntegration.isPairExists(fromToken.symbol, toToken.symbol);
@@ -115,7 +125,7 @@ export function SwapCard() {
     };
 
     fetchReserves();
-  }, [fromToken, toToken, walletAPI, providers]);
+  }, [fromToken, toToken, walletAPI, providers, runtimeConfig]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback((inputAmount: string): string => {
@@ -217,7 +227,7 @@ export function SwapCard() {
   };
 
   const handleSwap = async () => {
-    if (!isConnected || !walletAPI || !address) {
+    if (!isConnected || !walletAPI || !address || !runtimeConfig) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -234,7 +244,11 @@ export function SwapCard() {
 
     setIsSwapping(true);
     try {
-      const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+      const contractIntegration = createContractIntegration(
+        providers, 
+        walletAPI.wallet, 
+        runtimeConfig.LUNARSWAP_ADDRESS
+      );
       await contractIntegration.initialize();
 
       // Convert amounts to BigInt (assuming 18 decimals)

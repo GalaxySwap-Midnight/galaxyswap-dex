@@ -1,20 +1,22 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useWallet } from '@/hooks/use-wallet';
-import { createContractIntegration, type ContractStatusInfo } from '@/lib/contract-integration';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useWallet } from '../hooks/use-wallet';
+import { createContractIntegration, type ContractStatusInfo } from '../lib/contract-integration';
+import { useRuntimeConfiguration } from '../lib/runtime-configuration';
 import { AlertCircle, CheckCircle, Clock, XCircle, WifiOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 export function ContractStatusIndicator() {
   const { walletAPI, providers, isConnected } = useWallet();
+  const runtimeConfig = useRuntimeConfiguration();
   const [statusInfo, setStatusInfo] = useState<ContractStatusInfo>({ status: 'not-configured' });
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const checkContractStatus = useCallback(async () => {
-    if (!walletAPI || !isConnected) {
+    if (!walletAPI || !isConnected || !runtimeConfig) {
       setStatusInfo({ 
         status: 'not-configured', 
         message: 'Please connect your wallet first' 
@@ -24,7 +26,11 @@ export function ContractStatusIndicator() {
 
     setIsLoading(true);
     try {
-      const contractIntegration = createContractIntegration(providers, walletAPI.wallet);
+      const contractIntegration = createContractIntegration(
+        providers, 
+        walletAPI.wallet, 
+        runtimeConfig.LUNARSWAP_ADDRESS
+      );
       const status = await contractIntegration.initialize();
       setStatusInfo(status);
     } catch (error) {
@@ -36,7 +42,7 @@ export function ContractStatusIndicator() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAPI, providers, isConnected]);
+  }, [walletAPI, providers, isConnected, runtimeConfig]);
 
   useEffect(() => {
     checkContractStatus();

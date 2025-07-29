@@ -1,8 +1,8 @@
 {
-  "LOGGING_LEVEL": "trace",
+  "LOGGING_LEVEL": "warn",
   "NETWORK_ID": "TestNet",
-  "PUBLIC_URL": "http://127.0.0.1:3000",
+  "PUBLIC_URL": "http://127.0.0.1:8080",
   "INDEXER_URI": "https://indexer.testnet-02.midnight.network/api/v1/graphql",
   "INDEXER_WS_URI": "wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws",
-  "LUNARSWAP_ADDRESS": "0200dcfe6c1e64d00a50ca69d0b1dbccac0c07107bed69d81c6c63afae0d50ce1123"
+  "LUNARSWAP_ADDRESS": "02000400f75026235c9af6b5963f7d27a8b814dc348946491dab3097cae6a2dfdbb0"
 }

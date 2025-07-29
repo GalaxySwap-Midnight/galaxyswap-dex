@@ -22,7 +22,7 @@ import {
   type UnbalancedTransaction,
 } from '@midnight-ntwrk/midnight-js-types';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-//import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import {
   type CoinInfo,
   Transaction,
@@ -235,24 +235,14 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     [providerCallback],
   );
 
-  // const publicDataProvider = useMemo(
-  //   () =>
-  //     new PublicDataProviderWrapper(
-  //       indexerPublicDataProvider(config.INDEXER_URI, config.INDEXER_WS_URI),
-  //       providerCallback,
-  //       logger,
-  //     ),
-  //   [config.INDEXER_URI, config.INDEXER_WS_URI, providerCallback, logger],
-  // );
-
   const publicDataProvider = useMemo(
     () =>
       new PublicDataProviderWrapper(
-        {} as PublicDataProvider, // Use an empty object with a type assertion for the mock
+        indexerPublicDataProvider(config.INDEXER_URI, config.INDEXER_WS_URI),
         providerCallback,
         logger,
       ),
-    [providerCallback, logger],
+    [config.INDEXER_URI, config.INDEXER_WS_URI, providerCallback, logger],
   );
 
   const shake = useCallback((): void => {
