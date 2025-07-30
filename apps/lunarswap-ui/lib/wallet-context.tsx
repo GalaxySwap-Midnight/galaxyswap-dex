@@ -46,11 +46,79 @@ import type {
   ProofProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import { PrivateDataProviderWrapper } from '@/providers/private';
-import { connectToWallet } from '@/utils/wallet-utils';
+import { connectToWallet, type WalletConnectionResult } from '@/utils/wallet-utils';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
 import { PublicDataProviderWrapper } from '@/providers/public';
 import { noopProofClient } from '@/providers/proof';
 import { proofClient } from '@/providers/proof';
+import { firstValueFrom } from 'rxjs';
+import type { Wallet } from '@midnight-ntwrk/wallet-api';
+
+export const createWalletAndMidnightProvider = async (
+  wallet: Wallet,
+): Promise<WalletProvider & MidnightProvider> => {
+  const state = await firstValueFrom(wallet.state());
+  return {
+    coinPublicKey: state.coinPublicKey,
+    encryptionPublicKey: state.encryptionPublicKey,
+    balanceTx(
+      tx: UnbalancedTransaction,
+      newCoins: CoinInfo[],
+    ): Promise<BalancedTransaction> {
+      return wallet
+        .balanceTransaction(
+          ZswapTransaction.deserialize(
+            tx.serialize(getZswapNetworkId()),
+            getZswapNetworkId(),
+          ),
+          newCoins,
+        )
+        .then((tx) => wallet.proveTransaction(tx))
+        .then((zswapTx) =>
+          Transaction.deserialize(
+            zswapTx.serialize(getZswapNetworkId()),
+            getZswapNetworkId(),
+          ),
+        )
+        .then(createBalancedTx);
+    },
+    submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+      return wallet.submitTransaction(tx);
+    },
+  };
+};
+
+export const configureProviders = async (
+  wallet: Wallet,
+  config: {
+    INDEXER_URI: string;
+    INDEXER_WS_URI: string;
+  },
+  callback: (action: ProviderCallbackAction) => void,
+): Promise<LunarswapProviders> => {
+  const walletAndMidnightProvider =
+    await createWalletAndMidnightProvider(wallet);
+
+  return {
+    privateStateProvider: levelPrivateStateProvider<
+      typeof LunarswapPrivateStateId
+    >({
+      privateStateStoreName: 'lunarswap-private-state',
+    }),
+    publicDataProvider: indexerPublicDataProvider(
+      config.INDEXER_URI,
+      config.INDEXER_WS_URI,
+    ),
+    zkConfigProvider: new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
+      window.location.origin,
+      fetch.bind(window),
+      callback,
+    ),
+    proofProvider: noopProofClient(),
+    walletProvider: walletAndMidnightProvider,
+    midnightProvider: walletAndMidnightProvider,
+  };
+};
 
 function isChromeBrowser(): boolean {
   const userAgent = navigator.userAgent.toLowerCase();
@@ -61,7 +129,7 @@ function isChromeBrowser(): boolean {
   );
 }
 
-interface MidnightWalletState {
+export interface MidnightWalletState {
   isConnected: boolean;
   isConnecting: boolean;
   proofServerIsOnline: boolean;
@@ -81,9 +149,6 @@ interface MidnightWalletState {
   callback: (action: ProviderCallbackAction) => void;
   disconnect: () => void;
 }
-
-// Export the interface for external use
-export type { MidnightWalletState };
 
 export interface WalletAPI {
   wallet: DAppConnectorWalletAPI;
@@ -170,7 +235,6 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     undefined,
   );
   const [walletAPI, setWalletAPI] = useState<WalletAPI | undefined>(undefined);
-  const [floatingOpen, setFloatingOpen] = React.useState(true);
 
   // Disconnect function to reset wallet state
   const disconnect = useCallback(() => {
@@ -196,34 +260,30 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     [logger],
   );
 
-  const providerCallback = useCallback(
-    (action: ProviderCallbackAction): void => {
-      if (action === 'proveTxStarted') {
-        setSnackBarText('Proving transaction...');
-      } else if (action === 'proveTxDone') {
-        setSnackBarText(undefined);
-      } else if (action === 'balanceTxStarted') {
-        setSnackBarText('Signing the transaction with Midnight Lace wallet...');
-      } else if (action === 'downloadProverDone') {
-        setSnackBarText(undefined);
-      } else if (action === 'downloadProverStarted') {
-        setSnackBarText('Downloading prover key...');
-      } else if (action === 'balanceTxDone') {
-        setSnackBarText(undefined);
-      } else if (action === 'submitTxStarted') {
-        setSnackBarText('Submitting transaction...');
-      } else if (action === 'submitTxDone') {
-        setSnackBarText(undefined);
-      } else if (action === 'watchForTxDataStarted') {
-        setSnackBarText(
-          'Waiting for transaction finalization on blockchain...',
-        );
-      } else if (action === 'watchForTxDataDone') {
-        setSnackBarText(undefined);
-      }
-    },
-    [],
-  );
+  const providerCallback: (action: ProviderCallbackAction) => void = (action: ProviderCallbackAction): void => {
+    if (action === 'proveTxStarted') {
+      setSnackBarText('Proving transaction...');
+    } else if (action === 'proveTxDone') {
+      setSnackBarText(undefined);
+    } else if (action === 'balanceTxStarted') {
+      setSnackBarText('Signing the transaction with Midnight Lace wallet...');
+    } else if (action === 'downloadProverDone') {
+      setSnackBarText(undefined);
+    } else if (action === 'downloadProverStarted') {
+      setSnackBarText('Downloading prover key...');
+    } else if (action === 'balanceTxDone') {
+      setSnackBarText(undefined);
+    } else if (action === 'submitTxStarted') {
+      setSnackBarText('Submitting transaction...');
+    } else if (action === 'submitTxDone') {
+      setSnackBarText(undefined);
+    } else if (action === 'watchForTxDataStarted') {
+      setSnackBarText('Waiting for transaction finalization on blockchain...');
+    } else if (action === 'watchForTxDataDone') {
+      setSnackBarText(undefined);
+    }
+  };
+
 
   const zkConfigProvider = useMemo(
     () =>
@@ -232,7 +292,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         fetch.bind(window),
         providerCallback,
       ),
-    [providerCallback],
+    [],
   );
 
   const publicDataProvider = useMemo(
@@ -242,7 +302,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         providerCallback,
         logger,
       ),
-    [config.INDEXER_URI, config.INDEXER_WS_URI, providerCallback, logger],
+    [config.INDEXER_URI, config.INDEXER_WS_URI, logger],
   );
 
   const shake = useCallback((): void => {
@@ -259,7 +319,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       return proofClient(walletAPI.uris.proverServerUri, providerCallback);
     }
     return noopProofClient();
-  }, [walletAPI, providerCallback]);
+  }, [walletAPI]);
 
   const walletProvider: WalletProvider = useMemo(() => {
     if (walletAPI) {
@@ -271,20 +331,26 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
           newCoins: CoinInfo[],
         ): Promise<BalancedTransaction> {
           providerCallback('balanceTxStarted');
+          const ledgerNetworkId = getLedgerNetworkId();
+          const zswapNetworkId = getZswapNetworkId();
+          console.log('Ledger Network ID:', ledgerNetworkId);
+          console.log('Zswap Network ID:', zswapNetworkId);
           return walletAPI.wallet
             .balanceAndProveTransaction(
               ZswapTransaction.deserialize(
-                tx.serialize(getLedgerNetworkId()),
-                getZswapNetworkId(),
+                tx.serialize(ledgerNetworkId),
+                zswapNetworkId,
               ),
               newCoins,
             )
-            .then((zswapTx) =>
-              Transaction.deserialize(
-                zswapTx.serialize(getZswapNetworkId()),
-                getLedgerNetworkId(),
-              ),
-            )
+            .then((zswapTx) => {
+              // Output zswap tx for debugging
+              console.log('ZswapTransaction:', zswapTx);
+              return Transaction.deserialize(
+                zswapTx.serialize(zswapNetworkId),
+                ledgerNetworkId,
+              );
+            })
             .then(createBalancedTx)
             .finally(() => {
               providerCallback('balanceTxDone');
@@ -296,13 +362,13 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       coinPublicKey: '',
       encryptionPublicKey: '',
       balanceTx(
-        tx: UnbalancedTransaction,
-        newCoins: CoinInfo[],
+        _tx: UnbalancedTransaction,
+        _newCoins: CoinInfo[],
       ): Promise<BalancedTransaction> {
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI, providerCallback]);
+  }, [walletAPI]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
     if (walletAPI) {
@@ -320,9 +386,9 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI, providerCallback]);
+  }, [walletAPI]);
 
-  const [walletState, setWalletState] = React.useState<MidnightWalletState>({
+  const [walletState, setWalletState] = useState<MidnightWalletState>({
     isConnected: false,
     isConnecting: false,
     proofServerIsOnline: false,
@@ -364,9 +430,9 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
   async function connect(manual: boolean): Promise<void> {
     setIsConnecting(true);
-    let walletResult: unknown;
+    let walletResult: { wallet: DAppConnectorWalletAPI; uris: ServiceUriConfig } | undefined;
     try {
-      walletResult = await connectToWallet();
+      walletResult = await connectToWallet(logger);
     } catch (e) {
       const walletError = getErrorType(e as Error);
       setWalletError(walletError);
@@ -378,22 +444,16 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       return;
     }
     await checkProofServerStatus(
-    // @ts-expect-error: walletResult type depends on connectToWallet implementation
-      walletResult.uris?.proverServerUri ??
-    // @ts-expect-error: walletResult type depends on connectToWallet implementation
-        walletResult.serviceUriConfig?.proverServerUri,
+      walletResult.uris.proverServerUri,
     );
     try {
-      // @ts-expect-error: walletResult type depends on connectToWallet implementation
       const reqState = await walletResult.wallet.state();
       setAddress(reqState.address);
       setWalletAPI({
-        // @ts-expect-error: walletResult type depends on connectToWallet implementation
         wallet: walletResult.wallet,
         coinPublicKey: reqState.coinPublicKey,
         encryptionPublicKey: reqState.encryptionPublicKey,
-        // @ts-expect-error: walletResult type depends on connectToWallet implementation
-        uris: walletResult.uris ?? walletResult.serviceUriConfig,
+        uris: walletResult.uris,
       });
     } catch (e) {
       setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);

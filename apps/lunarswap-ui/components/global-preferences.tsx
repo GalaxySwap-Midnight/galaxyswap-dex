@@ -24,6 +24,18 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { cn } from '../utils/cn';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
+import { LunarswapContract, LunarswapPrivateStateId, LunarswapProviders } from '@midnight-dapps/lunarswap-api';
+import { PrivateStateProvider, ZKConfigProvider } from '@midnight-ntwrk/midnight-js-types';
+import { LunarswapCircuitKeys } from '@midnight-dapps/lunarswap-api';
+import { ProofProvider } from '@midnight-ntwrk/midnight-js-types';
+import { ZkConfigProviderWrapper } from '@/providers/zk-config';
+import { proofClient } from '@/providers/proof';
+import { Contract, LunarswapPrivateState, LunarswapWitnesses } from '@midnight-dapps/lunarswap-v1';
+import { ContractProviders, findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+import { configureProviders } from '@/lib/wallet-context';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { getLedgerNetworkId, getZswapNetworkId, NetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 interface GlobalPreferencesProps {
   inline?: boolean;
@@ -31,7 +43,7 @@ interface GlobalPreferencesProps {
 }
 
 function PreferencesContent() {
-  const { walletAPI, providers, isConnected } = useWallet();
+  const midnightWallet = useWallet();
   const { version, setVersion } = useVersion();
   const runtimeConfig = useRuntimeConfiguration();
   const [animationsEnabled, setAnimationsEnabledState] = useState(true);
@@ -40,27 +52,53 @@ function PreferencesContent() {
   const [statusInfo, setStatusInfo] = useState<ContractStatusInfo>({ status: 'not-configured' });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check contract status
   const checkContractStatus = useCallback(async () => {
-    if (!walletAPI || !isConnected || !runtimeConfig) {
+    console.log('[ContractStatusIndicator] checkContractStatus called');
+    
+    if (!midnightWallet.walletAPI || !midnightWallet.isConnected || !runtimeConfig) {
+      console.log('[ContractStatusIndicator] Early return - missing dependencies');
       setStatusInfo({ 
         status: 'not-configured', 
         message: 'Please connect your wallet first' 
       });
       return;
     }
-
     setIsLoading(true);
     try {
-      // Add a small delay to ensure wallet is fully ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      console.log('[ContractStatusIndicator] Starting contract status check');
+
+      const privateStateProvider: PrivateStateProvider<string, LunarswapPrivateState> = levelPrivateStateProvider({
+        privateStateStoreName: 'lunarswap-private-state',
+      });
+      const proofProvider: ProofProvider<LunarswapCircuitKeys> = proofClient(
+        midnightWallet.walletAPI.uris.proverServerUri,
+        midnightWallet.callback,
+      );
+      const zkConfigProvider: ZKConfigProvider<LunarswapCircuitKeys> = new ZkConfigProviderWrapper(
+        window.location.origin,
+        fetch.bind(window),
+        midnightWallet.callback,
+      ); 
+
+      const providers: LunarswapProviders = {
+        ...midnightWallet.providers,
+        zkConfigProvider,
+      };
+
+      // Create contract integration using the existing providers
       const contractIntegration = createContractIntegration(
-        providers, 
-        walletAPI.wallet, 
+        providers,
+        midnightWallet.walletAPI,
+        midnightWallet.callback,
         runtimeConfig.LUNARSWAP_ADDRESS
       );
+      
+      console.log('[ContractStatusIndicator] Created contract integration', contractIntegration);
+
+      // Initialize the contract integration
       const status = await contractIntegration.initialize();
+      console.log('[ContractStatusIndicator] Contract initialization result:', status);
+
       setStatusInfo(status);
     } catch (error) {
       console.error('Contract status check failed:', error);
@@ -72,15 +110,13 @@ function PreferencesContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAPI, providers, isConnected, runtimeConfig]);
+  }, [midnightWallet.walletAPI, midnightWallet.isConnected, midnightWallet.providers, midnightWallet.callback, runtimeConfig]);
 
   useEffect(() => {
-    // Only check contract status when wallet is connected
-    if (isConnected && walletAPI && runtimeConfig) {
-      checkContractStatus();
-    }
-  }, [isConnected, walletAPI, runtimeConfig, checkContractStatus]);
-
+    console.log('[ContractStatusIndicator] useEffect triggered, calling checkContractStatus');
+    checkContractStatus();
+    console.log('[ContractStatusIndicator] useEffect triggered, checkContractStatus completed');
+  }, [checkContractStatus]);
   // Load animation setting from localStorage
   useEffect(() => {
     try {
@@ -189,7 +225,7 @@ function PreferencesContent() {
   return (
     <>
       {/* Contract Status Section - Only show when connected */}
-      {isConnected && (
+      {midnightWallet.isConnected && (
         <>
           <div className="px-2 py-2">
             <div className="text-xs font-medium text-muted-foreground mb-2">
@@ -217,7 +253,7 @@ function PreferencesContent() {
       )}
 
       {/* Version Selection Section - Only show when connected */}
-      {isConnected && (
+      {midnightWallet.isConnected && (
         <>
           <div className="px-2 py-2">
             <div className="text-xs font-medium text-muted-foreground mb-2">

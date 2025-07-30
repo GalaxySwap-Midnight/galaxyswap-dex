@@ -28,6 +28,7 @@ import {
   type LunarswapProviders,
   type LunarswapPublicState,
   LunarswapPrivateStateId,
+  type LunarswapCircuitKeys,
 } from './types';
 import {
   deployContract,
@@ -228,7 +229,7 @@ export class Lunarswap implements ILunarswap {
     return deployedContract ?? null;
   }
 
-  private static async getPrivateState(
+  static async getPrivateState(
     providers: LunarswapProviders,
   ): Promise<LunarswapPrivateState> {
     const existingPrivateState = await providers.privateStateProvider.get(

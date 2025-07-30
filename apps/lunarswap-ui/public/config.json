@@ -1,5 +1,5 @@
 {
-  "LOGGING_LEVEL": "warn",
+  "LOGGING_LEVEL": "silent",
   "NETWORK_ID": "TestNet",
   "PUBLIC_URL": "http://127.0.0.1:8080",
   "INDEXER_URI": "https://indexer.testnet-02.midnight.network/api/v1/graphql",

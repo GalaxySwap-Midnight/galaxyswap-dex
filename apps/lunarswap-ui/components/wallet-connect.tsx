@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { AccountPanel } from './account-panel';
 import { Identicon } from './identicon';
 import { Download, ExternalLink } from 'lucide-react';
+import pino from 'pino';
 
 type BrowserType = 'chrome' | 'firefox' | 'other';
 
@@ -96,7 +97,8 @@ export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps 
     setIsManuallyConnecting(true);
 
     try {
-      await connectToWallet();
+      const logger = pino({ level: 'info' });
+      await connectToWallet(logger);
       
       // Store connection preference for future auto-connect (handled by wallet context)
       localStorage.setItem('lace-wallet-connected', 'true');

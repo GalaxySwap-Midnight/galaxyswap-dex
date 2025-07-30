@@ -3,7 +3,7 @@ import {
   Lunarswap,
   type LunarswapProviders,
 } from '@midnight-dapps/lunarswap-api';
-import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { getLedgerNetworkId, getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 export const deployContract = async (
   providers: LunarswapProviders,
@@ -45,13 +45,29 @@ export const joinContract = async (
   const contractAddressBytes = new Uint8Array(
     Buffer.from(contractAddress, 'hex'),
   );
+
+  const networkId = getZswapNetworkId();
+  console.log('[joinContract] Zswap Network ID:', networkId);
+
+  const ledgerNetworkId = getLedgerNetworkId();
+  console.log('[joinContract] Ledger Network ID:', ledgerNetworkId)
+
+  const currentContractState = await providers.publicDataProvider.queryContractState(contractAddress);
+  if (!currentContractState) {
+    throw new Error('Contract state not found');
+  }
+  const operations = currentContractState.operations();
+  console.log('[joinContract] Operations:', operations);
+  console.log('[joinContract] Current Contract State:', currentContractState);
+
   const lunarswap = await Lunarswap.join(
     providers,
     { bytes: contractAddressBytes },
     logger,
   );
 
-  logger.info('Successfully joined LunarSwap contract!');
+  logger.info('Successfully joined LunarSwap contract!', { lunarswap });
+  console.log('Lunarswap instance:', lunarswap);
   logger.info(`Contract Address: ${lunarswap.deployedContractAddressHex}`);
 
   return lunarswap;

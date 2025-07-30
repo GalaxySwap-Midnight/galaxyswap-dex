@@ -3,7 +3,7 @@ import type {
   VerifierKey,
   ZKIR,
 } from '@midnight-ntwrk/midnight-js-types';
-import type { fetch } from 'cross-fetch';
+import { fetch } from 'cross-fetch';
 import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 
 type CacheKey =
@@ -18,7 +18,7 @@ export class ZkConfigProviderWrapper<
 
   constructor(
     baseURL: string,
-    fetchFunc: typeof fetch,
+    fetchFunc: typeof fetch = fetch,
     private readonly callback: (
       action: 'downloadProverStarted' | 'downloadProverDone',
     ) => void,
@@ -59,6 +59,50 @@ export class ZkConfigProviderWrapper<
     const verifierKey = await super.getVerifierKey(circuitId);
     this.cache.set(cacheKey, verifierKey);
     return verifierKey;
+  }
+
+  async getVerifierKeys(circuitIds: K[]): Promise<[K, VerifierKey][]> {
+    // For lunarswap, use the correct order that matches the deployed contract
+    const lunarswapCircuitOrder = [
+      'swapTokensForExactTokens',
+      'getPairReserves',
+      'addLiquidity',
+      'getLpTokenSymbol',
+      'getLpTokenName',
+      'getLpTokenType',
+      'getLpTokenTotalSupply',
+      'getAllPairLength',
+      'getPairIdentity',
+      'isPairExists',
+      'removeLiquidity',
+      'getPair',
+      'getLpTokenDecimals',
+      'swapExactTokensForTokens'
+    ] as K[];
+
+    // If this is a lunarswap contract (has all the expected circuits), use the correct order
+    const isLunarswap = lunarswapCircuitOrder.every(id => circuitIds.includes(id));
+    
+    if (isLunarswap) {
+      console.log('[ZkConfigProviderWrapper] Using lunarswap circuit order for verifier keys');
+      const orderedCircuitIds = lunarswapCircuitOrder.filter(id => circuitIds.includes(id));
+      const verifierKeys = await Promise.all(
+        orderedCircuitIds.map(async (circuitId) => {
+          const verifierKey = await this.getVerifierKey(circuitId);
+          return [circuitId, verifierKey] as [K, VerifierKey];
+        })
+      );
+      return verifierKeys;
+    }
+
+    // For other contracts, use the original order
+    const verifierKeys = await Promise.all(
+      circuitIds.map(async (circuitId) => {
+        const verifierKey = await this.getVerifierKey(circuitId);
+        return [circuitId, verifierKey] as [K, VerifierKey];
+      })
+    );
+    return verifierKeys;
   }
 
   async getZKIR(circuitId: K): Promise<ZKIR> {

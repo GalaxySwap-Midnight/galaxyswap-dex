@@ -1,8 +1,13 @@
 import type {
+  DAppConnectorAPI,
   DAppConnectorWalletAPI,
   DAppConnectorWalletState,
   ServiceUriConfig,
 } from '@midnight-ntwrk/dapp-connector-api';
+import type { Logger } from 'pino';
+import { concatMap, filter, firstValueFrom, interval, map, of, take, tap, throwError, timeout } from 'rxjs';
+import { pipe as fnPipe } from 'fp-ts/function';
+import semver from 'semver';
 
 // Helper function to add timeout to promises
 export const withTimeout = (
@@ -61,86 +66,84 @@ export const detectWalletNetwork = async (
 /**
  * Connect to the Midnight Lace wallet with proper error handling and timeouts
  */
-export const connectToWallet = async (
-  options: WalletConnectionOptions = {},
-): Promise<WalletConnectionResult> => {
-  const {
-    checkExisting = true,
-    enableTimeout = 15000,
-    stateTimeout = 10000,
-    isEnabledTimeout = 10000,
-    serviceUriTimeout = 5000,
-  } = options;
+export const connectToWallet = (
+  logger: Logger,
+): Promise<{ wallet: DAppConnectorWalletAPI; uris: ServiceUriConfig }> => {
+  const COMPATIBLE_CONNECTOR_API_VERSION = '1.x';
 
-  // Check if Midnight Lace wallet is available
-  const midnight = window.midnight;
-  if (!midnight?.mnLace) {
-    throw new Error(
-      'Midnight Lace wallet not found. Please install the extension.',
-    );
-  }
+  return firstValueFrom(
+    fnPipe(
+      interval(100),
+      map(() => window.midnight?.mnLace),
+      tap((connectorAPI) => {
+        logger.info(connectorAPI, 'Check for wallet connector API');
+      }),
+      filter((connectorAPI): connectorAPI is DAppConnectorAPI => !!connectorAPI),
+      concatMap((connectorAPI) =>
+        semver.satisfies(connectorAPI.apiVersion, COMPATIBLE_CONNECTOR_API_VERSION)
+          ? of(connectorAPI)
+          : throwError(() => {
+              logger.error(
+                {
+                  expected: COMPATIBLE_CONNECTOR_API_VERSION,
+                  actual: connectorAPI.apiVersion,
+                },
+                'Incompatible version of wallet connector API',
+              );
 
-  const connector = midnight.mnLace;
+              return new Error(
+                `Incompatible version of Midnight Lace wallet found. Require '${COMPATIBLE_CONNECTOR_API_VERSION}', got '${connectorAPI.apiVersion}'.`,
+              );
+            }),
+      ),
+      tap((connectorAPI) => {
+        logger.info(connectorAPI, 'Compatible wallet connector API found. Connecting.');
+      }),
+      take(1),
+      timeout({
+        first: 1_000,
+        with: () =>
+          throwError(() => {
+            logger.error('Could not find wallet connector API');
 
-  // Check if already enabled (optional)
-  if (checkExisting) {
-    try {
-      const isEnabled = await withTimeout(
-        connector.isEnabled(),
-        isEnabledTimeout,
-        'Timeout checking if wallet is enabled',
-      );
+            return new Error('Could not find Midnight Lace wallet. Extension installed?');
+          }),
+      }),
+      concatMap(async (connectorAPI) => {
+        const isEnabled = await connectorAPI.isEnabled();
 
-      if (isEnabled) {
-        // If already enabled, just get the current state and service URI config
-        const existingWallet = await connector.enable();
-        const existingState = await existingWallet.state();
-        const serviceUriConfig = (await withTimeout(
-          connector.serviceUriConfig(),
-          serviceUriTimeout,
-          'Timeout getting service URI config',
-        )) as ServiceUriConfig;
+        logger.info(isEnabled, 'Wallet connector API enabled status');
 
-        if (existingState?.address) {
+        return connectorAPI;
+      }),
+      timeout({
+        first: 5_000,
+        with: () =>
+          throwError(() => {
+            logger.error('Wallet connector API has failed to respond');
+            return new Error('Midnight Lace wallet has failed to respond. Extension enabled?');
+          }),
+      }),
+      concatMap(async (connectorAPI) => {
+        try {
           return {
-            wallet: existingWallet,
-            state: existingState,
-            serviceUriConfig,
+            walletConnectorAPI: await connectorAPI.enable(),
+            connectorAPI,
           };
+        } catch (e) {
+          logger.error('Unable to enable connector API');
+          throw new Error('Application is not authorized');
         }
-      }
-    } catch (error) {
-      // If checking existing connection fails, continue with fresh connection
-      console.warn('Failed to check existing wallet connection:', error);
-    }
-  }
+      }),
+      concatMap(async ({ walletConnectorAPI, connectorAPI }) => {
+        const uris = await connectorAPI.serviceUriConfig();
 
-  // Enable the wallet with timeout
-  const wallet: DAppConnectorWalletAPI = (await withTimeout(
-    connector.enable(),
-    enableTimeout,
-    'Timeout enabling wallet',
-  )) as DAppConnectorWalletAPI;
+        logger.info('Connected to wallet connector API and retrieved service configuration');
 
-  // Get wallet state with timeout
-  const state: DAppConnectorWalletState = (await withTimeout(
-    wallet.state(),
-    stateTimeout,
-    'Timeout getting wallet state',
-  )) as DAppConnectorWalletState;
-
-  // Get service URI config with timeout
-  const serviceUriConfig: ServiceUriConfig = (await withTimeout(
-    connector.serviceUriConfig(),
-    serviceUriTimeout,
-    'Timeout getting service URI config',
-  )) as ServiceUriConfig;
-
-  if (!state?.address) {
-    throw new Error('Could not get wallet address');
-  }
-
-  return { wallet, state, serviceUriConfig };
+        return { wallet: walletConnectorAPI, uris };
+      }),
+    ),
+  );
 };
 
 /**

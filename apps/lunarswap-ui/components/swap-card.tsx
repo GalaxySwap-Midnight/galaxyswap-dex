@@ -39,7 +39,7 @@ type SwapType = 'EXACT_INPUT' | 'EXACT_OUTPUT';
 type ActiveField = 'from' | 'to' | null;
 
 export function SwapCard() {
-  const { isConnected, address, providers, walletAPI } = useWallet();
+  const midnightWallet = useWallet();
   const runtimeConfig = useRuntimeConfiguration();
   const [isHydrated, setIsHydrated] = useState(false);
   const [contractReady, setContractReady] = useState(false);
@@ -73,15 +73,16 @@ export function SwapCard() {
   // Check contract status when wallet connects
   useEffect(() => {
     const checkContractStatus = async () => {
-      if (!walletAPI || !isConnected || !runtimeConfig) {
+      if (!midnightWallet.walletAPI || !midnightWallet.isConnected || !runtimeConfig) {
         setContractReady(false);
         return;
       }
 
       try {
         const contractIntegration = createContractIntegration(
-          providers, 
-          walletAPI.wallet, 
+          midnightWallet.providers, 
+          midnightWallet.walletAPI, 
+          midnightWallet.callback,
           runtimeConfig.LUNARSWAP_ADDRESS
         );
         const status = await contractIntegration.initialize();
@@ -93,20 +94,21 @@ export function SwapCard() {
     };
 
     checkContractStatus();
-  }, [walletAPI, providers, isConnected, runtimeConfig]);
+  }, [midnightWallet.walletAPI, midnightWallet.providers, midnightWallet.isConnected, midnightWallet.callback, runtimeConfig]);
 
   // Fetch pool reserves when tokens change
   useEffect(() => {
     const fetchReserves = async () => {
-      if (!walletAPI || !fromToken || !toToken || fromToken.symbol === toToken.symbol || !runtimeConfig) {
+      if (!midnightWallet.walletAPI || !fromToken || !toToken || fromToken.symbol === toToken.symbol || !runtimeConfig) {
         setPoolReserves(null);
         return;
       }
 
       try {
         const contractIntegration = createContractIntegration(
-          providers, 
-          walletAPI.wallet, 
+          midnightWallet.providers, 
+          midnightWallet.walletAPI, 
+          midnightWallet.callback,
           runtimeConfig.LUNARSWAP_ADDRESS
         );
         await contractIntegration.initialize();
@@ -125,7 +127,7 @@ export function SwapCard() {
     };
 
     fetchReserves();
-  }, [fromToken, toToken, walletAPI, providers, runtimeConfig]);
+  }, [fromToken, toToken, midnightWallet.walletAPI, midnightWallet.providers, midnightWallet.callback, runtimeConfig]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback((inputAmount: string): string => {
@@ -227,7 +229,7 @@ export function SwapCard() {
   };
 
   const handleSwap = async () => {
-    if (!isConnected || !walletAPI || !address || !runtimeConfig) {
+    if (!midnightWallet.isConnected || !midnightWallet.walletAPI || !midnightWallet.address || !runtimeConfig) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -245,8 +247,9 @@ export function SwapCard() {
     setIsSwapping(true);
     try {
       const contractIntegration = createContractIntegration(
-        providers, 
-        walletAPI.wallet, 
+        midnightWallet.providers, 
+        midnightWallet.walletAPI, 
+        midnightWallet.callback,
         runtimeConfig.LUNARSWAP_ADDRESS
       );
       await contractIntegration.initialize();
@@ -264,7 +267,7 @@ export function SwapCard() {
           toToken.symbol,
           fromAmountBigInt.toString(),
           amountOutMin.toString(),
-          address
+          midnightWallet.address
         );
 
         toast.success(`Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`);
@@ -277,7 +280,7 @@ export function SwapCard() {
           toToken.symbol,
           toAmountBigInt.toString(),
           amountInMax.toString(),
-          address
+          midnightWallet.address
         );
 
         toast.success(`Swapped ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`);
@@ -305,7 +308,7 @@ export function SwapCard() {
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
-    if (!isConnected) return 'Connect Wallet';
+    if (!midnightWallet.isConnected) return 'Connect Wallet';
     if (!contractReady) return 'Contract Not Available';
     if (!fromAmount || !toAmount) return 'Enter amounts';
     if (!poolReserves) return 'Pool not found';
@@ -321,7 +324,7 @@ export function SwapCard() {
   const isButtonDisabled = () => {
     return (
       !isHydrated ||
-      !isConnected ||
+      !midnightWallet.isConnected ||
       !contractReady ||
       !fromAmount ||
       !toAmount ||

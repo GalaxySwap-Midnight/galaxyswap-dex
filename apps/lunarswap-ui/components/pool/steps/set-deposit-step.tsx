@@ -61,7 +61,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       try {
         const contractIntegration = createContractIntegration(
           providers, 
-          walletContext.walletAPI.wallet, 
+          walletContext.walletAPI, 
+          walletContext.callback,
           runtimeConfig.LUNARSWAP_ADDRESS
         );
         await contractIntegration.initialize();
@@ -81,7 +82,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     };
 
     fetchPoolInfo();
-  }, [isConnected, walletContext.walletAPI, providers, pairData.tokenA, pairData.tokenB, runtimeConfig]);
+  }, [isConnected, walletContext.walletAPI, providers, walletContext.callback, pairData.tokenA, pairData.tokenB, runtimeConfig]);
 
   // Calculate optimal amounts when inputs change
   useEffect(() => {
@@ -157,7 +158,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       // Create contract integration instance
       const contractIntegration = createContractIntegration(
         providers, 
-        walletContext.walletAPI.wallet, 
+        walletContext.walletAPI, 
+        walletContext.callback,
         runtimeConfig.LUNARSWAP_ADDRESS
       );
 

@@ -4,7 +4,7 @@ import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
 import { MidnightWalletProvider } from '@/lib/wallet-context';
 import { ThemeProvider } from 'next-themes';
-import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
+import { RuntimeConfigurationProvider, useRuntimeConfiguration } from '@/lib/runtime-configuration';
 import Home from '@/app/page';
 import PoolPage from '@/app/pool/page';
 import NewPositionPage from '@/app/pool/new/page';
@@ -12,21 +12,35 @@ import TokensPage from '@/app/tokens/page';
 import ExplorePage from '@/app/explore/page';
 import '../app/globals.css';
 import pino from 'pino';
+import type { ReactNode } from 'react';
+import type { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
-// Create a logger instance
-const logger = pino({
-  level: 'info',
-  browser: {
-    asObject: true,
-  },
-});
+// Component that creates logger with runtime configuration
+function AppWithLogger({ children }: { children: ReactNode }) {
+  const config = useRuntimeConfiguration();
+  // TODO: question: why do we need to set the network id here? why not directly detected from the wallet?
+  setNetworkId(config.NETWORK_ID as NetworkId);
+  const logger = pino({
+    level: config.LOGGING_LEVEL.toLowerCase(),
+    browser: {
+      asObject: true,
+    },
+  });
+
+  return (
+    <MidnightWalletProvider logger={logger}>
+      {children}
+    </MidnightWalletProvider>
+  );
+}
 
 const App = () => {
   return (
     <RuntimeConfigurationProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <VersionProvider>
-          <MidnightWalletProvider logger={logger}>
+          <AppWithLogger>
             <NetworkProvider>
               <BrowserRouter>
                 <Routes>
@@ -38,7 +52,7 @@ const App = () => {
                 </Routes>
               </BrowserRouter>
             </NetworkProvider>
-          </MidnightWalletProvider>
+          </AppWithLogger>
         </VersionProvider>
         <Toaster />
       </ThemeProvider>

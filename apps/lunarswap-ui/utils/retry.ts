@@ -1,4 +1,3 @@
-import type { Logger } from 'pino';
 
 /**
  * Retries a promise-returning operation with exponential backoff.
@@ -7,7 +6,7 @@ import type { Logger } from 'pino';
 export function retry<T>(
   operation: () => Promise<T>, // The promise-returning operation
   operationName: string, // Name of the operation for logging
-  logger: Logger,
+  _logger: unknown, // Logger parameter is ignored, kept for compatibility
   retries = 10, // Number of retries
   delay = 500, // Initial delay in milliseconds
   backoffFactor = 1.2, // Backoff factor
@@ -23,25 +22,26 @@ export function retry<T>(
       currentDelay: number,
       isRetry: boolean,
     ) => {
+      console.log(`[${operationName}] Attempt ${retryCount + 1} of ${retries + 1}`);
       operation()
         .then((result) => {
           if (isRetry) {
-            logger.info(
+            console.log(
               `[${operationName}] Operation succeeded after retries.`,
             );
           }
           resolve(result);
         })
         .catch((error) => {
-          logger.error(`[${operationName}] Operation failed: ${error.message}`);
+          console.error(`[${operationName}] Operation failed: ${error.message}`);
 
           if (retryCount <= 0) {
-            logger.error(
+            console.error(
               `[${operationName}] All retries exhausted. Rejecting.`,
             );
             reject(error);
           } else {
-            logger.info(
+            console.log(
               `[${operationName}] Retrying operation in ${currentDelay}ms...`,
             );
             setTimeout(() => {
