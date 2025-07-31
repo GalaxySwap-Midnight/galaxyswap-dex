@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useViewPreference } from '@/hooks/use-view-preference';
+import { useWallet } from '@/hooks/use-wallet';
 
 export const metadata = {
   title: 'Provide Liquidity & Earn Fees',
@@ -19,6 +20,7 @@ export const metadata = {
 export default function PoolPage() {
   const [showNewPosition, setShowNewPosition] = useState(false);
   const viewPreference = useViewPreference();
+  const { isConnected } = useWallet();
 
   useEffect(() => {
     document.title = 'Provide Liquidity & Earn Fees';
@@ -33,30 +35,11 @@ export default function PoolPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-3xl font-bold">Pools</h1>
-            <Button
-              onClick={() => setShowNewPosition(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Position
-            </Button>
           </div>
 
-          <div
-            className={`${
-              viewPreference === 'horizontal'
-                ? 'grid grid-cols-1 lg:grid-cols-3 gap-8'
-                : 'space-y-8'
-            }`}
-          >
-            {/* Main Content */}
-            <div
-              className={`${
-                viewPreference === 'horizontal'
-                  ? 'lg:col-span-2 space-y-8'
-                  : 'space-y-8'
-              }`}
-            >
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+            {/* Main Content - Left Side (70%) */}
+            <div className="lg:col-span-7 space-y-8">
               <div>
                 <TokenRewards />
               </div>
@@ -74,17 +57,9 @@ export default function PoolPage() {
               </div>
             </div>
 
-            {/* Top Pools */}
-            <div
-              className={`${
-                viewPreference === 'horizontal' ? 'lg:col-span-1' : ''
-              }`}
-            >
-              <div
-                className={
-                  viewPreference === 'horizontal' ? 'sticky top-24' : ''
-                }
-              >
+            {/* Top Pools - Right Side (30%) */}
+            <div className="lg:col-span-3">
+              <div className="sticky top-24">
                 <TopPoolsList />
               </div>
             </div>

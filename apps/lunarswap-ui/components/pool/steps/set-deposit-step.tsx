@@ -7,7 +7,7 @@ import { useWallet } from '../../../hooks/use-wallet';
 import {
   createContractIntegration,
   DEMO_TOKENS,
-} from '../../../lib/contract-integration';
+} from '../../../lib/lunarswap-integration';
 import { useRuntimeConfiguration } from '../../../lib/runtime-configuration';
 import {
   calculateAddLiquidityAmounts,
@@ -76,7 +76,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           walletContext.callback,
           runtimeConfig.LUNARSWAP_ADDRESS,
         );
-        await contractIntegration.initialize();
+        await contractIntegration.joinContract();
 
         // Check if pair exists
         const exists = await contractIntegration.isPairExists(
@@ -198,7 +198,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       );
 
       // Initialize the contract
-      await contractIntegration.initialize();
+      await contractIntegration.joinContract();
 
       // Convert input amounts to BigInt (assuming 18 decimals)
       const amountADesired = BigInt(

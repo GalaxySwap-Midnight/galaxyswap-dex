@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
 import { MidnightWalletProvider } from '@/lib/wallet-context';
+import { LunarswapProvider } from '@/lib/lunarswap-context';
 import { ThemeProvider } from 'next-themes';
 import {
   RuntimeConfigurationProvider,
@@ -42,17 +43,19 @@ const App = () => {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <VersionProvider>
           <AppWithLogger>
-            <NetworkProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/pool" element={<PoolPage />} />
-                  <Route path="/pool/new" element={<NewPositionPage />} />
-                  <Route path="/tokens" element={<TokensPage />} />
-                  <Route path="/explore" element={<ExplorePage />} />
-                </Routes>
-              </BrowserRouter>
-            </NetworkProvider>
+            <LunarswapProvider>
+              <NetworkProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/pool" element={<PoolPage />} />
+                    <Route path="/pool/new" element={<NewPositionPage />} />
+                    <Route path="/tokens" element={<TokensPage />} />
+                    <Route path="/explore" element={<ExplorePage />} />
+                  </Routes>
+                </BrowserRouter>
+              </NetworkProvider>
+            </LunarswapProvider>
           </AppWithLogger>
         </VersionProvider>
         <Toaster />

@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, ExternalLink, Search, Grid3X3, List, Clock } from 'lucide-react';
-import { DEMO_TOKENS } from '@/lib/contract-integration';
+import { DEMO_TOKENS } from '@/lib/lunarswap-integration';
 import { useViewPreference } from '@/hooks/use-view-preference';
 
 interface Token {

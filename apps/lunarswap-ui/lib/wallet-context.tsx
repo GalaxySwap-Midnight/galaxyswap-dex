@@ -263,9 +263,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     [logger],
   );
 
-  const providerCallback: (action: ProviderCallbackAction) => void = (
-    action: ProviderCallbackAction,
-  ): void => {
+  const providerCallback = useCallback((action: ProviderCallbackAction): void => {
     if (action === 'proveTxStarted') {
       setSnackBarText('Proving transaction...');
     } else if (action === 'proveTxDone') {
@@ -287,7 +285,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     } else if (action === 'watchForTxDataDone') {
       setSnackBarText(undefined);
     }
-  };
+  }, []);
 
   const zkConfigProvider = useMemo(
     () =>
@@ -296,7 +294,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         fetch.bind(window),
         providerCallback,
       ),
-    [],
+    [providerCallback],
   );
 
   const publicDataProvider = useMemo(
@@ -306,7 +304,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         providerCallback,
         logger,
       ),
-    [config.INDEXER_URI, config.INDEXER_WS_URI, logger],
+    [config.INDEXER_URI, config.INDEXER_WS_URI, logger, providerCallback],
   );
 
   const shake = useCallback((): void => {
@@ -323,7 +321,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       return proofClient(walletAPI.uris.proverServerUri, providerCallback);
     }
     return noopProofClient();
-  }, [walletAPI]);
+  }, [walletAPI, providerCallback]);
 
   const walletProvider: WalletProvider = useMemo(() => {
     if (walletAPI) {
@@ -372,7 +370,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI]);
+  }, [walletAPI, providerCallback]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
     if (walletAPI) {
@@ -390,7 +388,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI]);
+  }, [walletAPI, providerCallback]);
 
   const [walletState, setWalletState] = useState<MidnightWalletState>({
     isConnected: false,
@@ -507,11 +505,21 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
   const connectMemo = useCallback(connect, []);
 
+  // Check if wallet is available before auto-connecting
+  const isWalletAvailable = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return !!(
+      window.midnight?.mnLace ||
+      typeof window.midnight !== 'undefined'
+    );
+  }, []);
+
   useEffect(() => {
-    if (!walletState.isConnected && !isConnecting && !walletError) {
+    // Only auto-connect if wallet is available and we're not already connected/connecting
+    if (isWalletAvailable && !walletState.isConnected && !isConnecting && !walletError) {
       void connectMemo(false); // auto connect
     }
-  }, [walletState.isConnected, isConnecting, walletError, connectMemo]);
+  }, [isWalletAvailable, walletState.isConnected, isConnecting, walletError, connectMemo]);
 
   return (
     <MidnightWalletContext.Provider value={walletState}>

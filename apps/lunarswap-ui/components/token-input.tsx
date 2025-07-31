@@ -15,6 +15,7 @@ interface TokenInputProps {
   onSelectToken: () => void;
   label?: string;
   readonly?: boolean;
+  disabled?: boolean;
 }
 
 export function TokenInput({
@@ -24,6 +25,7 @@ export function TokenInput({
   onSelectToken,
   label,
   readonly = false,
+  disabled = false,
 }: TokenInputProps) {
   return (
     <div className="rounded-xl bg-gray-100/80 dark:bg-gray-700/50 p-4">
@@ -44,7 +46,12 @@ export function TokenInput({
         <button
           type="button"
           onClick={onSelectToken}
-          className="flex items-center gap-2 rounded-full bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 px-3 py-1.5 transition border border-gray-300/50 dark:border-blue-800/30"
+          disabled={disabled}
+          className={`flex items-center gap-2 rounded-full px-3 py-1.5 transition border ${
+            disabled
+              ? 'bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/30 cursor-not-allowed opacity-50'
+              : 'bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 border-gray-300/50 dark:border-blue-800/30'
+          }`}
         >
           <div className="relative h-6 w-6 rounded-full overflow-hidden">
             <Identicon address={token.address} size={24} />

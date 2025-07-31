@@ -13,10 +13,7 @@ import { Badge } from './ui/badge';
 import { ThemeToggle } from './theme-toggle';
 import { useWallet } from '../hooks/use-wallet';
 import { useVersion } from '../lib/version-context';
-import {
-  createContractIntegration,
-  type ContractStatusInfo,
-} from '../lib/contract-integration';
+import { useLunarswapContext } from '../lib/lunarswap-context';
 import { useRuntimeConfiguration } from '../lib/runtime-configuration';
 import {
   Settings,
@@ -80,107 +77,20 @@ function PreferencesContent() {
   const midnightWallet = useWallet();
   const { version, setVersion } = useVersion();
   const runtimeConfig = useRuntimeConfiguration();
+  const { statusInfo, isLoading, refreshContract } = useLunarswapContext();
   const [animationsEnabled, setAnimationsEnabledState] = useState(true);
   const [viewPreference, setViewPreferenceState] = useState<
     'horizontal' | 'vertical'
   >('horizontal');
   const [showContractDetails, setShowContractDetails] = useState(false);
-  const [statusInfo, setStatusInfo] = useState<ContractStatusInfo>({
-    status: 'not-configured',
-  });
-  const [isLoading, setIsLoading] = useState(false);
 
-  const checkContractStatus = useCallback(async () => {
-    console.log('[ContractStatusIndicator] checkContractStatus called');
-
-    if (
-      !midnightWallet.walletAPI ||
-      !midnightWallet.isConnected ||
-      !runtimeConfig
-    ) {
-      console.log(
-        '[ContractStatusIndicator] Early return - missing dependencies',
-      );
-      setStatusInfo({
-        status: 'not-configured',
-        message: 'Please connect your wallet first',
-      });
-      return;
-    }
-    setIsLoading(true);
-    try {
-      console.log('[ContractStatusIndicator] Starting contract status check');
-
-      const privateStateProvider: PrivateStateProvider<
-        string,
-        LunarswapPrivateState
-      > = levelPrivateStateProvider({
-        privateStateStoreName: 'lunarswap-private-state',
-      });
-      const proofProvider: ProofProvider<LunarswapCircuitKeys> = proofClient(
-        midnightWallet.walletAPI.uris.proverServerUri,
-        midnightWallet.callback,
-      );
-      const zkConfigProvider: ZKConfigProvider<LunarswapCircuitKeys> =
-        new ZkConfigProviderWrapper(
-          window.location.origin,
-          fetch.bind(window),
-          midnightWallet.callback,
-        );
-
-      const providers: LunarswapProviders = {
-        ...midnightWallet.providers,
-        zkConfigProvider,
-      };
-
-      // Create contract integration using the existing providers
-      const contractIntegration = createContractIntegration(
-        providers,
-        midnightWallet.walletAPI,
-        midnightWallet.callback,
-        runtimeConfig.LUNARSWAP_ADDRESS,
-      );
-
-      console.log(
-        '[ContractStatusIndicator] Created contract integration',
-        contractIntegration,
-      );
-
-      // Initialize the contract integration
-      const status = await contractIntegration.initialize();
-      console.log(
-        '[ContractStatusIndicator] Contract initialization result:',
-        status,
-      );
-
-      setStatusInfo(status);
-    } catch (error) {
-      console.error('Contract status check failed:', error);
-      setStatusInfo({
-        status: 'error',
-        error: error instanceof Error ? error.message : String(error),
-        message: 'Failed to check contract status',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    midnightWallet.walletAPI,
-    midnightWallet.isConnected,
-    midnightWallet.providers,
-    midnightWallet.callback,
-    runtimeConfig,
-  ]);
-
+  // Use the contract integration context instead of local state
   useEffect(() => {
     console.log(
-      '[ContractStatusIndicator] useEffect triggered, calling checkContractStatus',
+      '[ContractStatusIndicator] useEffect triggered, contract status from context:',
+      statusInfo,
     );
-    checkContractStatus();
-    console.log(
-      '[ContractStatusIndicator] useEffect triggered, checkContractStatus completed',
-    );
-  }, [checkContractStatus]);
+  }, [statusInfo]);
   // Load animation setting from localStorage
   useEffect(() => {
     try {
@@ -545,7 +455,7 @@ function PreferencesContent() {
                 Contract address is configured but connection failed. Please
                 check your network connection and try again.
                 <Button
-                  onClick={checkContractStatus}
+                  onClick={refreshContract}
                   disabled={isLoading}
                   size="sm"
                   variant="outline"

@@ -23,7 +23,7 @@ import {
   type FoundContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 import {
-  Contract,
+  type Contract,
   LunarswapWitnesses,
   type LunarswapPrivateState,
   type Witnesses,
@@ -61,7 +61,7 @@ type LunarswapContract = Contract<
 type DeployedLunarswap = FoundContract<LunarswapContract>;
 
 // Contract interaction utilities
-export class LunarswapContractIntegration {
+export class LunarswapIntegration {
   private providers: LunarswapProviders;
   private walletAPI: WalletAPI;
   private lunarswap: Lunarswap | null = null;
@@ -107,7 +107,7 @@ export class LunarswapContractIntegration {
   /**
    * Initialize contract connection
    */
-  async initialize(): Promise<ContractStatusInfo> {
+  async joinContract(): Promise<ContractStatusInfo> {
     console.log('[LunarswapContractIntegration] hello!');
 
     const targetAddress = this.contractAddress || LUNARSWAP_CONTRACT;
@@ -181,7 +181,7 @@ export class LunarswapContractIntegration {
       console.log(
         '[LunarswapContractIntegration] Status set to connected, fetching pool data...',
       );
-      const poolData = await this.fetchPoolData();
+      const poolData = await this.getPublicState();
       console.log('[LunarswapContractIntegration] Pool data:', poolData);
 
       console.log(
@@ -210,7 +210,7 @@ export class LunarswapContractIntegration {
   /**
    * Fetch the public ledger pool data
    */
-  async fetchPoolData(): Promise<Ledger | null> {
+  async getPublicState(): Promise<Ledger | null> {
     if (!this.lunarswap) {
       throw new Error('Contract not initialized');
     }
@@ -272,7 +272,7 @@ export class LunarswapContractIntegration {
     }
 
     if (!this.poolData) {
-      await this.fetchPoolData();
+      await this.getPublicState();
     }
 
     if (!this.poolData || !this.lunarswap) {
@@ -310,7 +310,7 @@ export class LunarswapContractIntegration {
     }
 
     if (!this.poolData) {
-      await this.fetchPoolData();
+      await this.getPublicState();
     }
 
     if (!this.poolData || !this.lunarswap) {
@@ -344,7 +344,7 @@ export class LunarswapContractIntegration {
     amountOutMin: string,
     recipient: string,
   ): Promise<void> {
-    await this.ensureInitialized();
+    await this.ensureContractJoined();
 
     if (!this.lunarswap) {
       throw new Error('Contract not initialized');
@@ -374,7 +374,7 @@ export class LunarswapContractIntegration {
     amountInMax: string,
     recipient: string,
   ): Promise<void> {
-    await this.ensureInitialized();
+    await this.ensureContractJoined();
 
     if (!this.lunarswap) {
       throw new Error('Contract not initialized');
@@ -406,7 +406,7 @@ export class LunarswapContractIntegration {
     minAmountB: string,
     recipient: string,
   ): Promise<void> {
-    await this.ensureInitialized();
+    await this.ensureContractJoined();
 
     if (!this.lunarswap) {
       throw new Error('Contract not initialized');
@@ -437,7 +437,7 @@ export class LunarswapContractIntegration {
     minAmountB: string,
     recipient: string,
   ): Promise<void> {
-    await this.ensureInitialized();
+    await this.ensureContractJoined();
 
     if (!this.lunarswap) {
       throw new Error('Contract not initialized');
@@ -462,9 +462,9 @@ export class LunarswapContractIntegration {
   /**
    * Ensure the contract is initialized
    */
-  private async ensureInitialized(): Promise<void> {
+  private async ensureContractJoined(): Promise<void> {
     if (!this.lunarswap) {
-      const status = await this.initialize();
+      const status = await this.joinContract();
       if (status.status !== 'connected') {
         throw new Error(`Contract not ready: ${status.message}`);
       }
@@ -583,7 +583,7 @@ export const createContractIntegration = (
   callback: (action: ProviderCallbackAction) => void,
   contractAddress?: string,
 ) => {
-  return new LunarswapContractIntegration(
+  return new LunarswapIntegration(
     providers,
     walletAPI,
     callback,

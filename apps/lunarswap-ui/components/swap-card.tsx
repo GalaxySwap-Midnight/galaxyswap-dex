@@ -12,7 +12,7 @@ import { useWallet } from '../hooks/use-wallet';
 import {
   createContractIntegration,
   DEMO_TOKENS,
-} from '../lib/contract-integration';
+} from '../lib/lunarswap-integration';
 import { useRuntimeConfiguration } from '../lib/runtime-configuration';
 import {
   calculateAmountOut,
@@ -91,7 +91,7 @@ export function SwapCard() {
           midnightWallet.callback,
           runtimeConfig.LUNARSWAP_ADDRESS,
         );
-        const status = await contractIntegration.initialize();
+        const status = await contractIntegration.joinContract();
         setContractReady(status.status === 'connected');
       } catch (error) {
         console.error('Contract status check failed:', error);
@@ -129,7 +129,7 @@ export function SwapCard() {
           midnightWallet.callback,
           runtimeConfig.LUNARSWAP_ADDRESS,
         );
-        await contractIntegration.initialize();
+        await contractIntegration.joinContract();
 
         const exists = await contractIntegration.isPairExists(
           fromToken.symbol,
@@ -312,7 +312,7 @@ export function SwapCard() {
         midnightWallet.callback,
         runtimeConfig.LUNARSWAP_ADDRESS,
       );
-      await contractIntegration.initialize();
+      await contractIntegration.joinContract();
 
       // Convert amounts to BigInt (assuming 18 decimals)
       const fromAmountBigInt = BigInt(
@@ -423,6 +423,8 @@ export function SwapCard() {
             onChange={handleFromAmountChange}
             onSelectToken={() => openTokenModal('from')}
             label="Sell"
+            readonly={!midnightWallet.isConnected}
+            disabled={!midnightWallet.isConnected}
           />
           <div className="flex justify-center -my-2">
             <Button
@@ -459,6 +461,8 @@ export function SwapCard() {
             onChange={handleToAmountChange}
             onSelectToken={() => openTokenModal('to')}
             label="Buy"
+            readonly={!midnightWallet.isConnected}
+            disabled={!midnightWallet.isConnected}
           />
 
           {fromAmount && toAmount && (

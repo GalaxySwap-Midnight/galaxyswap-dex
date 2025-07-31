@@ -1,10 +1,11 @@
 // layout.tsx
-import type React from 'react';
+import React from 'react';
 import './globals.css';
 import { Toaster } from '@/components/ui/hot-toast';
 import { NetworkProvider } from '@/lib/network-context';
 import { VersionProvider } from '@/lib/version-context';
 import { MidnightWalletProvider } from '@/lib/wallet-context';
+import { LunarswapProvider } from '@/lib/lunarswap-context';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeConfigurationProvider } from '@/lib/runtime-configuration';
 import pino from 'pino';
@@ -56,7 +57,9 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <VersionProvider>
               <MidnightWalletProvider logger={logger}>
-                <NetworkProvider>{children}</NetworkProvider>
+                <LunarswapProvider>
+                  <NetworkProvider>{children}</NetworkProvider>
+                </LunarswapProvider>
               </MidnightWalletProvider>
             </VersionProvider>
             <Toaster />

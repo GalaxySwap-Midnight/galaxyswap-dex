@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { useWallet } from '@/hooks/use-wallet';
 
 export function PoolPositions() {
   const [positions, _] = useState<any[]>([]);
+  const { isConnected } = useWallet();
 
   return (
     <Card className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden">
@@ -19,12 +21,28 @@ export function PoolPositions() {
               View and manage your liquidity positions
             </p>
           </div>
-          <Link to="/pool/new">
-            <Button variant="outline" size="sm" className="gap-1 rounded-full">
+          {isConnected ? (
+            <Link to="/pool/new">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-1 rounded-full"
+              >
+                <Plus className="h-4 w-4" />
+                New Position
+              </Button>
+            </Link>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1 rounded-full"
+              disabled={true}
+            >
               <Plus className="h-4 w-4" />
               New Position
             </Button>
-          </Link>
+          )}
         </div>
       </CardHeader>
       <CardContent>
