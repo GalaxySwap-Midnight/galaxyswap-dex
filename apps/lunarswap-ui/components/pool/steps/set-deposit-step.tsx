@@ -4,11 +4,10 @@ import { Button } from '../../ui/button';
 import { CardContent, CardFooter } from '../../ui/card';
 import { Input } from '../../ui/input';
 import { useWallet } from '../../../hooks/use-wallet';
-import {
-  createContractIntegration,
-  DEMO_TOKENS,
-} from '../../../lib/lunarswap-integration';
-import { useRuntimeConfiguration } from '../../../lib/runtime-configuration';
+import { useLunarswapContext } from '../../../lib/lunarswap-context';
+import { DEMO_TOKENS } from '../../../lib/lunarswap-integration';
+import { SplitTokenIcon } from '../split-token-icon';
+import { TokenIcon } from '../token-icon';
 import {
   calculateAddLiquidityAmounts,
   SLIPPAGE_TOLERANCE,
@@ -18,11 +17,18 @@ import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+interface TokenData {
+  symbol: string;
+  name: string;
+  type: string;
+  address: string;
+}
+
 interface PairData {
   version: string;
   fee: number;
-  tokenA: string;
-  tokenB: string;
+  tokenA: TokenData;
+  tokenB: TokenData;
 }
 
 interface SetDepositStepProps {
@@ -30,9 +36,8 @@ interface SetDepositStepProps {
 }
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
-  const walletContext = useWallet();
-  const runtimeConfig = useRuntimeConfiguration();
-  const { isConnected, address, providers } = walletContext;
+  const { isConnected, address } = useWallet();
+  const { lunarswap, status, isLoading } = useLunarswapContext();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [poolExists, setPoolExists] = useState<boolean | null>(null);
@@ -46,18 +51,15 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     amountBMin: bigint;
   } | null>(null);
 
-  const [amountA, setAmountA] = useState('1');
-  const [amountB, setAmountB] = useState('1831.102949');
+  const [amountA, setAmountA] = useState<string>('');
+  const [amountB, setAmountB] = useState<string>('');
 
-  // Get token details from DEMO_TOKENS
-  const tokenADetails =
-    Object.values(DEMO_TOKENS).find(
-      (token) => token.symbol === pairData.tokenA,
-    ) || DEMO_TOKENS.TUSD;
-  const tokenBDetails =
-    Object.values(DEMO_TOKENS).find(
-      (token) => token.symbol === pairData.tokenB,
-    ) || DEMO_TOKENS.TEURO;
+  // Transaction state tracking for better user feedback
+  const [transactionState, setTransactionState] = useState<'idle' | 'checking-balance' | 'fetching-params' | 'generating-proof' | 'submitting-transaction' | 'confirming' | 'success' | 'error'>('idle');
+
+  // Use the token objects directly from pairData
+  const tokenADetails = pairData.tokenA;
+  const tokenBDetails = pairData.tokenB;
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -67,30 +69,24 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   // Fetch pool data when component mounts
   useEffect(() => {
     const fetchPoolInfo = async () => {
-      if (!walletContext.walletAPI || !isConnected || !runtimeConfig) return;
+      if (!isConnected || !lunarswap || status !== 'connected') return;
 
       try {
-        const contractIntegration = createContractIntegration(
-          providers,
-          walletContext.walletAPI,
-          walletContext.callback,
-          runtimeConfig.LUNARSWAP_ADDRESS,
-        );
-        await contractIntegration.joinContract();
-
         // Check if pair exists
-        const exists = await contractIntegration.isPairExists(
-          pairData.tokenA,
-          pairData.tokenB,
+        const exists = await lunarswap.isPairExists(
+          pairData.tokenA.type,
+          pairData.tokenB.type,
         );
+        console.log('[DEBUG] exists:', exists);
         setPoolExists(exists);
 
         if (exists) {
           // Get reserves if pair exists
-          const reserves = await contractIntegration.getPairReserves(
-            pairData.tokenA,
-            pairData.tokenB,
+          const reserves = await lunarswap.getPairReserves(
+            pairData.tokenA.type,
+            pairData.tokenB.type,
           );
+          console.log('[DEBUG] reserves:', reserves);
           setPoolReserves(reserves);
         }
       } catch (error) {
@@ -99,15 +95,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     };
 
     fetchPoolInfo();
-  }, [
-    isConnected,
-    walletContext.walletAPI,
-    providers,
-    walletContext.callback,
-    pairData.tokenA,
-    pairData.tokenB,
-    runtimeConfig,
-  ]);
+  }, [isConnected, lunarswap, status, pairData.tokenA.type, pairData.tokenB.type]);
 
   // Calculate optimal amounts when inputs change
   useEffect(() => {
@@ -123,13 +111,6 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       }
 
       try {
-        const amountADesired = BigInt(
-          Math.floor(Number.parseFloat(amountA) * 1e18),
-        );
-        const amountBDesired = BigInt(
-          Math.floor(Number.parseFloat(amountB) * 1e18),
-        );
-
         // Get current reserves (use 0 for new pools)
         let reserveA = BigInt(0);
         let reserveB = BigInt(0);
@@ -140,8 +121,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
         // Calculate optimal amounts using SDK
         const amounts = calculateAddLiquidityAmounts(
-          amountADesired,
-          amountBDesired,
+          BigInt(amountA),
+          BigInt(amountB),
           reserveA,
           reserveB,
           SLIPPAGE_TOLERANCE.LOW,
@@ -157,9 +138,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     calculateAmounts();
   }, [amountA, amountB, poolReserves]);
 
-  // Simulated USD values (you could calculate these based on reserves in production)
-  const valueA = '$1,786.54';
-  const valueB = '$1,831.55';
+
 
   const handleAddLiquidity = async () => {
     if (!isConnected) {
@@ -167,13 +146,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       return;
     }
 
-    if (!walletContext.walletAPI) {
-      toast.error('Wallet API not available');
-      return;
-    }
-
-    if (!runtimeConfig) {
-      toast.error('Runtime configuration not available');
+    if (!lunarswap || status !== 'connected') {
+      toast.error('Contract not connected. Please try again.');
       return;
     }
 
@@ -188,26 +162,13 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     }
 
     setIsSubmitting(true);
+    setTransactionState('checking-balance');
+    
     try {
-      // Create contract integration instance
-      const contractIntegration = createContractIntegration(
-        providers,
-        walletContext.walletAPI,
-        walletContext.callback,
-        runtimeConfig.LUNARSWAP_ADDRESS,
-      );
-
-      // Initialize the contract
-      await contractIntegration.joinContract();
-
-      // Convert input amounts to BigInt (assuming 18 decimals)
-      const amountADesired = BigInt(
-        Math.floor(Number.parseFloat(amountA) * 1e18),
-      );
-      const amountBDesired = BigInt(
-        Math.floor(Number.parseFloat(amountB) * 1e18),
-      );
-
+      // Stage 1: Check balance and prepare transaction
+      setTransactionState('checking-balance');
+      console.log('[AddLiquidity] Checking balance and preparing transaction...');
+      
       // Get current reserves (use 0 for new pools)
       let reserveA = BigInt(0);
       let reserveB = BigInt(0);
@@ -219,8 +180,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       // Use SDK to calculate optimal amounts and minimum amounts with slippage protection
       const { amountAOptimal, amountBOptimal, amountAMin, amountBMin } =
         calculateAddLiquidityAmounts(
-          amountADesired,
-          amountBDesired,
+          BigInt(amountA),
+          BigInt(amountB),
           reserveA,
           reserveB,
           SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage tolerance
@@ -228,8 +189,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
       // Prepare liquidity parameters
       const liquidityParams = {
-        tokenA: pairData.tokenA,
-        tokenB: pairData.tokenB,
+        tokenA: pairData.tokenA.type,
+        tokenB: pairData.tokenB.type,
         amountADesired: amountAOptimal.toString(),
         amountBDesired: amountBOptimal.toString(),
         amountAMin: amountAMin.toString(),
@@ -238,8 +199,16 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes from now
       };
 
+      // Stage 2: Fetch proof parameters
+      setTransactionState('fetching-params');
+      console.log('[AddLiquidity] Fetching proof parameters...');
+      
+      // Stage 3: Generate ZK proof
+      setTransactionState('generating-proof');
+      console.log('[AddLiquidity] Generating ZK proof...');
+      
       // Execute the add liquidity transaction
-      await contractIntegration.addLiquidity(
+      const txData = await lunarswap.addLiquidity(
         liquidityParams.tokenA,
         liquidityParams.tokenB,
         liquidityParams.amountADesired,
@@ -249,6 +218,18 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         liquidityParams.recipient,
       );
 
+      // Stage 4: Submit transaction
+      setTransactionState('submitting-transaction');
+      console.log('[AddLiquidity] Submitting transaction...');
+
+      console.log('txData', txData);
+
+      // Stage 5: Confirming transaction
+      setTransactionState('confirming');
+      console.log('[AddLiquidity] Confirming transaction...');
+
+      // Stage 6: Success
+      setTransactionState('success');
       toast.success('Liquidity added successfully!');
 
       // Update the input amounts to reflect what was actually used
@@ -256,25 +237,63 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       setAmountB((Number(amountBOptimal) / 1e18).toString());
 
       // Refresh pool data after successful transaction
-      const exists = await contractIntegration.isPairExists(
-        pairData.tokenA,
-        pairData.tokenB,
+      const exists = await lunarswap.isPairExists(
+        pairData.tokenA.type,
+        pairData.tokenB.type,
       );
       setPoolExists(exists);
       if (exists) {
-        const reserves = await contractIntegration.getPairReserves(
-          pairData.tokenA,
-          pairData.tokenB,
+        const reserves = await lunarswap.getPairReserves(
+          pairData.tokenA.type,
+          pairData.tokenB.type,
         );
         setPoolReserves(reserves);
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to add liquidity';
+      // Enhanced error handling with better user messages
+      setTransactionState('error');
+      let errorMessage = 'Failed to add liquidity';
+      
+      if (error instanceof Error) {
+        const errorText = error.message.toLowerCase();
+        const errorReason = (error as { reason?: string })?.reason?.toLowerCase() || '';
+        
+        // Check for insufficient balance errors
+        if (errorText.includes('insufficient balance') || 
+            errorReason.includes('insufficient balance') ||
+            errorText.includes('insufficient funds') ||
+            errorReason.includes('insufficient funds')) {
+          
+          errorMessage = `Insufficient token balance. Please ensure you have enough ${pairData.tokenA.symbol} and ${pairData.tokenB.symbol} tokens.`;
+          
+        } else if (errorText.includes('slippage') || errorReason.includes('slippage')) {
+          errorMessage = 'Transaction failed due to price movement. Try adjusting your slippage tolerance or try again.';
+          
+        } else if (errorText.includes('pair does not exist') || errorReason.includes('pair does not exist')) {
+          errorMessage = `Trading pair for ${pairData.tokenA.symbol}/${pairData.tokenB.symbol} does not exist yet.`;
+          
+        } else if (errorText.includes('user rejected') || errorReason.includes('user rejected')) {
+          errorMessage = 'Transaction was cancelled by user.';
+          
+        } else if (errorText.includes('network') || errorReason.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+          
+        } else {
+          // Use the original error message for other cases
+          errorMessage = error.message;
+        }
+      }
+      
+      // Show all transaction errors as error notifications
       toast.error(errorMessage);
+      
       console.error('Add liquidity error:', error);
     } finally {
       setIsSubmitting(false);
+      // Reset transaction state after a delay
+      setTimeout(() => {
+        setTransactionState('idle');
+      }, 2000);
     }
   };
 
@@ -282,8 +301,64 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     if (!isHydrated) return 'Loading...';
     if (!isConnected) return 'Connect Wallet';
     if (!amountA || !amountB) return 'Enter amounts';
-    if (isSubmitting) return 'Adding Liquidity...';
-    return 'Add Liquidity';
+    
+    // Show transaction state-specific messages
+    switch (transactionState) {
+      case 'checking-balance':
+        return 'Checking Balance...';
+      case 'fetching-params':
+        return 'Fetching Parameters...';
+      case 'generating-proof':
+        return 'Generating ZK Proof...';
+      case 'submitting-transaction':
+        return 'Submitting Transaction...';
+      case 'confirming':
+        return 'Confirming Transaction...';
+      case 'success':
+        return 'Success!';
+      case 'error':
+        return 'Transaction Failed';
+      default:
+        return isSubmitting ? 'Adding Liquidity...' : 'Add Liquidity';
+    }
+  };
+
+  const getButtonVariant = () => {
+    switch (transactionState) {
+      case 'success':
+        return 'bg-green-500 hover:bg-green-600';
+      case 'error':
+        return 'bg-red-500 hover:bg-red-600';
+      case 'checking-balance':
+      case 'fetching-params':
+      case 'generating-proof':
+      case 'submitting-transaction':
+      case 'confirming':
+        return 'bg-blue-500 hover:bg-blue-600';
+      default:
+        return 'bg-blue-500 hover:bg-blue-600';
+    }
+  };
+
+  const getProgressPercentage = () => {
+    switch (transactionState) {
+      case 'checking-balance':
+        return 20;
+      case 'fetching-params':
+        return 40;
+      case 'generating-proof':
+        return 60;
+      case 'submitting-transaction':
+        return 80;
+      case 'confirming':
+        return 90;
+      case 'success':
+        return 100;
+      case 'error':
+        return 0;
+      default:
+        return 0;
+    }
   };
 
   const isButtonDisabled = () => {
@@ -293,7 +368,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       !amountA ||
       !amountB ||
       isSubmitting ||
-      !walletContext.walletAPI ||
+      !lunarswap ||
+      status !== 'connected' ||
       !calculatedAmounts // Disable if calculations aren't ready
     );
   };
@@ -304,16 +380,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <div className="relative h-8 w-8 mr-2">
-                <div className="absolute top-0 left-0 h-8 w-8 rounded-full overflow-hidden bg-blue-100 dark:bg-blue-900">
-                  <img
-                    src="/placeholder.svg?height=32&width=32"
-                    alt=""
-                    width={32}
-                    height={32}
-                  />
-                </div>
-              </div>
+              <SplitTokenIcon 
+                tokenASymbol={tokenADetails.symbol}
+                tokenBSymbol={tokenBDetails.symbol}
+                size={32}
+                className="mr-3"
+              />
               <div className="flex items-center">
                 <span className="font-medium mr-2">{tokenADetails.symbol}</span>
                 <span className="text-gray-500">/</span>
@@ -362,17 +434,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 placeholder="0"
               />
               <div className="flex justify-between mt-2">
-                <span className="text-sm text-gray-500">{valueA}</span>
                 <div className="flex items-center">
-                  <div className="relative h-5 w-5 mr-1">
-                    <img
-                      src="/placeholder.svg?height=20&width=20"
-                      alt=""
-                      width={20}
-                      height={20}
-                      className="rounded-full"
-                    />
-                  </div>
+                  <TokenIcon 
+                    symbol={tokenADetails.symbol}
+                    size={20}
+                    className="mr-2"
+                  />
                   <span className="text-sm font-medium">
                     {tokenADetails.symbol}
                   </span>
@@ -389,17 +456,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 placeholder="0"
               />
               <div className="flex justify-between mt-2">
-                <span className="text-sm text-gray-500">{valueB}</span>
                 <div className="flex items-center">
-                  <div className="relative h-5 w-5 mr-1">
-                    <img
-                      src="/placeholder.svg?height=20&width=20"
-                      alt=""
-                      width={20}
-                      height={20}
-                      className="rounded-full"
-                    />
-                  </div>
+                  <TokenIcon 
+                    symbol={tokenBDetails.symbol}
+                    size={20}
+                    className="mr-2"
+                  />
                   <span className="text-sm font-medium">
                     {tokenBDetails.symbol}
                   </span>
@@ -420,9 +482,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                     Optimal {tokenADetails.symbol}:
                   </span>
                   <span className="font-mono font-medium">
-                    {(Number(calculatedAmounts.amountAOptimal) / 1e18).toFixed(
-                      6,
-                    )}
+                    {Number(calculatedAmounts.amountAOptimal)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -430,9 +490,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                     Optimal {tokenBDetails.symbol}:
                   </span>
                   <span className="font-mono font-medium">
-                    {(Number(calculatedAmounts.amountBOptimal) / 1e18).toFixed(
-                      6,
-                    )}
+                    {Number(calculatedAmounts.amountBOptimal)}
                   </span>
                 </div>
                 <div className="border-t border-blue-200 dark:border-blue-700 pt-2 mt-2">
@@ -441,7 +499,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                       Min {tokenADetails.symbol} (with 0.5% slippage):
                     </span>
                     <span className="font-mono">
-                      {(Number(calculatedAmounts.amountAMin) / 1e18).toFixed(6)}
+                      {Number(calculatedAmounts.amountAMin)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
@@ -449,7 +507,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                       Min {tokenBDetails.symbol} (with 0.5% slippage):
                     </span>
                     <span className="font-mono">
-                      {(Number(calculatedAmounts.amountBMin) / 1e18).toFixed(6)}
+                      {Number(calculatedAmounts.amountBMin)}
                     </span>
                   </div>
                 </div>
@@ -459,14 +517,30 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
           {isSubmitting && (
             <div className="text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">
-              Processing transaction... This may take a few minutes.
+              <div className="flex items-center justify-between mb-2">
+                <span>Processing transaction...</span>
+                <span className="text-xs font-mono">{getProgressPercentage()}%</span>
+              </div>
+              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${getProgressPercentage()}%` }}
+                />
+              </div>
+              <div className="text-xs text-blue-500 mt-1">
+                {transactionState === 'checking-balance' && 'Checking your token balances...'}
+                {transactionState === 'fetching-params' && 'Downloading proof parameters...'}
+                {transactionState === 'generating-proof' && 'Generating zero-knowledge proof...'}
+                {transactionState === 'submitting-transaction' && 'Submitting to blockchain...'}
+                {transactionState === 'confirming' && 'Waiting for confirmation...'}
+              </div>
             </div>
           )}
         </div>
       </CardContent>
       <CardFooter className="p-6 pt-0">
         <Button
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl disabled:opacity-50"
+          className={`w-full text-white py-3 rounded-xl disabled:opacity-50 transition-all duration-300 ${getButtonVariant()}`}
           disabled={isButtonDisabled()}
           onClick={handleAddLiquidity}
         >

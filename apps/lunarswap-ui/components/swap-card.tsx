@@ -8,29 +8,61 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from './ui/tooltip';
-import { useWallet } from '../hooks/use-wallet';
-import {
-  createContractIntegration,
-  DEMO_TOKENS,
-} from '../lib/lunarswap-integration';
-import { useRuntimeConfiguration } from '../lib/runtime-configuration';
-import {
-  calculateAmountOut,
-  calculateAmountIn,
-  computeAmountOutMin,
-  computeAmountInMax,
-  SLIPPAGE_TOLERANCE,
-} from '@midnight-dapps/lunarswap-sdk';
+import { useWallet } from '@/hooks/use-wallet';
+import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
+import { createContractIntegration } from '@/lib/lunarswap-integration';
+import { SLIPPAGE_TOLERANCE } from '@midnight-dapps/lunarswap-sdk';
 import { ArrowDown, Fuel, Info, Settings, Loader2 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { TokenInput } from './token-input';
 import { TokenSelectModal } from './token-select-modal';
+import { Buffer } from 'buffer';
+
+// Popular tokens that might be available in pools
+const popularTokens = [
+  {
+    symbol: 'TUSD',
+    name: 'Test USD',
+    type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c',
+    address:
+      '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
+  },
+  {
+    symbol: 'TEURO',
+    name: 'Test Euro',
+    type: '02003af426c10783ffe699149c2ef39edb7a6e05e2a2bfe1c3a90e1add8a9d6e2dac',
+    address:
+      '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a',
+  },
+  {
+    symbol: 'TJPY',
+    name: 'Test Japanese Yen',
+    type: '020011a6de51d7633b00f9c5f9408c836a5566870f9366f14022814735eec0663a0b',
+    address:
+      '02003854ada114516d9ebe65061da7c3f9f00830afdd47c749ed9e2836d36a026d01',
+  },
+  {
+    symbol: 'TCNY',
+    name: 'Test Chinese Yuan',
+    type: '0200e6b100604d6e10e080948e43cfc4aa1646e32d972d4aada3ac36ce430443911d',
+    address:
+      '02001e10cca412097c53af918b4532865823e3850fbaf2f66203036acfab324df5c9',
+  },
+  {
+    symbol: 'TARS',
+    name: 'Test Argentine Peso',
+    type: '020063482c03ec84e6e9bf55ef1eef9ea431f2c434921fab43f9d4c3e60d884a4c6a',
+    address:
+      '02009161411a0e1e51467c8559444efb09d6a372aca23b3e6613c5b9394ba3d4befd',
+  },
+];
 
 interface Token {
   symbol: string;
   name: string;
   address: string;
+  type: string;
 }
 
 type SwapType = 'EXACT_INPUT' | 'EXACT_OUTPUT';
@@ -44,18 +76,10 @@ export function SwapCard() {
 
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [selectingToken, setSelectingToken] = useState<'from' | 'to'>('from');
-  const [fromToken, setFromToken] = useState<Token>({
-    symbol: 'TUSD',
-    name: 'Test USD',
-    address:
-      '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
-  });
-  const [toToken, setToToken] = useState<Token>({
-    symbol: 'TEURO',
-    name: 'Test Euro',
-    address:
-      '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a',
-  });
+  const [fromToken, setFromToken] = useState<Token | null>(null);
+  const [toToken, setToToken] = useState<Token | null>(null);
+  const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
   const [activeField, setActiveField] = useState<ActiveField>(null);
@@ -108,6 +132,66 @@ export function SwapCard() {
     runtimeConfig,
   ]);
 
+  // Get available tokens from pools
+  useEffect(() => {
+    const fetchAvailableTokens = async () => {
+      if (!midnightWallet.isConnected || !runtimeConfig || !midnightWallet.walletAPI) {
+        setAvailableTokens([]);
+        return;
+      }
+
+      setIsLoadingTokens(true);
+      try {
+        const contractIntegration = createContractIntegration(
+          midnightWallet.providers,
+          midnightWallet.walletAPI,
+          midnightWallet.callback,
+          runtimeConfig.LUNARSWAP_ADDRESS,
+        );
+        await contractIntegration.joinContract();
+        
+        const publicState = await contractIntegration.getPublicState();
+        if (publicState) {
+          const pairs = contractIntegration.getAllPairs();
+          
+          // Extract unique tokens from all pairs
+          const tokenSet = new Set<string>();
+          for (const { pair } of pairs) {
+            // Add both tokens from each pair
+            tokenSet.add(Buffer.from(pair.token0.color).toString('hex'));
+            tokenSet.add(Buffer.from(pair.token1.color).toString('hex'));
+          }
+
+          // Filter popular tokens to only include those with pools
+          const available = popularTokens.filter((token: Token) => 
+            tokenSet.has(token.type)
+          );
+          
+          setAvailableTokens(available);
+          
+          // Set default tokens if none are selected
+          if (!fromToken && available.length > 0) {
+            setFromToken(available[0]);
+          }
+          if (!toToken && available.length > 1) {
+            setToToken(available[1]);
+          } else if (!toToken && available.length === 1) {
+            setToToken(available[0]);
+          }
+        } else {
+          setAvailableTokens([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch available tokens:', error);
+        setAvailableTokens([]);
+      } finally {
+        setIsLoadingTokens(false);
+      }
+    };
+
+    fetchAvailableTokens();
+  }, [midnightWallet.isConnected, midnightWallet.providers, midnightWallet.walletAPI, midnightWallet.callback, runtimeConfig, fromToken, toToken]);
+
   // Fetch pool reserves when tokens change
   useEffect(() => {
     const fetchReserves = async () => {
@@ -145,77 +229,76 @@ export function SwapCard() {
           setPoolReserves(null);
         }
       } catch (error) {
-        console.error('Failed to fetch pool reserves:', error);
+        console.error('Failed to fetch reserves:', error);
         setPoolReserves(null);
       }
     };
 
     fetchReserves();
   }, [
-    fromToken,
-    toToken,
     midnightWallet.walletAPI,
     midnightWallet.providers,
     midnightWallet.callback,
     runtimeConfig,
+    fromToken,
+    toToken,
   ]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback(
     (inputAmount: string): string => {
-      if (
-        !inputAmount ||
-        !poolReserves ||
-        Number.parseFloat(inputAmount) <= 0
-      ) {
+      if (!poolReserves || !fromToken || !toToken) {
         return '';
       }
 
       try {
-        const amountIn = BigInt(
-          Math.floor(Number.parseFloat(inputAmount) * 1e18),
-        );
-        const [reserveIn, reserveOut] = poolReserves;
+        const amountIn = BigInt(inputAmount);
+        const reserveIn = poolReserves[0];
+        const reserveOut = poolReserves[1];
 
-        // Use SDK function with default 0.3% fee
-        const amountOut = calculateAmountOut(amountIn, reserveIn, reserveOut);
+        if (amountIn === 0n || reserveIn === 0n || reserveOut === 0n) {
+          return '';
+        }
 
-        return (Number(amountOut) / 1e18).toFixed(6);
-      } catch (error) {
-        console.error('Error calculating output amount:', error);
+        const amountInWithFee = amountIn * 997n;
+        const numerator = amountInWithFee * reserveOut;
+        const denominator = reserveIn * 1000n + amountInWithFee;
+        const amountOut = numerator / denominator;
+
+        return amountOut.toString();
+      } catch {
         return '';
       }
     },
-    [poolReserves],
+    [poolReserves, fromToken, toToken],
   );
 
   // Calculate input amount for exact output (reverse calculation)
   const calculateInputAmount = useCallback(
     (outputAmount: string): string => {
-      if (
-        !outputAmount ||
-        !poolReserves ||
-        Number.parseFloat(outputAmount) <= 0
-      ) {
+      if (!poolReserves || !fromToken || !toToken) {
         return '';
       }
 
       try {
-        const amountOut = BigInt(
-          Math.floor(Number.parseFloat(outputAmount) * 1e18),
-        );
-        const [reserveIn, reserveOut] = poolReserves;
+        const amountOut = BigInt(outputAmount);
+        const reserveIn = poolReserves[0];
+        const reserveOut = poolReserves[1];
 
-        // Use SDK function with default 0.3% fee
-        const amountIn = calculateAmountIn(amountOut, reserveIn, reserveOut);
+        if (amountOut === 0n || reserveIn === 0n || reserveOut === 0n) {
+          return '';
+        }
 
-        return (Number(amountIn) / 1e18).toFixed(6);
-      } catch (error) {
-        console.error('Error calculating input amount:', error);
+        const numerator = reserveIn * amountOut * 1000n;
+        const denominator = (reserveOut - amountOut) * 997n;
+        const amountIn = numerator / denominator + 1n;
+
+        return amountIn.toString();
+      } catch {
         return '';
       }
     },
-    [poolReserves],
+    [poolReserves, fromToken, toToken],
   );
 
   // Handle from amount change (exact input)
@@ -284,23 +367,7 @@ export function SwapCard() {
   };
 
   const handleSwap = async () => {
-    if (
-      !midnightWallet.isConnected ||
-      !midnightWallet.walletAPI ||
-      !midnightWallet.address ||
-      !runtimeConfig
-    ) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    if (!fromAmount || !toAmount) {
-      toast.error('Please enter valid amounts');
-      return;
-    }
-
-    if (!poolReserves) {
-      toast.error('Pool not found');
+    if (!fromToken || !toToken || !fromAmount || !toAmount || !midnightWallet.walletAPI || !midnightWallet.address || !runtimeConfig) {
       return;
     }
 
@@ -314,47 +381,25 @@ export function SwapCard() {
       );
       await contractIntegration.joinContract();
 
-      // Convert amounts to BigInt (assuming 18 decimals)
-      const fromAmountBigInt = BigInt(
-        Math.floor(Number.parseFloat(fromAmount) * 1e18),
-      );
-      const toAmountBigInt = BigInt(
-        Math.floor(Number.parseFloat(toAmount) * 1e18),
-      );
-
       if (swapType === 'EXACT_INPUT') {
-        // User specified exact input amount, calculate minimum output with slippage using SDK
-        const amountOutMin = computeAmountOutMin(
-          toAmountBigInt,
-          slippageTolerance,
-        );
-
-        await contractIntegration.swapExactTokensForTokens(
+        const result = await contractIntegration.swapExactTokensForTokens(
           fromToken.symbol,
           toToken.symbol,
-          fromAmountBigInt.toString(),
-          amountOutMin.toString(),
+          BigInt(fromAmount).toString(),
+          BigInt(toAmount).toString(),
           midnightWallet.address,
         );
-
         toast.success(
           `Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`,
         );
       } else {
-        // User specified exact output amount, calculate maximum input with slippage using SDK
-        const amountInMax = computeAmountInMax(
-          fromAmountBigInt,
-          slippageTolerance,
-        );
-
-        await contractIntegration.swapTokensForExactTokens(
+        const result = await contractIntegration.swapTokensForExactTokens(
           fromToken.symbol,
           toToken.symbol,
-          toAmountBigInt.toString(),
-          amountInMax.toString(),
+          BigInt(fromAmount).toString(),
+          BigInt(toAmount).toString(),
           midnightWallet.address,
         );
-
         toast.success(
           `Swapped ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`,
         );
@@ -365,45 +410,46 @@ export function SwapCard() {
       setToAmount('');
       setActiveField(null);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      toast.error(`Swap failed: ${errorMsg}`);
-      console.error('Swap error:', error);
+      console.error('Swap failed:', error);
+      toast.error('Swap failed. Please try again.');
     } finally {
       setIsSwapping(false);
     }
   };
 
   const getExchangeRate = () => {
-    if (!fromAmount || !toAmount || Number.parseFloat(fromAmount) === 0)
-      return null;
-    const rate = Number.parseFloat(toAmount) / Number.parseFloat(fromAmount);
+    if (!poolReserves || !fromToken || !toToken) {
+      return 'No rate available';
+    }
+
+    const [reserve0, reserve1] = poolReserves;
+    if (reserve0 === 0n || reserve1 === 0n) {
+      return 'No liquidity';
+    }
+
+    const rate = Number(reserve1) / Number(reserve0);
     return `1 ${fromToken.symbol} = ${rate.toFixed(6)} ${toToken.symbol}`;
   };
 
   const getButtonText = () => {
     if (!isHydrated) return 'Loading...';
     if (!midnightWallet.isConnected) return 'Connect Wallet';
-    if (!contractReady) return 'Contract Not Available';
+    if (!fromToken || !toToken) return 'Select Tokens';
     if (!fromAmount || !toAmount) return 'Enter amounts';
-    if (!poolReserves) return 'Pool not found';
-    if (isCalculating) return 'Calculating...';
+    if (!contractReady) return 'Contract not ready';
     if (isSwapping) return 'Swapping...';
-
-    if (swapType === 'EXACT_INPUT') {
-      return `Swap ${fromAmount} ${fromToken.symbol}`;
-    }
-    return `Swap for ${toAmount} ${toToken.symbol}`;
+    return 'Swap';
   };
 
   const isButtonDisabled = () => {
     return (
       !isHydrated ||
       !midnightWallet.isConnected ||
-      !contractReady ||
+      !fromToken ||
+      !toToken ||
       !fromAmount ||
       !toAmount ||
-      !poolReserves ||
-      isCalculating ||
+      !contractReady ||
       isSwapping
     );
   };
@@ -425,6 +471,7 @@ export function SwapCard() {
             label="Sell"
             readonly={!midnightWallet.isConnected}
             disabled={!midnightWallet.isConnected}
+            isActive={activeField === 'from'}
           />
           <div className="flex justify-center -my-2">
             <Button
@@ -463,6 +510,7 @@ export function SwapCard() {
             label="Buy"
             readonly={!midnightWallet.isConnected}
             disabled={!midnightWallet.isConnected}
+            isActive={activeField === 'to'}
           />
 
           {fromAmount && toAmount && (

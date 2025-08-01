@@ -60,18 +60,44 @@ module LunarswapPair {
 
     /**
      * @title MINIMUM_LIQUIDITY circuit
-     * @description Returns the minimum liquidity required for new pairs.
+     * @description Returns the minimum liquidity that is always locked in the pool to prevent share inflation attacks.
      * 
      * @remarks
-     * This circuit defines the minimum amount of liquidity that must be provided
-     * when creating a new trading pair. This prevents division by zero issues.
+     * This circuit defines the minimum amount of LP tokens (liquidity) that must be permanently locked in every new trading pair.
+     * 
+     * This mechanism directly mitigates the "share inflation attack" (see [OpenZeppelin: Inflation Attack](https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack))
+     * as originally described in the [Uniswap v2 Whitepaper, Section 5.2](https://app.uniswap.org/whitepaper.pdf#subsection.5.2).
+     * See also the Uniswap v2 code implementation: [UniswapV2Pair.sol#L77-L87](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol#L77-L87).
+     * 
+     * **Attack Prevention Mechanism:**
+     * By locking a small, nonzero amount of LP shares, the cost of manipulating the pool's share value is
+     * dramatically increased. This makes it economically infeasible for an attacker to inflate the value of
+     * a single share by donating assets to the pool, as the minimum liquidity is
+     * forever unclaimable and must be "burned" to the zero address.
+     * 
+     * **Decimal System Adaptation:**
+     * The original Uniswap v2 implementation uses 1000 for Ethereum's 18-decimal system, representing
+     * 1e-15 of a single LP token (1000 / 1e18 = 1e-15). For Midnight's 6-decimal system, we use 1,
+     * which represents 1e-6 of a single LP token (1 / 1e6 = 1e-6).
+     * 
+     * **Value Selection Rationale:**
+     * The value 1 is chosen because:
+     * 1. It maintains the same proportional security as Uniswap v2 (very small fraction of total supply)
+     * 2. It's negligible for honest liquidity providers (0.0001% of a token)
+     * 3. It's large enough to make share inflation attacks prohibitively expensive
+     * 4. It's appropriate for Midnight's token precision and economic scale
+     * 
+     * **Cross-Platform Equivalence:**
+     * - Ethereum (18 decimals): 1000 represents 1e-15 of a token
+     * - Midnight (6 decimals): 1 represents 1e-6 of a token
+     * Both values serve the same security purpose while being appropriately scaled for their respective ecosystems.
      *
      * @circuitInfo k=11, rows=100
      *
-     * @returns {Uint<16>} - The minimum liquidity amount (1000).
+     * @returns {Uint<16>} - The minimum liquidity amount (1), permanently locked to mitigate share inflation attacks.
      */
     circuit MINIMUM_LIQUIDITY(): Uint<16> {
-        return 1000;
+        return 1;
     }
 
     /**
@@ -162,7 +188,7 @@ module LunarswapPair {
                 disclose(Uint128_sqrt(Uint128_mulChecked(amount0, amount1))), 
                 MINIMUM_LIQUIDITY()
             );
-            assert(liquidity > 0) "LunarswapPair: Insufficient liquidity minted";
+            assert(liquidity > 0) "LunarswapPair: New pair Insufficient liquidity minted";
             LunarswapLiquidity_mint(identity, eitherZeroSenderAddress(), MINIMUM_LIQUIDITY());
             LunarswapLiquidity_mint(identity, to, liquidity);
             // For the initial mint, set the liquidity reserve to MINIMUM_LIQUIDITY() + liquidity
@@ -188,7 +214,7 @@ module LunarswapPair {
             ); 
             // TODO: that is TBD later in the future after doing benchmarks on the performance of MathU256
             assert (liquidity <= MAX_UINT128()) "LunarswapPair: liquidity overflows MAX_U128 supported size in ERC20";
-            assert(liquidity > 0) "LunarswapPair: Insufficient liquidity minted";
+            assert(liquidity > 0) "LunarswapPair: Existing pair Insufficient liquidity minted";
             LunarswapLiquidity_mint(identity, to, liquidity);
             return _update(
                 pair,

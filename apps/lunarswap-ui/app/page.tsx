@@ -1,5 +1,6 @@
 import { Header } from '@/components/header';
-import { SwapCard } from '@/components/swap-card';
+import { TradeTabs } from '@/components/trade-tabs';
+import { BrowserCompatibility } from '@/components/browser-compatibility';
 import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
 import { useEffect } from 'react';
@@ -21,9 +22,8 @@ export default function Home() {
       <MoonDustBackground />
       <Header />
       <main className="container mx-auto px-4 py-8 relative z-0 pt-24">
-        <div className="max-w-md mx-auto">
-          <SwapCard />
-        </div>
+        <BrowserCompatibility />
+        <TradeTabs />
       </main>
     </div>
   );

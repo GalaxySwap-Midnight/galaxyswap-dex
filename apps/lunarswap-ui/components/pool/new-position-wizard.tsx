@@ -9,16 +9,23 @@ import { SetDepositStep } from './steps/set-deposit-step';
 
 type Step = 'select-pair' | 'set-deposit';
 
+interface TokenData {
+  symbol: string;
+  name: string;
+  type: string;
+  address: string;
+}
+
 interface PairSelectionData {
-  tokenA: string | null;
-  tokenB: string | null;
+  tokenA: TokenData | null;
+  tokenB: TokenData | null;
   fee: number;
   version: string;
 }
 
 interface CompletePairData {
-  tokenA: string;
-  tokenB: string;
+  tokenA: TokenData;
+  tokenB: TokenData;
   fee: number;
   version: string;
 }
@@ -69,55 +76,70 @@ export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
 
             {/* Step 1 */}
             <div className="relative mb-12">
-              <div
-                className={`flex items-center ${currentStep === 'select-pair' ? '' : 'opacity-60'}`}
+              <button
+                onClick={() => setCurrentStep('select-pair')}
+                type="button"
+                className={`w-full text-left ${currentStep === 'select-pair' ? '' : 'opacity-60 hover:opacity-80'}`}
               >
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full z-10 ${
-                    currentStep === 'select-pair'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  1
-                </div>
-                <div className="ml-3">
-                  <div className="text-sm font-medium">Step 1</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Select token pair and fees
+                <div className="flex items-center">
+                  <div
+                    className={`flex items-center justify-center w-8 h-8 rounded-full z-10 ${
+                      currentStep === 'select-pair'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    1
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-sm font-medium">Step 1</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Select token pair and fees
+                    </div>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* Step 2 */}
             <div className="relative">
-              <div
-                className={`flex items-center ${currentStep === 'set-deposit' ? '' : 'opacity-60'}`}
+              <button
+                onClick={() => isCompletePairData(pairData) && setCurrentStep('set-deposit')}
+                disabled={!isCompletePairData(pairData)}
+                type="button"
+                className={`w-full text-left ${
+                  currentStep === 'set-deposit' 
+                    ? '' 
+                    : isCompletePairData(pairData) 
+                      ? 'opacity-60 hover:opacity-80' 
+                      : 'opacity-40 cursor-not-allowed'
+                }`}
               >
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-full z-10 ${
-                    currentStep === 'set-deposit'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  2
-                </div>
-                <div className="ml-3">
-                  <div className="text-sm font-medium">Step 2</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Enter deposit amounts
+                <div className="flex items-center">
+                  <div
+                    className={`flex items-center justify-center w-8 h-8 rounded-full z-10 ${
+                      currentStep === 'set-deposit'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
+                    2
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-sm font-medium">Step 2</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Enter deposit amounts
+                    </div>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Right content area */}
         <div className="flex-1">
-          <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+          {/* <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-2">
               <Button
                 variant="ghost"
@@ -144,7 +166,7 @@ export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
                 </Button>
               )}
             </div>
-          </div>
+          </div> */}
 
           {currentStep === 'select-pair' && (
             <SelectPairStep

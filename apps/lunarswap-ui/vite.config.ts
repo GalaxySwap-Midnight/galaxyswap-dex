@@ -13,6 +13,7 @@ export default defineConfig({
     minify: false,
   },
   plugins: [wasm(), react(), viteCommonjs(), topLevelAwait()],
+
   optimizeDeps: {
     esbuildOptions: {
       target: 'esnext',
@@ -33,5 +34,15 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+  },
+  server: {
+    proxy: {
+      '/faucet': {
+        target: 'https://faucet.testnet-02.midnight.network',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/faucet/, ''),
+        secure: true,
+      },
+    },
   },
 });

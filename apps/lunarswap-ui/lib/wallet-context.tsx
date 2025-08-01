@@ -154,6 +154,7 @@ export interface MidnightWalletState {
 }
 
 export interface WalletAPI {
+  address: Address;
   wallet: DAppConnectorWalletAPI;
   coinPublicKey: CoinPublicKey;
   encryptionPublicKey: EncPublicKey;
@@ -318,7 +319,13 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
   const proofProvider = useMemo(() => {
     if (walletAPI) {
-      return proofClient(walletAPI.uris.proverServerUri, providerCallback);
+      console.log('[DEBUG] Wallet proverServerUri:', walletAPI.uris.proverServerUri);
+      
+      // Use the wallet's proof server URL directly - no proxy
+      const proofServerUrl = walletAPI.uris.proverServerUri;
+      
+      console.log('[DEBUG] Using proof server URL:', proofServerUrl);
+      return proofClient(proofServerUrl, providerCallback);
     }
     return noopProofClient();
   }, [walletAPI, providerCallback]);
@@ -326,6 +333,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   const walletProvider: WalletProvider = useMemo(() => {
     if (walletAPI) {
       return {
+        address: walletAPI.address,
         coinPublicKey: walletAPI.coinPublicKey,
         encryptionPublicKey: walletAPI.encryptionPublicKey,
         balanceTx(
@@ -452,6 +460,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       const reqState = await walletResult.wallet.state();
       setAddress(reqState.address);
       setWalletAPI({
+        address: reqState.address,
         wallet: walletResult.wallet,
         coinPublicKey: reqState.coinPublicKey,
         encryptionPublicKey: reqState.encryptionPublicKey,

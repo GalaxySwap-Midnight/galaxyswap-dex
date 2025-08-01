@@ -220,6 +220,21 @@ export function WalletConnect({
 
     // If wallet is not available, show download button
     if (walletAvailable === false) {
+      // Show Firefox-specific message
+      if (browserType === 'firefox') {
+        return (
+          <Button
+            onClick={() => window.open('https://www.google.com/chrome/', '_blank')}
+            className="rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-sm font-medium text-white flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Use Chrome Browser
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+        );
+      }
+
+      // Show regular Lace download for other browsers
       return (
         <Button
           onClick={() => window.open(getDownloadUrl(), '_blank')}

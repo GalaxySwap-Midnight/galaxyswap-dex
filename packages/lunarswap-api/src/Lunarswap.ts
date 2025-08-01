@@ -32,6 +32,7 @@ import {
 } from './types';
 import {
   deployContract,
+  FinalizedCallTxData,
   findDeployedContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 
@@ -46,7 +47,7 @@ export interface ILunarswap {
     amountAMin: bigint,
     amountBMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void>;
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'addLiquidity'>>;
   removeLiquidity(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
@@ -54,21 +55,21 @@ export interface ILunarswap {
     amountAMin: bigint,
     amountBMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void>;
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'removeLiquidity'>>;
   swapExactTokensForTokens(
     tokenIn: CoinInfo,
     tokenOut: CoinInfo,
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void>;
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>>;
   swapTokensForExactTokens(
     tokenIn: CoinInfo,
     tokenOut: CoinInfo,
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void>;
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>>;
   isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Promise<boolean>;
   getAllPairLength(): Promise<bigint>;
   getPair(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Pair>;
@@ -247,7 +248,13 @@ export class Lunarswap implements ILunarswap {
     amountAMin: bigint,
     amountBMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void> {
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'addLiquidity'>> {
+    console.log('API addLiquidity tokenA:', tokenA);
+    console.log('API addLiquidity tokenB:', tokenB);
+    console.log('API addLiquidity amountAMin:', amountAMin);
+    console.log('API addLiquidity amountBMin:', amountBMin);
+    console.log('API addLiquidity to:', to);
+
     const txData = await this.deployedContract.callTx.addLiquidity(
       tokenA,
       tokenB,
@@ -255,6 +262,8 @@ export class Lunarswap implements ILunarswap {
       amountBMin,
       to,
     );
+
+    console.log('API addLiquidity txData:', txData);
 
     this.logger?.trace({
       transactionAdded: {
@@ -264,7 +273,7 @@ export class Lunarswap implements ILunarswap {
       },
     });
 
-    return;
+    return txData;
   }
 
   async removeLiquidity(
@@ -274,7 +283,7 @@ export class Lunarswap implements ILunarswap {
     amountAMin: bigint,
     amountBMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void> {
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'removeLiquidity'>> {
     const txData = await this.deployedContract.callTx.removeLiquidity(
       tokenA,
       tokenB,
@@ -292,7 +301,7 @@ export class Lunarswap implements ILunarswap {
       },
     });
 
-    return;
+    return txData;
   }
 
   async swapExactTokensForTokens(
@@ -301,7 +310,7 @@ export class Lunarswap implements ILunarswap {
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void> {
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>> {
     const txData = await this.deployedContract.callTx.swapExactTokensForTokens(
       tokenIn,
       tokenOut,
@@ -318,7 +327,7 @@ export class Lunarswap implements ILunarswap {
       },
     });
 
-    return;
+    return txData;
   }
 
   async swapTokensForExactTokens(
@@ -327,7 +336,7 @@ export class Lunarswap implements ILunarswap {
     amountOut: bigint,
     amountInMax: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<void> {
+  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>> {
     const txData = await this.deployedContract.callTx.swapTokensForExactTokens(
       tokenIn,
       tokenOut,
@@ -344,7 +353,7 @@ export class Lunarswap implements ILunarswap {
       },
     });
 
-    return;
+    return txData;
   }
 
   async isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Promise<boolean> {

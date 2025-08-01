@@ -62,36 +62,47 @@ export class ZkConfigProviderWrapper<
   }
 
   async getVerifierKeys(circuitIds: K[]): Promise<[K, VerifierKey][]> {
-    // For lunarswap, use the correct order that matches the deployed contract
+    // For lunarswap contracts, we need to provide verifier keys in the exact order
+    // that matches the deployed contract's circuit order
+    // Based on the contract state error, this is the correct order:
     const lunarswapCircuitOrder = [
-      'swapTokensForExactTokens',
-      'getPairReserves',
       'addLiquidity',
-      'getLpTokenSymbol',
+      'removeLiquidity',
+      'swapExactTokensForTokens',
+      'swapTokensForExactTokens',
+      'isPairExists',
+      'getAllPairLength',
+      'getPair',
+      'getPairReserves',
+      'getPairIdentity',
       'getLpTokenName',
+      'getLpTokenSymbol',
+      'getLpTokenDecimals',
       'getLpTokenType',
       'getLpTokenTotalSupply',
-      'getAllPairLength',
-      'getPairIdentity',
-      'isPairExists',
-      'removeLiquidity',
-      'getPair',
-      'getLpTokenDecimals',
-      'swapExactTokensForTokens',
     ] as K[];
 
-    // If this is a lunarswap contract (has all the expected circuits), use the correct order
-    const isLunarswap = lunarswapCircuitOrder.every((id) =>
-      circuitIds.includes(id),
-    );
+    // Check if this looks like a lunarswap contract
+    const isLunarswap = lunarswapCircuitOrder.some(id => circuitIds.includes(id));
 
     if (isLunarswap) {
       console.log(
-        '[ZkConfigProviderWrapper] Using lunarswap circuit order for verifier keys',
+        '[ZkConfigProviderWrapper] Processing lunarswap verifier keys',
+        { 
+          requested: circuitIds, 
+          requestedCount: circuitIds.length,
+          lunarswapCircuits: lunarswapCircuitOrder.length 
+        }
       );
-      const orderedCircuitIds = lunarswapCircuitOrder.filter((id) =>
-        circuitIds.includes(id),
+      
+      // For lunarswap, we need to provide verifier keys in the exact order
+      // that matches the deployed contract's circuit order
+      const orderedCircuitIds = lunarswapCircuitOrder.filter(id => 
+        circuitIds.includes(id)
       );
+      
+      console.log('[ZkConfigProviderWrapper] Ordered circuit IDs:', orderedCircuitIds);
+      
       const verifierKeys = await Promise.all(
         orderedCircuitIds.map(async (circuitId) => {
           const verifierKey = await this.getVerifierKey(circuitId);

@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { HelpCircle } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { TokenSelector } from '../token-selector';
 
 interface SelectPairStepProps {
@@ -12,18 +12,18 @@ interface SelectPairStepProps {
 }
 
 export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
-  const [tokenA, setTokenA] = useState(initialData.tokenA);
-  const [tokenB, setTokenB] = useState(initialData.tokenB);
+  // Set default tokens - first token is TUSD, second is empty
+  const [tokenA, setTokenA] = useState(initialData.tokenA || {
+    symbol: 'TUSD',
+    name: 'Test USD',
+    type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c',
+    address: '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
+  });
+  const [tokenB, setTokenB] = useState(initialData.tokenB || null);
   const [fee] = useState(initialData.fee);
   const [version] = useState(initialData.version);
 
-  // Track which token was last changed
-  const lastChanged = useRef<'A' | 'B' | null>(null);
-
   const handleTokenASelect = (token: any) => {
-    // Mark tokenA as last changed
-    lastChanged.current = 'A';
-
     // Check if the new token is the same as tokenB
     if (tokenB && token.symbol === tokenB.symbol) {
       // Reset tokenB since tokenA was changed last
@@ -34,9 +34,6 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
   };
 
   const handleTokenBSelect = (token: any) => {
-    // Mark tokenB as last changed
-    lastChanged.current = 'B';
-
     // Check if the new token is the same as tokenA
     if (tokenA && token.symbol === tokenA.symbol) {
       // Reset tokenA since tokenB was changed last
@@ -68,7 +65,7 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
               <TokenSelector
                 selectedToken={tokenA}
                 onSelectToken={handleTokenASelect}
-                placeholder="TUSD"
+                placeholder="Choose token"
                 showTokenIcon={true}
               />
             </div>
@@ -77,7 +74,7 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
                 selectedToken={tokenB}
                 onSelectToken={handleTokenBSelect}
                 placeholder="Choose token"
-                showTokenIcon={false}
+                showTokenIcon={true}
               />
             </div>
           </div>

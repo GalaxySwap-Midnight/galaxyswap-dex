@@ -35,3 +35,5 @@ export {
   ILunarswapWitnesses,
   IShieldedFungibleTokenWitnesses,
 } from './witnesses/interfaces';
+
+export { LunarswapSimulator } from './tests/LunarswapSimulator';
