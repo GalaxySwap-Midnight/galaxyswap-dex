@@ -19,9 +19,8 @@ import {
   TrendingUp,
   Users,
   DollarSign,
-
 } from 'lucide-react';
-import { DEMO_TOKENS } from '@/lib/lunarswap-integration';
+import { popularTokens } from '@/lib/token-config';
 import { Input } from '@/components/ui/input';
 import { Copy, ExternalLink, Search, Grid3X3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -122,7 +121,7 @@ export default function ExplorePage() {
     },
   ];
 
-  const tokens = Object.values(DEMO_TOKENS);
+  const tokens = Object.values(popularTokens);
   const filteredTokens = tokens.filter(
     (token) =>
       token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

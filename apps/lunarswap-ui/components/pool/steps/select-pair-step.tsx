@@ -5,6 +5,7 @@ import { CardContent, CardFooter } from '@/components/ui/card';
 import { HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import { TokenSelector } from '../token-selector';
+import { getTokenByName, type Token } from '@/lib/token-config';
 
 interface SelectPairStepProps {
   onSubmit: (data: any) => void;
@@ -13,17 +14,12 @@ interface SelectPairStepProps {
 
 export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
   // Set default tokens - first token is TUSD, second is empty
-  const [tokenA, setTokenA] = useState(initialData.tokenA || {
-    symbol: 'TUSD',
-    name: 'Test USD',
-    type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c',
-    address: '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
-  });
+  const [tokenA, setTokenA] = useState(initialData.tokenA || getTokenByName('TUSD'));
   const [tokenB, setTokenB] = useState(initialData.tokenB || null);
   const [fee] = useState(initialData.fee);
   const [version] = useState(initialData.version);
 
-  const handleTokenASelect = (token: any) => {
+  const handleTokenASelect = (token: Token) => {
     // Check if the new token is the same as tokenB
     if (tokenB && token.symbol === tokenB.symbol) {
       // Reset tokenB since tokenA was changed last
@@ -33,7 +29,7 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
     setTokenA(token);
   };
 
-  const handleTokenBSelect = (token: any) => {
+  const handleTokenBSelect = (token: Token) => {
     // Check if the new token is the same as tokenA
     if (tokenA && token.symbol === tokenA.symbol) {
       // Reset tokenA since tokenB was changed last

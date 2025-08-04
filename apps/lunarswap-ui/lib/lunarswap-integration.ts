@@ -45,6 +45,7 @@ import { encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
 import {
   ShieldedAddress,
   MidnightBech32m,
+  ShieldedCoinPublicKey,
 } from '@midnight-ntwrk/wallet-sdk-address-format';
 import { ensureLunarswapProofParams } from '../utils/proof-params';
 
@@ -125,17 +126,9 @@ export class LunarswapIntegration {
    * Initialize contract connection
    */
   async joinContract(): Promise<ContractStatusInfo> {
-    console.log('[LunarswapContractIntegration] hello!');
-
-    const targetAddress = this.contractAddress || LUNARSWAP_CONTRACT;
-
-    console.log('[LunarswapContractIntegration] initialize called');
-    console.log('[LunarswapContractIntegration] targetAddress:', targetAddress);
+    const targetAddress = this.contractAddress;
 
     if (!targetAddress) {
-      console.log(
-        '[LunarswapContractIntegration] No contract address configured',
-      );
       this._status = 'not-configured';
       this._statusInfo = {
         status: 'not-configured',
@@ -151,42 +144,10 @@ export class LunarswapIntegration {
       message: 'Connecting to Lunarswap contract...',
     };
 
-    const networkId = getZswapNetworkId();
-    console.log('[LunarswapContractIntegration] Zswap Network ID:', networkId);
-
-    const ledgerNetworkId = getLedgerNetworkId();
-    console.log(
-      '[LunarswapContractIntegration] Ledger Network ID:',
-      ledgerNetworkId,
-    );
-
-    const currentContractState =
-      await this.providers.publicDataProvider.queryContractState(targetAddress);
-    if (!currentContractState) {
-      throw new Error('Contract state not found');
-    }
-    const operations = currentContractState.operations();
-    console.log('[LunarswapContractIntegration] Operations:', operations);
-    console.log(
-      '[LunarswapContractIntegration] Current Contract State:',
-      currentContractState,
-    );
-
-    console.log('[LunarswapContractIntegration] Status set to connecting');
-
     try {
-      console.log(
-        '[LunarswapContractIntegration] Attempting to join contract with address:',
-        targetAddress,
-      );
       this.lunarswap = await Lunarswap.join(this.providers, {
         bytes: new Uint8Array(Buffer.from(targetAddress, 'hex')),
       });
-
-      console.log(
-        '[LunarswapContractIntegration] Successfully joined contract:',
-        this.lunarswap,
-      );
 
       this._status = 'connected';
       this._statusInfo = {
@@ -195,23 +156,10 @@ export class LunarswapIntegration {
         message: 'Successfully connected to Lunarswap contract',
       };
 
-      console.log(
-        '[LunarswapContractIntegration] Status set to connected, fetching pool data...',
-      );
-      const poolData = await this.getPublicState();
-      console.log('[LunarswapContractIntegration] Pool data:', poolData);
-
-      console.log(
-        '[LunarswapContractIntegration] Initialization complete:',
-        this._statusInfo,
-      );
+      await this.getPublicState();
 
       return this._statusInfo;
     } catch (error) {
-      console.error(
-        '[LunarswapContractIntegration] Failed to connect to Lunarswap contract:',
-        error,
-      );
       this._status = 'error';
       this._statusInfo = {
         status: 'error',
@@ -297,8 +245,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = this.createCoinInfo(tokenA, '0');
-      const tokenBInfo = this.createCoinInfo(tokenB, '0');
+      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const pairIdentity = this.lunarswapSimulator.getPairIdentity(
@@ -337,8 +285,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = this.createCoinInfo(tokenA, '0');
-      const tokenBInfo = this.createCoinInfo(tokenB, '0');
+      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const identity = this.lunarswapSimulator.getPairIdentity(
@@ -359,9 +307,9 @@ export class LunarswapIntegration {
   async swapExactTokensForTokens(
     tokenIn: string,
     tokenOut: string,
-    amountIn: string,
-    amountOutMin: string,
-    recipient: string,
+    amountIn: bigint,
+    amountOutMin: bigint,
+    recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>> {
     await this.ensureContractJoined();
     
@@ -372,16 +320,16 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenInInfo = this.createCoinInfo(tokenIn, amountIn);
-    const tokenOutInfo = this.createCoinInfo(tokenOut, '0');
-    const recipientAddress = this.createRecipient(recipient);
+    const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, amountIn);
+    const tokenOutInfo = LunarswapIntegration.createCoinInfo(tokenOut, BigInt(0));
+    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
 
     // Use the Lunarswap API method
     return await this.lunarswap.swapExactTokensForTokens(
       tokenInInfo,
       tokenOutInfo,
-      BigInt(amountIn),
-      BigInt(amountOutMin),
+      amountIn,
+      amountOutMin,
       recipientAddress,
     );
   }
@@ -392,9 +340,9 @@ export class LunarswapIntegration {
   async swapTokensForExactTokens(
     tokenIn: string,
     tokenOut: string,
-    amountOut: string,
-    amountInMax: string,
-    recipient: string,
+    amountOut: bigint,
+    amountInMax: bigint,
+    recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>> {
     await this.ensureContractJoined();
     
@@ -405,16 +353,16 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenInInfo = this.createCoinInfo(tokenIn, '0');
-    const tokenOutInfo = this.createCoinInfo(tokenOut, '0');
-    const recipientAddress = this.createRecipient(recipient);
+    const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, BigInt(0));
+    const tokenOutInfo = LunarswapIntegration.createCoinInfo(tokenOut, BigInt(0));
+    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
 
     // Use the Lunarswap API method
     return await this.lunarswap.swapTokensForExactTokens(
       tokenInInfo,
       tokenOutInfo,
-      BigInt(amountOut),
-      BigInt(amountInMax),
+      amountOut,
+      amountInMax,
       recipientAddress,
     );
   }
@@ -425,11 +373,11 @@ export class LunarswapIntegration {
   async addLiquidity(
     tokenA: string,
     tokenB: string,
-    amountA: string,
-    amountB: string,
-    minAmountA: string,
-    minAmountB: string,
-    recipient: string,
+    amountA: bigint,
+    amountB: bigint,
+    minAmountA: bigint,
+    minAmountB: bigint,
+    recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'addLiquidity'>> {
     await this.ensureContractJoined();
     
@@ -440,9 +388,9 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenAInfo = this.createCoinInfo(tokenA, amountA);
-    const tokenBInfo = this.createCoinInfo(tokenB, amountB);
-    const recipientAddress = this.createRecipient(recipient);
+    const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, amountA);
+    const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, amountB);
+    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
 
     // Add console logs for debugging
     console.log('addLiquidity called with:', {
@@ -452,7 +400,7 @@ export class LunarswapIntegration {
       amountB,
       minAmountA,
       minAmountB,
-      recipient,
+      recipientCoinPublicKey,
     });
     console.log('addLiquidity tokenAInfo:', tokenAInfo);
     console.log('addLiquidity tokenBInfo:', tokenBInfo);
@@ -462,8 +410,8 @@ export class LunarswapIntegration {
     return await this.lunarswap.addLiquidity(
       tokenAInfo,
       tokenBInfo,
-      BigInt(minAmountA),
-      BigInt(minAmountB),
+      minAmountA,
+      minAmountB,
       recipientAddress,
     );
   }
@@ -475,9 +423,9 @@ export class LunarswapIntegration {
     tokenA: string,
     tokenB: string,
     liquidity: string,
-    minAmountA: string,
-    minAmountB: string,
-    recipient: string,
+    minAmountA: bigint,
+    minAmountB: bigint,
+    recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'removeLiquidity'>> {
     await this.ensureContractJoined();
     
@@ -488,18 +436,18 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenAInfo = this.createCoinInfo(tokenA, '0');
-    const tokenBInfo = this.createCoinInfo(tokenB, '0');
-    const liquidityInfo = this.createCoinInfo('LP', liquidity);
-    const recipientAddress = this.createRecipient(recipient);
+    const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
+    const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
+    const liquidityInfo = LunarswapIntegration.createCoinInfo('LP', BigInt(liquidity));
+    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
 
     // Use the Lunarswap API method
     return await this.lunarswap.removeLiquidity(
       tokenAInfo,
       tokenBInfo,
       liquidityInfo,
-      BigInt(minAmountA),
-      BigInt(minAmountB),
+      minAmountA,
+      minAmountB,
       recipientAddress,
     );
   }
@@ -543,9 +491,9 @@ export class LunarswapIntegration {
   /**
    * Create CoinInfo from token symbol/address and amount
    */
-  private createCoinInfo(
+  static createCoinInfo(
     type: string,
-    value: string,
+    value: bigint,
   ): CoinInfo {
     console.log('[DEBUG] createCoinInfo type:', type);
     console.log('[DEBUG] createCoinInfo value:', value);
@@ -564,7 +512,7 @@ export class LunarswapIntegration {
 
     return {
       color,
-      value: BigInt(value),
+      value,
       nonce: new Uint8Array(32),
     };
   }
@@ -572,55 +520,25 @@ export class LunarswapIntegration {
   /**
    * Create recipient address
    */
-  private createRecipient(
-    recipient: string,
+  static createRecipient(
+    recipientCoinPublicKey: string,
   ): Either<ZswapCoinPublicKey, ContractAddress> {
-    console.log('[DEBUG] createRecipient called with:', recipient);
+    console.log('[DEBUG] createRecipient called with:', recipientCoinPublicKey);
     
-    if (!recipient || recipient.length === 0) {
+    if (!recipientCoinPublicKey || recipientCoinPublicKey.length === 0) {
       console.error('[DEBUG] Empty recipient address provided');
       throw new Error('Recipient address cannot be empty');
     }
 
-    // Handle Bech32 addresses (like mn_shield-addr_test1...)
-    if (recipient.startsWith('mn_shield-addr')) {
-      console.log('[DEBUG] Bech32 address detected, decoding...');
-      
-      try {
-        // Parse the shielded address string to get the MidnightBech32m object
-        const bech32mAddress = MidnightBech32m.parse(recipient);
-
-        // Decode the bech32m address to get the ShieldedAddress object
-        const shieldedAddress = ShieldedAddress.codec.decode(
-          getZswapNetworkId(),
-          bech32mAddress,
-        );
-
-        // Extract the coin public key from the shielded address
-        const coinPublicKeyBytes = shieldedAddress.coinPublicKey.data;
-
-        console.log('[DEBUG] Successfully decoded Bech32 address, coin public key bytes:', coinPublicKeyBytes);
-
-        // Use the decoded coin public key
-        return {
-          is_left: true,
-          left: { bytes: coinPublicKeyBytes },
-          right: { bytes: new Uint8Array(32) },
-        };
-      } catch (error) {
-        console.error('[DEBUG] Failed to decode Bech32 address:', error);
-        // Fallback to wallet's own coin public key
-        return {
-          is_left: true,
-          left: { bytes: encodeCoinPublicKey(this.walletAPI.coinPublicKey) },
-          right: { bytes: new Uint8Array(32) },
-        };
-      }
-    }
+    const bech32mCoinPublicKey = MidnightBech32m.parse(recipientCoinPublicKey);
+    const coinPublicKey = ShieldedCoinPublicKey.codec.decode(
+      getZswapNetworkId(),
+      bech32mCoinPublicKey,
+    );
 
     return {
       is_left: true,
-      left: { bytes: encodeCoinPublicKey(this.walletAPI.coinPublicKey) },
+      left: { bytes: coinPublicKey.data },
       right: { bytes: new Uint8Array(32) },
     };
   }
@@ -637,8 +555,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = this.createCoinInfo(tokenA, '0');
-      const tokenBInfo = this.createCoinInfo(tokenB, '0');
+      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const pairIdentity = await this.lunarswap.getPairIdentity(
@@ -671,46 +589,3 @@ export const createContractIntegration = (
     contractAddress,
   );
 };
-
-// Token configuration
-export const DEMO_TOKENS = {
-  TUSD: {
-    symbol: 'TUSD',
-    name: 'Test USD',
-    address:
-      '020050fdd8e2eea82068e6bab6ad0c78ef7e0c050dd9fc1d0a32495c95310c4e1959',
-    type: '0200fb81b15b883bcbba5630c6f9111d85bd6b237afda821789e2bd049f483cfbf3c',
-  },
-  TEURO: {
-    symbol: 'TEURO',
-    name: 'Test Euro',
-    address:
-      '02007285b48ebb1f85fc6cc7b1754a64deed1f2210b4c758a37309039510acb8781a',
-    type: '02003af426c10783ffe699149c2ef39edb7a6e05e2a2bfe1c3a90e1add8a9d6e2dac',
-  },
-  TJPY: {
-    symbol: 'TJPY',
-    name: 'Test Japanese Yen',
-    address:
-      '02003854ada114516d9ebe65061da7c3f9f00830afdd47c749ed9e2836d36a026d01',
-    type: '020011a6de51d7633b00f9c5f9408c836a5566870f9366f14022814735eec0663a0b',
-  },
-  TCNY: {
-    symbol: 'TCNY',
-    name: 'Test Chinese Yuan',
-    address:
-      '02001e10cca412097c53af918b4532865823e3850fbaf2f66203036acfab324df5c9',
-    type: '0200e6b100604d6e10e080948e43cfc4aa1646e32d972d4aada3ac36ce430443911d',
-  },
-  TARS: {
-    symbol: 'TARS',
-    name: 'Test Argentine Peso',
-    address:
-      '02009161411a0e1e51467c8559444efb09d6a372aca23b3e6613c5b9394ba3d4befd',
-    type: '020063482c03ec84e6e9bf55ef1eef9ea431f2c434921fab43f9d4c3e60d884a4c6a',
-  },
-} as const;
-
-// Contract addresses
-export const LUNARSWAP_CONTRACT =
-  '02000400f75026235c9af6b5963f7d27a8b814dc348946491dab3097cae6a2dfdbb0';

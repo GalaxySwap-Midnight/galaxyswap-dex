@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, ExternalLink, Search, Grid3X3, List, Clock } from 'lucide-react';
-import { DEMO_TOKENS } from '@/lib/lunarswap-integration';
+import { popularTokens } from '@/lib/token-config';
 import { useViewPreference } from '@/hooks/use-view-preference';
 
 interface Token {
@@ -47,7 +47,7 @@ function TokensContent() {
     setViewMode(viewPreference === 'horizontal' ? 'grid' : 'list');
   }, [viewPreference]);
 
-  const tokens: Token[] = Object.values(DEMO_TOKENS);
+  const tokens: Token[] = Object.values(popularTokens);
 
   const filteredTokens = tokens.filter(
     (token) =>

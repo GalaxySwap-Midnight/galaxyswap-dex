@@ -28,6 +28,7 @@ export interface Config {
   readonly node: string;
   readonly proofServer: string;
   readonly testSeed?: string; // Optional test seed for faster development
+  readonly testRecoveryPhrase?: string; // Optional test recovery phrase for faster development
 }
 
 export class TestnetLocalConfig implements Config {
@@ -43,6 +44,7 @@ export class TestnetLocalConfig implements Config {
   node = 'http://127.0.0.1:9944';
   proofServer = 'http://127.0.0.1:6300';
   testSeed = process.env.TEST_SEED;
+  testRecoveryPhrase = process.env.TEST_RECOVERY_PHRASE;
 
   constructor() {
     setNetworkId(NetworkId.Undeployed);
@@ -62,6 +64,7 @@ export class TestnetRemoteConfig implements Config {
   node = 'https://rpc.testnet-02.midnight.network';
   proofServer = 'http://127.0.0.1:6300';
   testSeed = process.env.TEST_SEED;
+  testRecoveryPhrase = process.env.TEST_RECOVERY_PHRASE;
 
   constructor() {
     setNetworkId(NetworkId.TestNet);
@@ -81,6 +84,7 @@ export class TestnetRemotePSConfig implements Config {
   node = 'https://rpc.testnet-02.midnight.network';
   proofServer = 'https://proof-server.testnet-02.midnight.network';
   testSeed = process.env.TEST_SEED;
+  testRecoveryPhrase = process.env.TEST_RECOVERY_PHRASE;
 
   constructor() {
     setNetworkId(NetworkId.TestNet);

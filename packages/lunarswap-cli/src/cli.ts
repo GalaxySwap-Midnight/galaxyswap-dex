@@ -9,7 +9,7 @@ import type {
 import type { CoinInfo } from '@midnight-dapps/compact-std';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
-import { buildFreshWallet, buildWalletFromSeed } from './api/wallet';
+import { buildFreshWallet, buildWalletFromSeed, buildWalletFromRecoveryPhrase } from './api/wallet';
 import { configureProviders } from './api/providers';
 import { deployContract, joinContract } from './api/contract';
 import {
@@ -37,7 +37,8 @@ You can do one of the following:
   1. Build a fresh wallet
   2. Build wallet from a seed
   3. Use test seed (if available)
-  4. Exit
+  4. Build wallet from recovery phrase
+  5. Exit
 Which would you like to do? `;
 
 const DEPLOY_OR_JOIN_QUESTION = `
@@ -97,7 +98,20 @@ const buildWallet = async (
         );
         break;
       }
-      case '4':
+      case '4': {
+        if (config.testRecoveryPhrase) {
+          logger.info('Using test recovery phrase from environment variable');
+          return await buildWalletFromRecoveryPhrase(config, config.testRecoveryPhrase, logger);
+        }
+        logger.error(
+          'No test recovery phrase found in environment variable TEST_RECOVERY_PHRASE',
+        );
+        logger.info(
+          'Please set TEST_RECOVERY_PHRASE environment variable or choose option 2 to enter seed manually',
+        );
+        break;
+      }
+      case '5':
         logger.info('Exiting...');
         return null;
       default:

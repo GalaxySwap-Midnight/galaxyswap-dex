@@ -318,56 +318,64 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   }, []);
 
   const proofProvider = useMemo(() => {
+    console.log('[WalletContext] Creating proofProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
-      console.log('[DEBUG] Wallet proverServerUri:', walletAPI.uris.proverServerUri);
+      console.log('[WalletContext] ProofProvider created with proverServerUri:', walletAPI.uris.proverServerUri);
       
       // Use the wallet's proof server URL directly - no proxy
       const proofServerUrl = walletAPI.uris.proverServerUri;
       
-      console.log('[DEBUG] Using proof server URL:', proofServerUrl);
+      console.log('[WalletContext] Using proof server URL:', proofServerUrl);
       return proofClient(proofServerUrl, providerCallback);
     }
+    console.log('[WalletContext] ProofProvider created in noop mode');
     return noopProofClient();
   }, [walletAPI, providerCallback]);
 
   const walletProvider: WalletProvider = useMemo(() => {
+    console.log('[WalletContext] Creating walletProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
+      console.log('[WalletContext] WalletProvider created with address:', walletAPI.address);
       return {
         address: walletAPI.address,
         coinPublicKey: walletAPI.coinPublicKey,
         encryptionPublicKey: walletAPI.encryptionPublicKey,
-        balanceTx(
+        async balanceTx(
           tx: UnbalancedTransaction,
           newCoins: CoinInfo[],
         ): Promise<BalancedTransaction> {
           providerCallback('balanceTxStarted');
           const ledgerNetworkId = getLedgerNetworkId();
           const zswapNetworkId = getZswapNetworkId();
-          console.log('Ledger Network ID:', ledgerNetworkId);
-          console.log('Zswap Network ID:', zswapNetworkId);
-          return walletAPI.wallet
-            .balanceAndProveTransaction(
+          console.log('[WalletContext] Ledger Network ID:', ledgerNetworkId);
+          console.log('[WalletContext] Zswap Network ID:', zswapNetworkId);
+          console.log('[WalletContext] Wallet:', walletAPI.wallet);
+          
+          try {
+            const zswapTx = await walletAPI.wallet.balanceAndProveTransaction(
               ZswapTransaction.deserialize(
                 tx.serialize(ledgerNetworkId),
                 zswapNetworkId,
               ),
               newCoins,
-            )
-            .then((zswapTx) => {
-              // Output zswap tx for debugging
-              console.log('ZswapTransaction:', zswapTx);
-              return Transaction.deserialize(
-                zswapTx.serialize(zswapNetworkId),
-                ledgerNetworkId,
-              );
-            })
-            .then(createBalancedTx)
-            .finally(() => {
-              providerCallback('balanceTxDone');
-            });
+            );
+            
+            // Output zswap tx for debugging
+            console.log('[WalletContext] ZswapTransaction:', zswapTx);
+            
+            const deserializedTx = Transaction.deserialize(
+              zswapTx.serialize(zswapNetworkId),
+              ledgerNetworkId,
+            );
+            
+            return createBalancedTx(deserializedTx);
+          } finally {
+            providerCallback('balanceTxDone');
+          }
         },
       };
     }
+    console.log('[WalletContext] WalletProvider created in readonly mode');
     return {
       coinPublicKey: '',
       encryptionPublicKey: '',
@@ -381,7 +389,9 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   }, [walletAPI, providerCallback]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
+    console.log('[WalletContext] Creating midnightProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
+      console.log('[WalletContext] MidnightProvider created with wallet API');
       return {
         submitTx(tx: BalancedTransaction): Promise<TransactionId> {
           providerCallback('submitTxStarted');
@@ -391,6 +401,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         },
       };
     }
+    console.log('[WalletContext] MidnightProvider created in readonly mode');
     return {
       submitTx(tx: BalancedTransaction): Promise<TransactionId> {
         return Promise.reject(new Error('readonly'));
@@ -458,21 +469,27 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     await checkProofServerStatus(walletResult.uris.proverServerUri);
     try {
       const reqState = await walletResult.wallet.state();
+      console.log('[WalletContext] Setting wallet address:', reqState.address);
       setAddress(reqState.address);
-      setWalletAPI({
+      
+      const newWalletAPI = {
         address: reqState.address,
         wallet: walletResult.wallet,
         coinPublicKey: reqState.coinPublicKey,
         encryptionPublicKey: reqState.encryptionPublicKey,
         uris: walletResult.uris,
-      });
+      };
+      console.log('[WalletContext] Setting wallet API:', newWalletAPI);
+      setWalletAPI(newWalletAPI);
     } catch (e) {
+      console.error('[WalletContext] Error setting wallet API:', e);
       setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
     }
     setIsConnecting(false);
   }
 
   useEffect(() => {
+    console.log('[WalletContext] Updating wallet state with providers, walletAPI:', !!walletAPI);
     setWalletState((state) => ({
       ...state,
       walletAPI,
@@ -529,6 +546,25 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       void connectMemo(false); // auto connect
     }
   }, [isWalletAvailable, walletState.isConnected, isConnecting, walletError, connectMemo]);
+
+  // Expose wallet state for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).debugWalletState = () => {
+        console.log('[WalletContext] Current wallet state:', {
+          isConnected: walletState.isConnected,
+          address: walletState.address,
+          hasWalletAPI: !!walletState.walletAPI,
+          hasProviders: !!walletState.providers,
+          providerKeys: walletState.providers ? Object.keys(walletState.providers) : [],
+          walletProviderAddress: walletState.walletAPI?.address,
+          midnightProviderType: typeof walletState.midnightProvider?.submitTx,
+        });
+        return walletState;
+      };
+    }
+  }, [walletState]);
 
   return (
     <MidnightWalletContext.Provider value={walletState}>

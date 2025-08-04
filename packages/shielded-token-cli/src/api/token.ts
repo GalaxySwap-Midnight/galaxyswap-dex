@@ -3,7 +3,7 @@ import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
 import { firstValueFrom } from 'rxjs';
 import type { ShieldedToken } from '@midnight-dapps/shielded-token-api';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
+
 import type {
   Either,
   ZswapCoinPublicKey,
@@ -13,6 +13,7 @@ import type {
 import {
   ShieldedAddress,
   MidnightBech32m,
+  ShieldedCoinPublicKey,
 } from '@midnight-ntwrk/wallet-sdk-address-format';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
@@ -51,17 +52,22 @@ export const mintTokens = async (
   let recipient: Either<ZswapCoinPublicKey, ContractAddress>;
 
   if (recipientCoinPublicKey) {
+    logger.debug('[mintTokens] Parsing recipientCoinPublicKey:', recipientCoinPublicKey);
     // Parse the shielded address string to get the MidnightBech32m object
     const bech32mAddress = MidnightBech32m.parse(recipientCoinPublicKey);
+    logger.debug('[mintTokens] Parsed bech32mAddress:', bech32mAddress);
 
     // Decode the bech32m address to get the ShieldedAddress object
     const shieldedAddress = ShieldedAddress.codec.decode(
       getZswapNetworkId(),
       bech32mAddress,
     );
+    logger.debug('[mintTokens] Decoded shieldedAddress:', shieldedAddress);
+    logger.debug('[mintTokens] zswap network id:', getZswapNetworkId());
 
     // Extract the coin public key from the shielded address
     const coinPublicKeyBytes = shieldedAddress.coinPublicKey.data;
+    logger.debug('[mintTokens] Extracted coinPublicKeyBytes:', Buffer.from(coinPublicKeyBytes).toString('hex'));
 
     // Use the provided recipient's coin public key
     recipient = {
@@ -69,15 +75,46 @@ export const mintTokens = async (
       left: { bytes: coinPublicKeyBytes },
       right: { bytes: new Uint8Array(32) },
     };
+    logger.debug('[mintTokens] Constructed recipient (custom):', {
+      is_left: recipient.is_left,
+      left: Buffer.from(recipient.left.bytes).toString('hex'),
+      right: Buffer.from(recipient.right.bytes).toString('hex'),
+    });
   } else {
     // Use the wallet's own coin public key (default behavior)
+    logger.debug('[mintTokens] No recipientCoinPublicKey provided, using wallet state');
     const state = await firstValueFrom(wallet.state());
+    logger.debug('[mintTokens] Wallet state:', {
+      address: state.address,
+      coinPublicKey: Buffer.from(state.coinPublicKey).toString('hex'),
+    });
+    
+    // Convert the coin public key string to Uint8Array
+    const bech32mCoinPublicKey = MidnightBech32m.parse(state.coinPublicKey);
+    const coinPublicKey = ShieldedCoinPublicKey.codec.decode(
+      getZswapNetworkId(),
+      bech32mCoinPublicKey,
+    );
     recipient = {
       is_left: true,
-      left: { bytes: encodeCoinPublicKey(state.coinPublicKey) },
+      left: { bytes: coinPublicKey.data },
       right: { bytes: new Uint8Array(32) },
     };
+    logger.debug('[mintTokens] Constructed recipient (self):', {
+      is_left: recipient.is_left,
+      left: Buffer.from(recipient.left.bytes).toString('hex'),
+      right: Buffer.from(recipient.right.bytes).toString('hex'),
+    });
   }
+
+  logger.debug('[mintTokens] Calling shieldedToken.mint with recipient and amount', {
+    recipient: {
+      is_left: recipient.is_left,
+      left: Buffer.from(recipient.left.bytes).toString('hex'),
+      right: Buffer.from(recipient.right.bytes).toString('hex'),
+    },
+    amount: amount.toString(),
+  });
 
   await shieldedToken.mint(recipient, amount);
 

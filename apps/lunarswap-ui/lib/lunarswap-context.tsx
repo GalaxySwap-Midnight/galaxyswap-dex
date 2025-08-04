@@ -139,9 +139,15 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   useEffect(() => {
     console.log(
       '[LunarswapContext] Dependencies changed, reinitializing contract...',
+      {
+        isConnected: midnightWallet.isConnected,
+        hasWalletAPI: !!midnightWallet.walletAPI,
+        hasProviders: !!midnightWallet.providers,
+        providers: midnightWallet.providers ? Object.keys(midnightWallet.providers) : [],
+      }
     );
     initializeLunarswap();
-  }, [initializeLunarswap]);
+  }, [initializeLunarswap, midnightWallet.isConnected, midnightWallet.walletAPI, midnightWallet.providers]);
 
   const contextValue: LunarswapContextType = {
     lunarswap,

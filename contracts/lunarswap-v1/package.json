@@ -45,10 +45,11 @@
   "dependencies": {
     "@midnight-dapps/compact": "workspace:^",
     "@midnight-dapps/compact-std": "workspace:^",
-    "@midnight-dapps/math": "workspace:^",
     "@midnight-dapps/lunarswap-sdk": "workspace:^",
-    "@midnight-ntwrk/compact-runtime": "^0.8.0",
+    "@midnight-dapps/math": "workspace:^",
+    "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/midnight-js-network-id": "^0.2.5",
+    "@midnight-ntwrk/wallet-sdk-address-format": "^2.0.0",
     "@midnight-ntwrk/zswap": "^3.0.6"
   }
 }

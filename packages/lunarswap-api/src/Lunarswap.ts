@@ -36,7 +36,7 @@ import {
   findDeployedContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 
-const lunarswapContractInstance = new Contract(LunarswapWitnesses());
+const lunarswapContractInstance: LunarswapContract = new Contract(LunarswapWitnesses());
 
 export interface ILunarswap {
   deployedContractAddressHex: string;
@@ -93,9 +93,9 @@ export class Lunarswap implements ILunarswap {
   public state$: Observable<LunarswapPublicState>;
 
   // Constructor arguments as constants
-  public static readonly LP_TOKEN_NAME = 'Lunarswap LP';
-  public static readonly LP_TOKEN_SYMBOL = 'LP';
-  public static readonly LP_TOKEN_DECIMALS = BigInt(18);
+  public static readonly LP_TOKEN_NAME = 'Test Lunar';
+  public static readonly LP_TOKEN_SYMBOL = 'TLUNAR';
+  public static readonly LP_TOKEN_DECIMALS = BigInt(6);
 
   private constructor(
     public readonly deployedContract: DeployedLunarswapContract,
@@ -179,9 +179,14 @@ export class Lunarswap implements ILunarswap {
       'hex',
     );
 
+    await providers.privateStateProvider.set(
+      'lunarswapPrivateState',
+      LunarswapPrivateState.generate(),
+    );
+
     const deployedContract = await findDeployedContract(providers, {
       contractAddress: contractAddressHex,
-      contract: lunarswapContractInstance as LunarswapContract,
+      contract: lunarswapContractInstance,
       privateStateId: 'lunarswapPrivateState',
       initialPrivateState: await Lunarswap.getPrivateState(providers),
     });

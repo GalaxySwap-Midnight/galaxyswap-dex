@@ -3,24 +3,43 @@ import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
 } from '@midnight-dapps/lunarswap-sdk';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
+import { decodeCoinPublicKey, encodeCoinPublicKey, EncodedRecipient, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
+import { getZswapNetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
+import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 
 const NONCE = new Uint8Array(32).fill(0x44);
 const DOMAIN = new Uint8Array(32).fill(0x44);
 
 // Static addresses like in access control test
-const LP_USER =
-  'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+// const LP_USER =
+//   'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
+
+const LP_USER = 'mn_shield-cpk_test1v3xew9zdxkn48c76e6yzcqw69y44vzscu7dp4mlmvalakpdtjfaq7zczq3';
+const hardCodedPublicKey = new Uint8Array([
+  55,  28,  18,  45, 197,  80, 201, 189,
+  101, 219, 143, 148, 157, 216, 197, 178,
+  192,  26,   7, 104,  22, 214,  55, 191,
+  207, 196, 152, 176, 233,  94, 216,   5
+]);
 
 // Helper function to create Either for hex addresses
-const createEitherFromHex = (hexString: string) => ({
-  is_left: true,
-  left: { bytes: encodeCoinPublicKey(hexString) },
-  right: { bytes: new Uint8Array(32) },
-});
+const createEitherFromHex = (hexString: string) => {
+  setNetworkId(NetworkId.TestNet); 
+  const bech32mCoinPublicKey = MidnightBech32m.parse(hexString);
+  const coinPublicKey = ShieldedCoinPublicKey.codec.decode(
+    getZswapNetworkId(),
+    bech32mCoinPublicKey,
+  );
+  return {
+    is_left: true,
+    left: { bytes: coinPublicKey.data },
+    right: { bytes: new Uint8Array(32) },
+  }
+};
 
 // Helper function to get expected token values based on which token is token0
 const getExpectedTokenValues = (
@@ -57,7 +76,7 @@ describe('addLiquidity', () => {
     // Deploy tokens with admin
     usdc = new ShieldedFungibleTokenSimulator(NONCE, 'USDC', 'USDC', NONCE);
     night = new ShieldedFungibleTokenSimulator(NONCE, 'Night', 'NIGHT', DOMAIN);
-    dust = new ShieldedFungibleTokenSimulator(NONCE, 'Dust', 'DUST', DOMAIN);
+    dust = new ShieldedFungibleTokenSimulator(NONCE, 'Dust', 'DUST', DOMAIN); 
   };
 
   beforeEach(setup);

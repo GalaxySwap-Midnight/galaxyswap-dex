@@ -1,4 +1,4 @@
-import { DEMO_TOKENS } from './lunarswap-integration';
+import { popularTokens } from './token-config';
 
 // Generate a consistent color based on token symbol
 export function getTokenColor(symbol: string): string {
@@ -41,10 +41,10 @@ export function getTokenColor(symbol: string): string {
 
 // Get token details from DEMO_TOKENS
 export function getTokenDetails(symbol: string) {
-  return Object.values(DEMO_TOKENS).find(token => token.symbol === symbol);
+  return Object.values(popularTokens).find(token => token.symbol === symbol);
 }
 
 // Get all available token symbols
 export function getAvailableTokenSymbols(): string[] {
-  return Object.values(DEMO_TOKENS).map(token => token.symbol);
+  return Object.values(popularTokens).map(token => token.symbol);
 } 

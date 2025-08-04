@@ -7,6 +7,15 @@ import { firstValueFrom, throttleTime, tap, filter, map } from 'rxjs';
 import { existsSync, createReadStream } from 'node:fs';
 import { nativeToken } from '@midnight-ntwrk/ledger';
 import { streamToString, toHex, randomBytes } from './utils';
+import * as bip39 from '@scure/bip39';
+import { wordlist as english } from '@scure/bip39/wordlists/english';
+import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
+
+export const mnemonicToWords: (mnemonic: string) => string[] = (mnemonic: string) => mnemonic.split(' ');
+
+/** A wrapper around the bip39 package function, with default strength applied to produce 24 words */
+export const generateMnemonicWords: (strength?: number) => string[] = (strength = 256) =>
+  mnemonicToWords(bip39.generateMnemonic(english, strength));
 
 const waitForSyncProgress = async (wallet: Wallet, logger: Logger) => {
   await firstValueFrom(
@@ -121,7 +130,7 @@ export const buildWalletAndWaitForFunds = async (
           true
         ) {
           logger.warn('The chain was reset, building wallet from scratch');
-          wallet = await WalletBuilder.buildFromSeed(
+          wallet = await WalletBuilder.build(
             indexer,
             indexerWS,
             proofServer,
@@ -146,7 +155,7 @@ export const buildWalletAndWaitForFunds = async (
             logger.warn(
               'Wallet was not able to sync from restored state, building wallet from scratch',
             );
-            wallet = await WalletBuilder.buildFromSeed(
+            wallet = await WalletBuilder.build(
               indexer,
               indexerWS,
               proofServer,
@@ -169,7 +178,7 @@ export const buildWalletAndWaitForFunds = async (
         logger.warn(
           'Wallet was not able to restore using the stored state, building wallet from scratch',
         );
-        wallet = await WalletBuilder.buildFromSeed(
+        wallet = await WalletBuilder.build(
           indexer,
           indexerWS,
           proofServer,
@@ -182,7 +191,7 @@ export const buildWalletAndWaitForFunds = async (
       }
     } else {
       logger.info('Wallet save file not found, building wallet from scratch');
-      wallet = await WalletBuilder.buildFromSeed(
+      wallet = await WalletBuilder.build(
         indexer,
         indexerWS,
         proofServer,
@@ -197,7 +206,7 @@ export const buildWalletAndWaitForFunds = async (
     logger.info(
       'File path for save file not found, building wallet from scratch',
     );
-    wallet = await WalletBuilder.buildFromSeed(
+    wallet = await WalletBuilder.build(
       indexer,
       indexerWS,
       proofServer,
@@ -218,7 +227,7 @@ export const buildWalletAndWaitForFunds = async (
     logger.info('Waiting to receive tokens...');
     balance = await waitForFunds(wallet, logger);
   }
-  logger.info(`Your wallet balance is: ${balance}`);
+  logger.info(`Your wallet balance is: ${(Number(balance) / 1e6).toFixed(6)} (raw: ${balance})`);
   return wallet;
 };
 
@@ -241,6 +250,54 @@ export const buildWalletFromSeed = async (
   return await buildWalletAndWaitForFunds(
     config,
     seed,
+    'lunarswap-wallet.json',
+    logger,
+  );
+};
+
+export const buildWalletFromRecoveryPhrase = async (
+  config: Config,
+  recoveryPhrase: string,
+  logger: Logger,
+): Promise<Wallet & Resource> => {
+  // Validate the recovery phrase
+  if (!bip39.validateMnemonic(recoveryPhrase, english)) {
+    throw new Error('Invalid recovery phrase provided');
+  }
+
+  // Convert recovery phrase to seed
+  const passphrase = ''; // Optional passphrase
+  const seed = bip39.mnemonicToSeedSync(recoveryPhrase, passphrase);
+
+  logger.info('Converting recovery phrase to seed...');
+  logger.info(`Recovery phrase: ${recoveryPhrase}`);
+  logger.info(`Generated seed (64 bytes): ${Buffer.from(seed).toString('hex')}`);
+
+  // Create HD wallet from seed
+  const hdWalletResult = HDWallet.fromSeed(seed);
+  if (hdWalletResult.type === 'seedError') {
+    throw new Error(`Failed to create HD wallet from seed: ${hdWalletResult.error}`);
+  }
+
+  const hdWallet = hdWalletResult.hdWallet;
+  
+  // Derive the Zswap key (account 0, role Zswap, index 0)
+  const accountKey = hdWallet.selectAccount(0);
+  const roleKey = accountKey.selectRole(Roles.Zswap);
+  const derivationResult = roleKey.deriveKeyAt(0);
+
+  if (derivationResult.type === 'keyOutOfBounds') {
+    throw new Error('Failed to derive key: key out of bounds');
+  }
+
+  const derivedKey = derivationResult.key;
+  const seedHex = Buffer.from(derivedKey).toString('hex');
+
+  logger.info(`Derived key (32 bytes): ${seedHex}`);
+
+  return await buildWalletAndWaitForFunds(
+    config,
+    seedHex,
     'lunarswap-wallet.json',
     logger,
   );

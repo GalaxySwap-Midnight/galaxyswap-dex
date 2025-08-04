@@ -11,6 +11,7 @@ import {
   QueryContext,
   constructorContext,
   emptyZswapLocalState,
+  ownPublicKey,
 } from '@midnight-ntwrk/compact-runtime';
 import {
   sampleCoinPublicKey,
