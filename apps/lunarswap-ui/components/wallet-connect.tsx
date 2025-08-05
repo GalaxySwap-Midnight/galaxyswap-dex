@@ -224,7 +224,9 @@ export function WalletConnect({
       if (browserType === 'firefox') {
         return (
           <Button
-            onClick={() => window.open('https://www.google.com/chrome/', '_blank')}
+            onClick={() =>
+              window.open('https://www.google.com/chrome/', '_blank')
+            }
             className="rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-sm font-medium text-white flex items-center gap-2"
           >
             <Download className="h-4 w-4" />

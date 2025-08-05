@@ -18,15 +18,31 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import type { LunarswapCircuitKeys, LunarswapContract, LunarswapProviders } from '@midnight-dapps/lunarswap-api';
-import { Contract, type LunarswapPrivateState, LunarswapWitnesses } from '@midnight-dapps/lunarswap-v1';
+import type {
+  LunarswapCircuitKeys,
+  LunarswapContract,
+  LunarswapProviders,
+} from '@midnight-dapps/lunarswap-api';
+import {
+  Contract,
+  type LunarswapPrivateState,
+  LunarswapWitnesses,
+} from '@midnight-dapps/lunarswap-v1';
 import { LunarswapIntegration } from '@/lib/lunarswap-integration';
 import { ensureLunarswapProofParams } from '@/utils/proof-params';
-import type { PrivateStateProvider, ProofProvider, PublicDataProvider, WalletProvider, MidnightProvider } from '@midnight-ntwrk/midnight-js-types';
+import type {
+  PrivateStateProvider,
+  ProofProvider,
+  PublicDataProvider,
+  WalletProvider,
+  MidnightProvider,
+} from '@midnight-ntwrk/midnight-js-types';
 import { proofClient } from '@/providers/proof';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import type { ProviderCallbackAction, WalletAPI } from '@/lib/wallet-context';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
+import { createCoinInfo, encodeCoinInfo } from '@midnight-ntwrk/ledger';
+import { encodeCoinPublicKey, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
 
 interface TokenData {
   symbol: string;
@@ -48,7 +64,7 @@ interface SetDepositStepProps {
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const runtimeConfig = useRuntimeConfiguration();
-  const { isConnected, address, providers, walletAPI, callback } = useWallet();
+  const { isConnected, address, providers, walletAPI, callback, publicDataProvider, walletProvider, midnightProvider } = useWallet();
   const { lunarswap, status, isLoading } = useLunarswapContext();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,7 +83,16 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const [amountB, setAmountB] = useState<string>('');
 
   // Transaction state tracking for better user feedback
-  const [transactionState, setTransactionState] = useState<'idle' | 'checking-balance' | 'fetching-params' | 'generating-proof' | 'submitting-transaction' | 'confirming' | 'success' | 'error'>('idle');
+  const [transactionState, setTransactionState] = useState<
+    | 'idle'
+    | 'checking-balance'
+    | 'fetching-params'
+    | 'generating-proof'
+    | 'submitting-transaction'
+    | 'confirming'
+    | 'success'
+    | 'error'
+  >('idle');
 
   // Use the token objects directly from pairData
   const tokenADetails = pairData.tokenA;
@@ -163,7 +188,10 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     walletAPI: WalletAPI,
     callback: (action: ProviderCallbackAction) => void,
   ) => {
-    const privateStateProvider: PrivateStateProvider<string, LunarswapPrivateState> = levelPrivateStateProvider({
+    const privateStateProvider: PrivateStateProvider<
+      string,
+      LunarswapPrivateState
+    > = levelPrivateStateProvider({
       privateStateStoreName: 'lunarswap-private-state',
     });
     const proofProvider: ProofProvider<LunarswapCircuitKeys> = proofClient(
@@ -212,12 +240,14 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
     setIsSubmitting(true);
     setTransactionState('checking-balance');
-    
+
     try {
       // Stage 1: Check balance and prepare transaction
       setTransactionState('checking-balance');
-      console.log('[AddLiquidity] Checking balance and preparing transaction...');
-      
+      console.log(
+        '[AddLiquidity] Checking balance and preparing transaction...',
+      );
+
       // Get current reserves (use 0 for new pools)
       let reserveA = BigInt(0);
       let reserveB = BigInt(0);
@@ -253,15 +283,22 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       // Stage 2: Fetch proof parameters
       setTransactionState('fetching-params');
       console.log('[AddLiquidity] Fetching proof parameters...');
-      
+
       // Stage 3: Generate ZK proof
       setTransactionState('generating-proof');
       console.log('[AddLiquidity] Generating ZK proof...');
 
       const contract: LunarswapContract = new Contract(LunarswapWitnesses());
-      const customProvider = customProviders(providers.publicDataProvider, providers.walletProvider, providers.midnightProvider, walletAPI, callback);
+      const customProvider = customProviders(
+        publicDataProvider,
+        walletProvider,
+        midnightProvider,
+        walletAPI,
+        callback,
+      );
 
-      await customProvider.privateStateProvider.set('lunarswapPrivateState',
+      await customProvider.privateStateProvider.set(
+        'lunarswapPrivateState',
         {},
       );
       const found = await findDeployedContract(customProvider, {
@@ -270,9 +307,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         privateStateId: 'lunarswapPrivateState',
       });
 
+      const coinInfoA = encodeCoinInfo(createCoinInfo(liquidityParams.tokenA, liquidityParams.amountADesired));
+      const coinInfoB = encodeCoinInfo(createCoinInfo(liquidityParams.tokenB, liquidityParams.amountBDesired));
+
       const txData = await found.callTx.addLiquidity(
-        LunarswapIntegration.createCoinInfo(liquidityParams.tokenA, liquidityParams.amountADesired),
-        LunarswapIntegration.createCoinInfo(liquidityParams.tokenB, liquidityParams.amountBDesired),
+        coinInfoA,
+        coinInfoB,
         liquidityParams.amountAMin,
         liquidityParams.amountBMin,
         LunarswapIntegration.createRecipient(walletAPI.coinPublicKey),
@@ -313,40 +353,51 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       // Enhanced error handling with better user messages
       setTransactionState('error');
       let errorMessage = 'Failed to add liquidity';
-      
+
       if (error instanceof Error) {
         const errorText = error.message.toLowerCase();
-        const errorReason = (error as { reason?: string })?.reason?.toLowerCase() || '';
-        
+        const errorReason =
+          (error as { reason?: string })?.reason?.toLowerCase() || '';
+
         // Check for insufficient balance errors
-        if (errorText.includes('insufficient balance') || 
-            errorReason.includes('insufficient balance') ||
-            errorText.includes('insufficient funds') ||
-            errorReason.includes('insufficient funds')) {
-          
+        if (
+          errorText.includes('insufficient balance') ||
+          errorReason.includes('insufficient balance') ||
+          errorText.includes('insufficient funds') ||
+          errorReason.includes('insufficient funds')
+        ) {
           errorMessage = `Insufficient token balance. Please ensure you have enough ${pairData.tokenA.symbol} and ${pairData.tokenB.symbol} tokens.`;
-          
-        } else if (errorText.includes('slippage') || errorReason.includes('slippage')) {
-          errorMessage = 'Transaction failed due to price movement. Try adjusting your slippage tolerance or try again.';
-          
-        } else if (errorText.includes('pair does not exist') || errorReason.includes('pair does not exist')) {
+        } else if (
+          errorText.includes('slippage') ||
+          errorReason.includes('slippage')
+        ) {
+          errorMessage =
+            'Transaction failed due to price movement. Try adjusting your slippage tolerance or try again.';
+        } else if (
+          errorText.includes('pair does not exist') ||
+          errorReason.includes('pair does not exist')
+        ) {
           errorMessage = `Trading pair for ${pairData.tokenA.symbol}/${pairData.tokenB.symbol} does not exist yet.`;
-          
-        } else if (errorText.includes('user rejected') || errorReason.includes('user rejected')) {
+        } else if (
+          errorText.includes('user rejected') ||
+          errorReason.includes('user rejected')
+        ) {
           errorMessage = 'Transaction was cancelled by user.';
-          
-        } else if (errorText.includes('network') || errorReason.includes('network')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-          
+        } else if (
+          errorText.includes('network') ||
+          errorReason.includes('network')
+        ) {
+          errorMessage =
+            'Network error. Please check your connection and try again.';
         } else {
           // Use the original error message for other cases
           errorMessage = error.message;
         }
       }
-      
+
       // Show all transaction errors as error notifications
       toast.error(errorMessage);
-      
+
       console.error('Add liquidity error:', error);
     } finally {
       setIsSubmitting(false);
@@ -361,7 +412,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     if (!isHydrated) return 'Loading...';
     if (!isConnected) return 'Connect Wallet';
     if (!amountA || !amountB) return 'Enter amounts';
-    
+
     // Show transaction state-specific messages
     switch (transactionState) {
       case 'checking-balance':
@@ -440,7 +491,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <SplitTokenIcon 
+              <SplitTokenIcon
                 tokenASymbol={tokenADetails.symbol}
                 tokenBSymbol={tokenBDetails.symbol}
                 size={32}
@@ -495,7 +546,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
               />
               <div className="flex justify-between mt-2">
                 <div className="flex items-center">
-                  <TokenIcon 
+                  <TokenIcon
                     symbol={tokenADetails.symbol}
                     size={20}
                     className="mr-2"
@@ -517,7 +568,7 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
               />
               <div className="flex justify-between mt-2">
                 <div className="flex items-center">
-                  <TokenIcon 
+                  <TokenIcon
                     symbol={tokenBDetails.symbol}
                     size={20}
                     className="mr-2"
@@ -579,20 +630,27 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
             <div className="text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">
               <div className="flex items-center justify-between mb-2">
                 <span>Processing transaction...</span>
-                <span className="text-xs font-mono">{getProgressPercentage()}%</span>
+                <span className="text-xs font-mono">
+                  {getProgressPercentage()}%
+                </span>
               </div>
               <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
-                <div 
+                <div
                   className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${getProgressPercentage()}%` }}
                 />
               </div>
               <div className="text-xs text-blue-500 mt-1">
-                {transactionState === 'checking-balance' && 'Checking your token balances...'}
-                {transactionState === 'fetching-params' && 'Downloading proof parameters...'}
-                {transactionState === 'generating-proof' && 'Generating zero-knowledge proof...'}
-                {transactionState === 'submitting-transaction' && 'Submitting to blockchain...'}
-                {transactionState === 'confirming' && 'Waiting for confirmation...'}
+                {transactionState === 'checking-balance' &&
+                  'Checking your token balances...'}
+                {transactionState === 'fetching-params' &&
+                  'Downloading proof parameters...'}
+                {transactionState === 'generating-proof' &&
+                  'Generating zero-knowledge proof...'}
+                {transactionState === 'submitting-transaction' &&
+                  'Submitting to blockchain...'}
+                {transactionState === 'confirming' &&
+                  'Waiting for confirmation...'}
               </div>
             </div>
           )}

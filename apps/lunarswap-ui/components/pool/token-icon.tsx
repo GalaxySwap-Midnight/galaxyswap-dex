@@ -8,19 +8,21 @@ interface TokenIconProps {
   className?: string;
 }
 
-export function TokenIcon({ symbol, size = 20, className = "" }: TokenIconProps) {
+export function TokenIcon({
+  symbol,
+  size = 20,
+  className = '',
+}: TokenIconProps) {
   const tokenDetails = getTokenDetails(symbol);
-  
+
   if (!tokenDetails) {
     // Fallback to colored circle if token not found
     return (
-      <div 
+      <div
         className={`rounded-full bg-gray-500 flex items-center justify-center ${className}`}
         style={{ width: size, height: size }}
       >
-        <span className="text-white text-xs font-bold">
-          {symbol.charAt(0)}
-        </span>
+        <span className="text-white text-xs font-bold">{symbol.charAt(0)}</span>
       </div>
     );
   }
@@ -30,4 +32,4 @@ export function TokenIcon({ symbol, size = 20, className = "" }: TokenIconProps)
       <Identicon address={tokenDetails.address} size={size} />
     </div>
   );
-} 
+}

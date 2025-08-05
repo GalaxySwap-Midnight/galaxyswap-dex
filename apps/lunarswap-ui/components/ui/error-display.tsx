@@ -11,64 +11,67 @@ interface ErrorDisplayProps {
   className?: string;
 }
 
-export function ErrorDisplay({ 
-  error, 
-  onRetry, 
-  onDismiss, 
+export function ErrorDisplay({
+  error,
+  onRetry,
+  onDismiss,
   showDetails = false,
-  className = '' 
+  className = '',
 }: ErrorDisplayProps) {
   const errorMessage = typeof error === 'string' ? error : error.message;
   const errorName = typeof error === 'string' ? 'Error' : error.name;
-  
+
   // Determine error type and icon
   const getErrorConfig = () => {
     const message = errorMessage.toLowerCase();
-    
-    if (message.includes('insufficient balance') || message.includes('insufficient funds')) {
+
+    if (
+      message.includes('insufficient balance') ||
+      message.includes('insufficient funds')
+    ) {
       return {
         type: 'warning' as const,
         icon: AlertTriangle,
         title: 'Insufficient Balance',
-        variant: 'default' as const
+        variant: 'default' as const,
       };
     }
-    
+
     if (message.includes('slippage')) {
       return {
         type: 'warning' as const,
         icon: AlertTriangle,
         title: 'Slippage Error',
-        variant: 'default' as const
+        variant: 'default' as const,
       };
     }
-    
+
     if (message.includes('network') || message.includes('connection')) {
       return {
         type: 'error' as const,
         icon: XCircle,
         title: 'Network Error',
-        variant: 'destructive' as const
+        variant: 'destructive' as const,
       };
     }
-    
+
     if (message.includes('user rejected') || message.includes('cancelled')) {
       return {
         type: 'info' as const,
         icon: Info,
         title: 'Transaction Cancelled',
-        variant: 'default' as const
+        variant: 'default' as const,
       };
     }
-    
+
     return {
       type: 'error' as const,
       icon: XCircle,
       title: 'Transaction Failed',
-      variant: 'destructive' as const
+      variant: 'destructive' as const,
     };
   };
-  
+
   const config = getErrorConfig();
   const IconComponent = config.icon;
 
@@ -78,7 +81,7 @@ export function ErrorDisplay({
       <AlertTitle>{config.title}</AlertTitle>
       <AlertDescription className="mt-2">
         <p className="text-sm">{errorMessage}</p>
-        
+
         {showDetails && typeof error !== 'string' && error.stack && (
           <details className="mt-2">
             <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
@@ -89,23 +92,23 @@ export function ErrorDisplay({
             </pre>
           </details>
         )}
-        
+
         <div className="mt-3 flex gap-2">
           {onRetry && (
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={onRetry}
               className="text-xs"
             >
               Try Again
             </Button>
           )}
-          
+
           {onDismiss && (
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               onClick={onDismiss}
               className="text-xs"
             >
@@ -119,11 +122,11 @@ export function ErrorDisplay({
 }
 
 // Specialized error display for insufficient balance
-export function InsufficientBalanceError({ 
-  tokenA, 
-  tokenB, 
-  onRetry, 
-  onDismiss 
+export function InsufficientBalanceError({
+  tokenA,
+  tokenB,
+  onRetry,
+  onDismiss,
 }: {
   tokenA: string;
   tokenB: string;
@@ -133,31 +136,35 @@ export function InsufficientBalanceError({
   return (
     <Alert variant="default" className="border-yellow-200 bg-yellow-50">
       <AlertTriangle className="h-4 w-4 text-yellow-600" />
-      <AlertTitle className="text-yellow-800">Insufficient Token Balance</AlertTitle>
+      <AlertTitle className="text-yellow-800">
+        Insufficient Token Balance
+      </AlertTitle>
       <AlertDescription className="mt-2 text-yellow-700">
         <p className="text-sm">
-          You don't have enough {tokenA} and/or {tokenB} tokens to add liquidity.
+          You don't have enough {tokenA} and/or {tokenB} tokens to add
+          liquidity.
         </p>
         <p className="text-xs mt-1 text-yellow-600">
-          Please check your wallet balance and ensure you have sufficient tokens for this transaction.
+          Please check your wallet balance and ensure you have sufficient tokens
+          for this transaction.
         </p>
-        
+
         <div className="mt-3 flex gap-2">
           {onRetry && (
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={onRetry}
               className="text-xs border-yellow-300 text-yellow-700 hover:bg-yellow-100"
             >
               Check Balance
             </Button>
           )}
-          
+
           {onDismiss && (
-            <Button 
-              size="sm" 
-              variant="ghost" 
+            <Button
+              size="sm"
+              variant="ghost"
               onClick={onDismiss}
               className="text-xs text-yellow-600 hover:bg-yellow-100"
             >
@@ -168,4 +175,4 @@ export function InsufficientBalanceError({
       </AlertDescription>
     </Alert>
   );
-} 
+}

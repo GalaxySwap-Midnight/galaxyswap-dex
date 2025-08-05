@@ -49,8 +49,6 @@ import {
 } from '@midnight-ntwrk/wallet-sdk-address-format';
 import { ensureLunarswapProofParams } from '../utils/proof-params';
 
-
-
 // Contract status types
 export type ContractStatus =
   | 'not-configured' // No contract address configured
@@ -156,7 +154,7 @@ export class LunarswapIntegration {
         message: 'Successfully connected to Lunarswap contract',
       };
 
-      await this.getPublicState();
+      //await this.getPublicState();
 
       return this._statusInfo;
     } catch (error) {
@@ -237,7 +235,7 @@ export class LunarswapIntegration {
     }
 
     if (!this.poolData) {
-      await this.getPublicState();
+      //await this.getPublicState();
     }
 
     if (!this.poolData || !this.lunarswap) {
@@ -277,7 +275,7 @@ export class LunarswapIntegration {
     }
 
     if (!this.poolData) {
-      await this.getPublicState();
+      //await this.getPublicState();
     }
 
     if (!this.poolData || !this.lunarswap) {
@@ -310,9 +308,11 @@ export class LunarswapIntegration {
     amountIn: bigint,
     amountOutMin: bigint,
     recipientCoinPublicKey: string,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>> {
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>
+  > {
     await this.ensureContractJoined();
-    
+
     // Ensure proof parameters are downloaded before transaction
     await this.ensureProofParams();
 
@@ -321,8 +321,13 @@ export class LunarswapIntegration {
     }
 
     const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, amountIn);
-    const tokenOutInfo = LunarswapIntegration.createCoinInfo(tokenOut, BigInt(0));
-    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
+    const tokenOutInfo = LunarswapIntegration.createCoinInfo(
+      tokenOut,
+      BigInt(0),
+    );
+    const recipientAddress = LunarswapIntegration.createRecipient(
+      recipientCoinPublicKey,
+    );
 
     // Use the Lunarswap API method
     return await this.lunarswap.swapExactTokensForTokens(
@@ -343,9 +348,11 @@ export class LunarswapIntegration {
     amountOut: bigint,
     amountInMax: bigint,
     recipientCoinPublicKey: string,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>> {
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>
+  > {
     await this.ensureContractJoined();
-    
+
     // Ensure proof parameters are downloaded before transaction
     await this.ensureProofParams();
 
@@ -354,8 +361,13 @@ export class LunarswapIntegration {
     }
 
     const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, BigInt(0));
-    const tokenOutInfo = LunarswapIntegration.createCoinInfo(tokenOut, BigInt(0));
-    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
+    const tokenOutInfo = LunarswapIntegration.createCoinInfo(
+      tokenOut,
+      BigInt(0),
+    );
+    const recipientAddress = LunarswapIntegration.createRecipient(
+      recipientCoinPublicKey,
+    );
 
     // Use the Lunarswap API method
     return await this.lunarswap.swapTokensForExactTokens(
@@ -380,7 +392,7 @@ export class LunarswapIntegration {
     recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'addLiquidity'>> {
     await this.ensureContractJoined();
-    
+
     // Ensure proof parameters are downloaded before transaction
     await this.ensureProofParams();
 
@@ -390,7 +402,9 @@ export class LunarswapIntegration {
 
     const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, amountA);
     const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, amountB);
-    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
+    const recipientAddress = LunarswapIntegration.createRecipient(
+      recipientCoinPublicKey,
+    );
 
     // Add console logs for debugging
     console.log('addLiquidity called with:', {
@@ -405,7 +419,10 @@ export class LunarswapIntegration {
     console.log('addLiquidity tokenAInfo:', tokenAInfo);
     console.log('addLiquidity tokenBInfo:', tokenBInfo);
     console.log('addLiquidity recipientAddress:', recipientAddress);
-    console.log('addLiquidity wallet coinPublicKey:', this.walletAPI.coinPublicKey);
+    console.log(
+      'addLiquidity wallet coinPublicKey:',
+      this.walletAPI.coinPublicKey,
+    );
 
     return await this.lunarswap.addLiquidity(
       tokenAInfo,
@@ -428,7 +445,7 @@ export class LunarswapIntegration {
     recipientCoinPublicKey: string,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'removeLiquidity'>> {
     await this.ensureContractJoined();
-    
+
     // Ensure proof parameters are downloaded before transaction
     await this.ensureProofParams();
 
@@ -438,8 +455,13 @@ export class LunarswapIntegration {
 
     const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
     const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
-    const liquidityInfo = LunarswapIntegration.createCoinInfo('LP', BigInt(liquidity));
-    const recipientAddress = LunarswapIntegration.createRecipient(recipientCoinPublicKey);
+    const liquidityInfo = LunarswapIntegration.createCoinInfo(
+      'LP',
+      BigInt(liquidity),
+    );
+    const recipientAddress = LunarswapIntegration.createRecipient(
+      recipientCoinPublicKey,
+    );
 
     // Use the Lunarswap API method
     return await this.lunarswap.removeLiquidity(
@@ -457,21 +479,33 @@ export class LunarswapIntegration {
    */
   private async ensureProofParams(): Promise<void> {
     try {
-      console.log('[LunarswapIntegration] Ensuring proof parameters are downloaded...');
-      
+      console.log(
+        '[LunarswapIntegration] Ensuring proof parameters are downloaded...',
+      );
+
       // Get the proof server URL from the wallet API
-      const proofServerUrl = this.walletAPI?.uris?.proverServerUri || 'http://localhost:6300';
-      
+      const proofServerUrl =
+        this.walletAPI?.uris?.proverServerUri || 'http://localhost:6300';
+
       const result = await ensureLunarswapProofParams(proofServerUrl);
-      
+
       if (!result.success) {
-        console.warn('[LunarswapIntegration] Some proof parameters failed to download:', result.errors);
+        console.warn(
+          '[LunarswapIntegration] Some proof parameters failed to download:',
+          result.errors,
+        );
         // Don't throw here - let the transaction proceed and fail naturally if needed
       } else {
-        console.log('[LunarswapIntegration] Proof parameters ready:', result.downloaded);
+        console.log(
+          '[LunarswapIntegration] Proof parameters ready:',
+          result.downloaded,
+        );
       }
     } catch (error) {
-      console.error('[LunarswapIntegration] Error ensuring proof parameters:', error);
+      console.error(
+        '[LunarswapIntegration] Error ensuring proof parameters:',
+        error,
+      );
       // Don't throw here - let the transaction proceed and fail naturally if needed
     }
   }
@@ -491,16 +525,13 @@ export class LunarswapIntegration {
   /**
    * Create CoinInfo from token symbol/address and amount
    */
-  static createCoinInfo(
-    type: string,
-    value: bigint,
-  ): CoinInfo {
+  static createCoinInfo(type: string, value: bigint): CoinInfo {
     console.log('[DEBUG] createCoinInfo type:', type);
     console.log('[DEBUG] createCoinInfo value:', value);
 
     // Convert hex string to bytes and ensure it's exactly 32 bytes
     const colorBytes = new Uint8Array(Buffer.from(type, 'hex'));
-    
+
     // If the color is longer than 32 bytes, truncate it
     // If it's shorter than 32 bytes, pad it with zeros
     const color = new Uint8Array(32);
@@ -524,7 +555,7 @@ export class LunarswapIntegration {
     recipientCoinPublicKey: string,
   ): Either<ZswapCoinPublicKey, ContractAddress> {
     console.log('[DEBUG] createRecipient called with:', recipientCoinPublicKey);
-    
+
     if (!recipientCoinPublicKey || recipientCoinPublicKey.length === 0) {
       console.error('[DEBUG] Empty recipient address provided');
       throw new Error('Recipient address cannot be empty');

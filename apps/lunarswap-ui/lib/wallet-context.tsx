@@ -68,6 +68,8 @@ export const createWalletAndMidnightProvider = async (
       tx: UnbalancedTransaction,
       newCoins: CoinInfo[],
     ): Promise<BalancedTransaction> {
+      console.log('[DEBUG] balanceTx', tx.toString(), newCoins);
+      console.dir(tx.imbalances(true), { depth: null });
       return wallet
         .balanceTransaction(
           ZswapTransaction.deserialize(
@@ -261,32 +263,37 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         }),
         logger,
       ),
-    [logger],
+    [],
   );
 
-  const providerCallback = useCallback((action: ProviderCallbackAction): void => {
-    if (action === 'proveTxStarted') {
-      setSnackBarText('Proving transaction...');
-    } else if (action === 'proveTxDone') {
-      setSnackBarText(undefined);
-    } else if (action === 'balanceTxStarted') {
-      setSnackBarText('Signing the transaction with Midnight Lace wallet...');
-    } else if (action === 'downloadProverDone') {
-      setSnackBarText(undefined);
-    } else if (action === 'downloadProverStarted') {
-      setSnackBarText('Downloading prover key...');
-    } else if (action === 'balanceTxDone') {
-      setSnackBarText(undefined);
-    } else if (action === 'submitTxStarted') {
-      setSnackBarText('Submitting transaction...');
-    } else if (action === 'submitTxDone') {
-      setSnackBarText(undefined);
-    } else if (action === 'watchForTxDataStarted') {
-      setSnackBarText('Waiting for transaction finalization on blockchain...');
-    } else if (action === 'watchForTxDataDone') {
-      setSnackBarText(undefined);
-    }
-  }, []);
+  const providerCallback = useCallback(
+    (action: ProviderCallbackAction): void => {
+      if (action === 'proveTxStarted') {
+        setSnackBarText('Proving transaction...');
+      } else if (action === 'proveTxDone') {
+        setSnackBarText(undefined);
+      } else if (action === 'balanceTxStarted') {
+        setSnackBarText('Signing the transaction with Midnight Lace wallet...');
+      } else if (action === 'downloadProverDone') {
+        setSnackBarText(undefined);
+      } else if (action === 'downloadProverStarted') {
+        setSnackBarText('Downloading prover key...');
+      } else if (action === 'balanceTxDone') {
+        setSnackBarText(undefined);
+      } else if (action === 'submitTxStarted') {
+        setSnackBarText('Submitting transaction...');
+      } else if (action === 'submitTxDone') {
+        setSnackBarText(undefined);
+      } else if (action === 'watchForTxDataStarted') {
+        setSnackBarText(
+          'Waiting for transaction finalization on blockchain...',
+        );
+      } else if (action === 'watchForTxDataDone') {
+        setSnackBarText(undefined);
+      }
+    },
+    [],
+  );
 
   const zkConfigProvider = useMemo(
     () =>
@@ -295,7 +302,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         fetch.bind(window),
         providerCallback,
       ),
-    [providerCallback],
+    [],
   );
 
   const publicDataProvider = useMemo(
@@ -305,7 +312,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         providerCallback,
         logger,
       ),
-    [config.INDEXER_URI, config.INDEXER_WS_URI, logger, providerCallback],
+    [],
   );
 
   const shake = useCallback((): void => {
@@ -318,65 +325,54 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   }, []);
 
   const proofProvider = useMemo(() => {
-    console.log('[WalletContext] Creating proofProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
-      console.log('[WalletContext] ProofProvider created with proverServerUri:', walletAPI.uris.proverServerUri);
-      
-      // Use the wallet's proof server URL directly - no proxy
-      const proofServerUrl = walletAPI.uris.proverServerUri;
-      
-      console.log('[WalletContext] Using proof server URL:', proofServerUrl);
-      return proofClient(proofServerUrl, providerCallback);
+      return proofClient(walletAPI.uris.proverServerUri, providerCallback);
     }
-    console.log('[WalletContext] ProofProvider created in noop mode');
     return noopProofClient();
   }, [walletAPI, providerCallback]);
 
   const walletProvider: WalletProvider = useMemo(() => {
-    console.log('[WalletContext] Creating walletProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
-      console.log('[WalletContext] WalletProvider created with address:', walletAPI.address);
       return {
         address: walletAPI.address,
         coinPublicKey: walletAPI.coinPublicKey,
         encryptionPublicKey: walletAPI.encryptionPublicKey,
-        async balanceTx(
+        balanceTx(
           tx: UnbalancedTransaction,
           newCoins: CoinInfo[],
         ): Promise<BalancedTransaction> {
+          console.log('[DEBUG] balanceTx', tx.toString(), newCoins);
+          console.dir(
+            {
+              imbalances: tx.imbalances(true),
+              deltas: tx.guaranteedCoins?.deltas,
+            },
+            { depth: null },
+          );
           providerCallback('balanceTxStarted');
-          const ledgerNetworkId = getLedgerNetworkId();
-          const zswapNetworkId = getZswapNetworkId();
-          console.log('[WalletContext] Ledger Network ID:', ledgerNetworkId);
-          console.log('[WalletContext] Zswap Network ID:', zswapNetworkId);
-          console.log('[WalletContext] Wallet:', walletAPI.wallet);
-          
-          try {
-            const zswapTx = await walletAPI.wallet.balanceAndProveTransaction(
+          return walletAPI.wallet
+            .balanceAndProveTransaction(
               ZswapTransaction.deserialize(
-                tx.serialize(ledgerNetworkId),
-                zswapNetworkId,
+                tx.serialize(getLedgerNetworkId()),
+                getZswapNetworkId(),
               ),
               newCoins,
-            );
-            
-            // Output zswap tx for debugging
-            console.log('[WalletContext] ZswapTransaction:', zswapTx);
-            
-            const deserializedTx = Transaction.deserialize(
-              zswapTx.serialize(zswapNetworkId),
-              ledgerNetworkId,
-            );
-            
-            return createBalancedTx(deserializedTx);
-          } finally {
-            providerCallback('balanceTxDone');
-          }
+            )
+            .then((zswapTx) =>
+              Transaction.deserialize(
+                zswapTx.serialize(getZswapNetworkId()),
+                getLedgerNetworkId(),
+              ),
+            )
+            .then(createBalancedTx)
+            .finally(() => {
+              providerCallback('balanceTxDone');
+            });
         },
       };
     }
-    console.log('[WalletContext] WalletProvider created in readonly mode');
     return {
+      address: '',
       coinPublicKey: '',
       encryptionPublicKey: '',
       balanceTx(
@@ -386,12 +382,10 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI, providerCallback]);
+  }, [walletAPI]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
-    console.log('[WalletContext] Creating midnightProvider, walletAPI:', !!walletAPI);
     if (walletAPI) {
-      console.log('[WalletContext] MidnightProvider created with wallet API');
       return {
         submitTx(tx: BalancedTransaction): Promise<TransactionId> {
           providerCallback('submitTxStarted');
@@ -401,13 +395,12 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         },
       };
     }
-    console.log('[WalletContext] MidnightProvider created in readonly mode');
     return {
       submitTx(tx: BalancedTransaction): Promise<TransactionId> {
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI, providerCallback]);
+  }, [walletAPI]);
 
   const [walletState, setWalletState] = useState<MidnightWalletState>({
     isConnected: false,
@@ -469,27 +462,21 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     await checkProofServerStatus(walletResult.uris.proverServerUri);
     try {
       const reqState = await walletResult.wallet.state();
-      console.log('[WalletContext] Setting wallet address:', reqState.address);
       setAddress(reqState.address);
-      
-      const newWalletAPI = {
+      setWalletAPI({
         address: reqState.address,
         wallet: walletResult.wallet,
         coinPublicKey: reqState.coinPublicKey,
         encryptionPublicKey: reqState.encryptionPublicKey,
         uris: walletResult.uris,
-      };
-      console.log('[WalletContext] Setting wallet API:', newWalletAPI);
-      setWalletAPI(newWalletAPI);
+      });
     } catch (e) {
-      console.error('[WalletContext] Error setting wallet API:', e);
       setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
     }
     setIsConnecting(false);
   }
 
   useEffect(() => {
-    console.log('[WalletContext] Updating wallet state with providers, walletAPI:', !!walletAPI);
     setWalletState((state) => ({
       ...state,
       walletAPI,
@@ -529,23 +516,27 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     }));
   }, [address, isConnecting, proofServerIsOnline, shake]);
 
-  const connectMemo = useCallback(connect, []);
+  //const connectMemo = useCallback(connect, []);
 
   // Check if wallet is available before auto-connecting
   const isWalletAvailable = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return !!(
-      window.midnight?.mnLace ||
-      typeof window.midnight !== 'undefined'
+      window.midnight?.mnLace || typeof window.midnight !== 'undefined'
     );
   }, []);
 
   useEffect(() => {
     // Only auto-connect if wallet is available and we're not already connected/connecting
-    if (isWalletAvailable && !walletState.isConnected && !isConnecting && !walletError) {
-      void connectMemo(false); // auto connect
+    if (
+      isWalletAvailable &&
+      !walletState.isConnected &&
+      !isConnecting &&
+      !walletError
+    ) {
+      void connect(false); // auto connect
     }
-  }, [isWalletAvailable, walletState.isConnected, isConnecting, walletError, connectMemo]);
+  }, [walletState.isConnected, isConnecting]);
 
   // Expose wallet state for debugging
   useEffect(() => {
@@ -557,7 +548,9 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
           address: walletState.address,
           hasWalletAPI: !!walletState.walletAPI,
           hasProviders: !!walletState.providers,
-          providerKeys: walletState.providers ? Object.keys(walletState.providers) : [],
+          providerKeys: walletState.providers
+            ? Object.keys(walletState.providers)
+            : [],
           walletProviderAddress: walletState.walletAPI?.address,
           midnightProviderType: typeof walletState.midnightProvider?.submitTx,
         });

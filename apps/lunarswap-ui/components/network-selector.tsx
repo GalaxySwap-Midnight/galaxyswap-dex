@@ -48,7 +48,7 @@ export function NetworkSelector() {
 
   const handleSyncClick = async () => {
     if (!isConnected || isSyncing) return;
-    
+
     setIsSyncing(true);
     try {
       await syncWithWallet();
@@ -70,7 +70,9 @@ export function NetworkSelector() {
           <div className="flex items-center gap-2">
             <div
               className={`w-2 h-2 rounded-full ${
-                currentNetwork.type === 'mainnet' ? 'bg-green-500' : 'bg-yellow-500'
+                currentNetwork.type === 'mainnet'
+                  ? 'bg-green-500'
+                  : 'bg-yellow-500'
               }`}
             />
             {currentNetwork.name}

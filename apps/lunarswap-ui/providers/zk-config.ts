@@ -83,32 +83,39 @@ export class ZkConfigProviderWrapper<
     ] as K[];
 
     // Check if this looks like a lunarswap contract
-    const isLunarswap = lunarswapCircuitOrder.some(id => circuitIds.includes(id));
+    const isLunarswap = lunarswapCircuitOrder.some((id) =>
+      circuitIds.includes(id),
+    );
 
     if (isLunarswap) {
       console.log(
         '[ZkConfigProviderWrapper] Processing lunarswap verifier keys',
-        { 
-          requested: circuitIds, 
+        {
+          requested: circuitIds,
           requestedCount: circuitIds.length,
-          lunarswapCircuits: lunarswapCircuitOrder.length 
-        }
+          lunarswapCircuits: lunarswapCircuitOrder.length,
+        },
       );
-      
+
       // For lunarswap, we need to provide verifier keys in the exact order
       // that matches the deployed contract's circuit order
       // However, if the requested circuits don't match our expected order,
       // we should use the requested order to avoid mismatches
-      const orderedCircuitIds = lunarswapCircuitOrder.filter(id => 
-        circuitIds.includes(id)
+      const orderedCircuitIds = lunarswapCircuitOrder.filter((id) =>
+        circuitIds.includes(id),
       );
-      
-      console.log('[ZkConfigProviderWrapper] Ordered circuit IDs:', orderedCircuitIds);
-      
+
+      console.log(
+        '[ZkConfigProviderWrapper] Ordered circuit IDs:',
+        orderedCircuitIds,
+      );
+
       // If we have fewer circuits than requested, there might be additional circuits
       // that we don't have in our order. In this case, use the requested order.
       if (orderedCircuitIds.length < circuitIds.length) {
-        console.log('[ZkConfigProviderWrapper] Warning: Requested circuits include additional circuits not in our order. Using requested order.');
+        console.log(
+          '[ZkConfigProviderWrapper] Warning: Requested circuits include additional circuits not in our order. Using requested order.',
+        );
         const verifierKeys = await Promise.all(
           circuitIds.map(async (circuitId) => {
             const verifierKey = await this.getVerifierKey(circuitId);
@@ -117,7 +124,7 @@ export class ZkConfigProviderWrapper<
         );
         return verifierKeys;
       }
-      
+
       const verifierKeys = await Promise.all(
         orderedCircuitIds.map(async (circuitId) => {
           const verifierKey = await this.getVerifierKey(circuitId);

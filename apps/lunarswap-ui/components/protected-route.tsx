@@ -27,9 +27,10 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
               <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Wallet Required</h3>
               <p className="text-muted-foreground mb-6">
-                Please connect your wallet to access this page. You need a connected wallet to create liquidity positions.
+                Please connect your wallet to access this page. You need a
+                connected wallet to create liquidity positions.
               </p>
-              <Button 
+              <Button
                 onClick={() => navigate('/')}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
@@ -43,4 +44,4 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
   }
 
   return <>{children}</>;
-} 
+}

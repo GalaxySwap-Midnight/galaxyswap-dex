@@ -48,8 +48,8 @@ export function TokenSelector({
         aria-expanded={open}
         aria-controls="token-selector-dialog"
         className={`w-full justify-between h-12 ${
-          selectedToken 
-            ? 'bg-white dark:bg-gray-800' 
+          selectedToken
+            ? 'bg-white dark:bg-gray-800'
             : 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500 hover:border-blue-600'
         }`}
         onClick={() => setOpen(true)}
@@ -64,7 +64,11 @@ export function TokenSelector({
             <span>{selectedToken.symbol}</span>
           </div>
         ) : (
-          <span className={selectedToken ? 'text-gray-500 dark:text-gray-400' : 'text-white'}>
+          <span
+            className={
+              selectedToken ? 'text-gray-500 dark:text-gray-400' : 'text-white'
+            }
+          >
             {placeholder}
           </span>
         )}

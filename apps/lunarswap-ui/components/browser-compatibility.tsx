@@ -13,7 +13,7 @@ export function BrowserCompatibility() {
     // Check if user is using Firefox
     const userAgent = navigator.userAgent.toLowerCase();
     const isFirefoxBrowser = userAgent.includes('firefox');
-    
+
     setIsFirefox(isFirefoxBrowser);
     setIsVisible(isFirefoxBrowser);
   }, []);
@@ -39,8 +39,9 @@ export function BrowserCompatibility() {
       <AlertDescription className="text-yellow-700 dark:text-yellow-300">
         <div className="space-y-3">
           <p>
-            Midnight Lace wallet is not yet supported in Firefox. Please use a Chrome-based browser 
-            (Chrome, Edge, Brave, etc.) for the best experience.
+            Midnight Lace wallet is not yet supported in Firefox. Please use a
+            Chrome-based browser (Chrome, Edge, Brave, etc.) for the best
+            experience.
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -66,4 +67,4 @@ export function BrowserCompatibility() {
       </AlertDescription>
     </Alert>
   );
-} 
+}

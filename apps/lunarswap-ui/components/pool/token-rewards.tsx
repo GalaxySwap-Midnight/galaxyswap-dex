@@ -29,12 +29,13 @@ export function TokenRewards() {
               <div className="relative inline-flex group">
                 <HelpCircle className="h-4 w-4 ml-1" />
                 <div className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded w-48">
-                  Currently reading balance from connected wallet is not supported yet
+                  Currently reading balance from connected wallet is not
+                  supported yet
                 </div>
               </div>
             </div>
           </div>
-          <Button 
+          <Button
             className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
             disabled
           >
@@ -51,7 +52,9 @@ export function TokenRewards() {
           >
             <div className="flex items-center space-x-2">
               <div className="flex items-center text-blue-600 dark:text-blue-400">
-                <span className="font-medium">Find pools with LUNAR rewards</span>
+                <span className="font-medium">
+                  Find pools with LUNAR rewards
+                </span>
                 <svg
                   role="img"
                   aria-labelledby="find-rewards-arrow-title"
@@ -72,7 +75,8 @@ export function TokenRewards() {
               </div>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Currently reading balance from connected wallet is not supported yet
+              Currently reading balance from connected wallet is not supported
+              yet
             </p>
           </button>
         </div>

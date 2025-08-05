@@ -30,11 +30,13 @@ export function TokenInput({
   isActive = false,
 }: TokenInputProps) {
   return (
-    <div className={`rounded-xl p-4 transition-all duration-200 ${
-      isActive 
-        ? 'bg-gray-50/40 dark:bg-gray-800/30' // More transparent when active
-        : 'bg-gray-100/80 dark:bg-gray-700/50' // Normal opacity when inactive
-    }`}>
+    <div
+      className={`rounded-xl p-4 transition-all duration-200 ${
+        isActive
+          ? 'bg-gray-50/40 dark:bg-gray-800/30' // More transparent when active
+          : 'bg-gray-100/80 dark:bg-gray-700/50' // Normal opacity when inactive
+      }`}
+    >
       {label && (
         <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
           {label}
@@ -57,8 +59,8 @@ export function TokenInput({
             disabled
               ? 'bg-gray-100/50 dark:bg-gray-700/50 border-gray-200/50 dark:border-gray-600/30 cursor-not-allowed opacity-50'
               : token
-              ? 'bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 border-gray-300/50 dark:border-blue-800/30'
-              : 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700/50 text-blue-600 dark:text-blue-400'
+                ? 'bg-white/80 dark:bg-blue-900/50 hover:bg-gray-100 dark:hover:bg-blue-800/50 border-gray-300/50 dark:border-blue-800/30'
+                : 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-700/50 text-blue-600 dark:text-blue-400'
           }`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -75,7 +77,9 @@ export function TokenInput({
               </>
             )}
           </div>
-          <ChevronDown className={`h-4 w-4 flex-shrink-0 ${token ? 'text-gray-400' : 'text-blue-500 dark:text-blue-400'}`} />
+          <ChevronDown
+            className={`h-4 w-4 flex-shrink-0 ${token ? 'text-gray-400' : 'text-blue-500 dark:text-blue-400'}`}
+          />
         </button>
       </div>
     </div>

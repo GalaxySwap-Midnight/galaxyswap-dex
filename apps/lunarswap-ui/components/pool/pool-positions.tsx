@@ -23,9 +23,9 @@ export function PoolPositions() {
           </div>
           {isConnected ? (
             <Link to="/pool/new">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="gap-1 rounded-full"
               >
                 <Plus className="h-4 w-4" />
@@ -33,9 +33,9 @@ export function PoolPositions() {
               </Button>
             </Link>
           ) : (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="gap-1 rounded-full"
               disabled={true}
             >

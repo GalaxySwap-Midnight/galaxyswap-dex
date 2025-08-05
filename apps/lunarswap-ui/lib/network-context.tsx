@@ -76,30 +76,35 @@ export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
 
     try {
       console.log('[NetworkProvider] Starting wallet sync...');
-      
+
       // Get wallet state to check if wallet is working
       const walletState = await walletAPI.wallet.state();
       console.log('[NetworkProvider] Wallet state:', walletState);
-      
+
       // If we can get wallet state, consider it synced
       // In a real implementation, you would check actual sync status
       const isWalletWorking = !!walletState;
-      
+
       if (isWalletWorking) {
         console.log('[NetworkProvider] Wallet is working and synced');
         setIsNetworkSynced(true);
-        
+
         // Try to detect network from wallet (if supported)
         const walletNetwork = await detectWalletNetwork(
           walletAPI.wallet,
           availableNetworks,
         );
-        
+
         if (walletNetwork) {
-          console.log('[NetworkProvider] Detected wallet network:', walletNetwork);
+          console.log(
+            '[NetworkProvider] Detected wallet network:',
+            walletNetwork,
+          );
           setCurrentNetwork(walletNetwork);
         } else {
-          console.log('[NetworkProvider] Network detection not supported, using config network');
+          console.log(
+            '[NetworkProvider] Network detection not supported, using config network',
+          );
           // Keep current network from config
         }
       } else {
@@ -107,7 +112,10 @@ export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
         setIsNetworkSynced(false);
       }
     } catch (error) {
-      console.error('[NetworkProvider] Failed to sync network with wallet:', error);
+      console.error(
+        '[NetworkProvider] Failed to sync network with wallet:',
+        error,
+      );
       setIsNetworkSynced(false);
     }
   }, [isConnected, walletAPI]);
@@ -118,7 +126,9 @@ export const NetworkProvider: React.FC<Readonly<NetworkProviderProps>> = ({
       console.log('[NetworkProvider] Wallet connected, starting sync...');
       syncWithWallet();
     } else {
-      console.log('[NetworkProvider] Wallet disconnected, clearing sync status');
+      console.log(
+        '[NetworkProvider] Wallet disconnected, clearing sync status',
+      );
       setIsNetworkSynced(false);
     }
   }, [isConnected, syncWithWallet]);

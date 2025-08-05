@@ -54,7 +54,7 @@ export function TokenSelectModal({
         const publicState = await lunarswap.getPublicState();
         if (publicState) {
           const pairs = lunarswap.getAllPairs();
-          
+
           // Extract unique tokens from all pairs
           const tokenSet = new Set<string>();
           for (const { pair } of pairs) {
@@ -64,10 +64,10 @@ export function TokenSelectModal({
           }
 
           // Filter popular tokens to only include those with pools
-          const available = popularTokens.filter(token => 
-            tokenSet.has(token.type)
+          const available = popularTokens.filter((token) =>
+            tokenSet.has(token.type),
           );
-          
+
           setAvailableTokens(available);
         } else {
           setAvailableTokens([]);
@@ -120,14 +120,18 @@ export function TokenSelectModal({
           ) : !isConnected ? (
             <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               <Droplets className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm mb-2">Connect your wallet to see available tokens</p>
+              <p className="text-sm mb-2">
+                Connect your wallet to see available tokens
+              </p>
             </div>
           ) : availableTokens.length === 0 ? (
             <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               <Droplets className="h-8 w-8 text-gray-400 mx-auto mb-2" />
               <p className="text-sm mb-2">No liquidity pools available</p>
-              <p className="text-xs mb-3">Add liquidity to create trading pairs</p>
-              <Button 
+              <p className="text-xs mb-3">
+                Add liquidity to create trading pairs
+              </p>
+              <Button
                 onClick={handleAddLiquidity}
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-white"

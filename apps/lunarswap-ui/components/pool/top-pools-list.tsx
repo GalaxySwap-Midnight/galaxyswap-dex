@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
 import type { Pair } from '@midnight-dapps/lunarswap-v1';
 
-
-
 export function TopPoolsList() {
   const navigate = useNavigate();
   const { isConnected } = useWallet();
   const { lunarswap, status, isLoading } = useLunarswapContext();
-  const [poolData, setPoolData] = useState<Array<{ identity: string; pair: Pair }> | null>(null);
+  const [poolData, setPoolData] = useState<Array<{
+    identity: string;
+    pair: Pair;
+  }> | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
 
   const handleExploreMorePools = () => {
@@ -61,9 +62,12 @@ export function TopPoolsList() {
             <div className="flex items-center space-x-3">
               <Droplets className="h-12 w-12 text-gray-400 flex-shrink-0" />
               <div className="text-left">
-                <h4 className="text-lg font-semibold mb-1">Connect Your Wallet</h4>
+                <h4 className="text-lg font-semibold mb-1">
+                  Connect Your Wallet
+                </h4>
                 <p className="text-sm text-muted-foreground">
-                  Please connect your wallet to view liquidity pools and their statistics.
+                  Please connect your wallet to view liquidity pools and their
+                  statistics.
                 </p>
               </div>
             </div>
@@ -120,7 +124,7 @@ export function TopPoolsList() {
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Top pools by TVL</h3>
-      
+
       {!poolData || poolData.length === 0 ? (
         <Card className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden">
           <CardContent className="p-6">
@@ -172,7 +176,8 @@ export function TopPoolsList() {
                           {pool.pair.token0.color}/{pool.pair.token1.color}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {pool.identity.slice(0, 8)}...{pool.identity.slice(-8)}
+                          {pool.identity.slice(0, 8)}...
+                          {pool.identity.slice(-8)}
                         </div>
                       </div>
                     </div>
@@ -191,7 +196,7 @@ export function TopPoolsList() {
               </CardContent>
             </Card>
           ))}
-          
+
           <div className="flex justify-center pt-2">
             <Button
               variant="ghost"

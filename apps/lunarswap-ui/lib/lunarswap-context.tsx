@@ -143,11 +143,18 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
         isConnected: midnightWallet.isConnected,
         hasWalletAPI: !!midnightWallet.walletAPI,
         hasProviders: !!midnightWallet.providers,
-        providers: midnightWallet.providers ? Object.keys(midnightWallet.providers) : [],
-      }
+        providers: midnightWallet.providers
+          ? Object.keys(midnightWallet.providers)
+          : [],
+      },
     );
     initializeLunarswap();
-  }, [initializeLunarswap, midnightWallet.isConnected, midnightWallet.walletAPI, midnightWallet.providers]);
+  }, [
+    initializeLunarswap,
+    midnightWallet.isConnected,
+    midnightWallet.walletAPI,
+    midnightWallet.providers,
+  ]);
 
   const contextValue: LunarswapContextType = {
     lunarswap,

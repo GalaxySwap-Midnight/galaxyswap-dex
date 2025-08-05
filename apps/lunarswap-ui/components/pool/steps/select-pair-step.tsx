@@ -14,7 +14,9 @@ interface SelectPairStepProps {
 
 export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
   // Set default tokens - first token is TUSD, second is empty
-  const [tokenA, setTokenA] = useState(initialData.tokenA || getTokenByName('TUSD'));
+  const [tokenA, setTokenA] = useState(
+    initialData.tokenA || getTokenByName('TUSD'),
+  );
   const [tokenB, setTokenB] = useState(initialData.tokenB || null);
   const [fee] = useState(initialData.fee);
   const [version] = useState(initialData.version);

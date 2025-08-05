@@ -62,7 +62,10 @@ export default function ExplorePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(
     viewPreference === 'horizontal' ? 'grid' : 'list',
   );
-  const [poolData, setPoolData] = useState<Array<{ identity: string; pair: Pair }> | null>(null);
+  const [poolData, setPoolData] = useState<Array<{
+    identity: string;
+    pair: Pair;
+  }> | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
 
   // Update view mode when view preference changes
@@ -359,9 +362,12 @@ export default function ExplorePage() {
           <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30">
             <CardContent className="p-8 text-center">
               <Droplets className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                Connect Your Wallet
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Please connect your wallet to view liquidity pools and their statistics.
+                Please connect your wallet to view liquidity pools and their
+                statistics.
               </p>
             </CardContent>
           </Card>
@@ -410,7 +416,9 @@ export default function ExplorePage() {
           <div>
             <h3 className="text-2xl font-bold mb-2">Top Pools by TVL</h3>
             <p className="text-muted-foreground">
-              {poolData ? `${poolData.length} active liquidity pools` : 'No pools found'}
+              {poolData
+                ? `${poolData.length} active liquidity pools`
+                : 'No pools found'}
             </p>
           </div>
           <Button
@@ -476,10 +484,12 @@ export default function ExplorePage() {
                             </div>
                             <div>
                               <div className="font-medium">
-                                {pool.pair.token0.color}/{pool.pair.token1.color}
+                                {pool.pair.token0.color}/
+                                {pool.pair.token1.color}
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {pool.identity.slice(0, 8)}...{pool.identity.slice(-8)}
+                                {pool.identity.slice(0, 8)}...
+                                {pool.identity.slice(-8)}
                               </div>
                             </div>
                           </div>
@@ -490,8 +500,12 @@ export default function ExplorePage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4">0.3%</td>
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">Coming soon</td>
-                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">Coming soon</td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                          Coming soon
+                        </td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                          Coming soon
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -529,8 +543,6 @@ export default function ExplorePage() {
       </Card>
     </div>
   );
-
-
 
   const renderContent = () => {
     switch (selectedOption) {
@@ -600,7 +612,9 @@ export default function ExplorePage() {
                             }`}
                           />
                         </div>
-                        <CardTitle className="text-lg">{option.title}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {option.title}
+                        </CardTitle>
                       </CardHeader>
                     </Card>
                   </button>

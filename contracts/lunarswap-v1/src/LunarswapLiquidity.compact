@@ -184,6 +184,7 @@ module LunarswapLiquidity {
     ): CoinInfo {
         _counter.increment(1);
         const newNonce = evolve_nonce(_counter, _nonce);
+        // identity is dealed as a domainSep in the mint_token circuit
         const ret = mint_token(identity, amount, newNonce, recipient);
 
         if (Bytes32_isZero(_type)) {

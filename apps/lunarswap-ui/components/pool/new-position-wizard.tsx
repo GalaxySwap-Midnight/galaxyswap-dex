@@ -104,14 +104,16 @@ export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
             {/* Step 2 */}
             <div className="relative">
               <button
-                onClick={() => isCompletePairData(pairData) && setCurrentStep('set-deposit')}
+                onClick={() =>
+                  isCompletePairData(pairData) && setCurrentStep('set-deposit')
+                }
                 disabled={!isCompletePairData(pairData)}
                 type="button"
                 className={`w-full text-left ${
-                  currentStep === 'set-deposit' 
-                    ? '' 
-                    : isCompletePairData(pairData) 
-                      ? 'opacity-60 hover:opacity-80' 
+                  currentStep === 'set-deposit'
+                    ? ''
+                    : isCompletePairData(pairData)
+                      ? 'opacity-60 hover:opacity-80'
                       : 'opacity-40 cursor-not-allowed'
                 }`}
               >

@@ -1,7 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { CheckCircle, User } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,7 +16,11 @@ interface SimpleCaptchaProps {
   onVerify: (token: string) => void;
 }
 
-export function SimpleCaptcha({ isOpen, onClose, onVerify }: SimpleCaptchaProps) {
+export function SimpleCaptcha({
+  isOpen,
+  onClose,
+  onVerify,
+}: SimpleCaptchaProps) {
   const [isVerified, setIsVerified] = useState(false);
 
   const handleVerify = () => {
@@ -55,11 +64,7 @@ export function SimpleCaptcha({ isOpen, onClose, onVerify }: SimpleCaptchaProps)
           </div>
         </CardContent>
         <CardFooter className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={onClose} className="flex-1">
             Cancel
           </Button>
           <Button
@@ -73,4 +78,4 @@ export function SimpleCaptcha({ isOpen, onClose, onVerify }: SimpleCaptchaProps)
       </Card>
     </div>
   );
-} 
+}

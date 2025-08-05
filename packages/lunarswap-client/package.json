@@ -1,0 +1,43 @@
+{
+  "name": "@midnight-dapps/lunarswap-client",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "prepack": "yarn build",
+    "build": "rm -rf ./dist && tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json",
+    "lint": "biome lint",
+    "lint:fix": "biome lint --write",
+    "fmt": "biome format --write",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@midnight-dapps/biome-config": "workspace:*",
+    "@types/node": "^24.0.7",
+    "eslint": "^9.30.0",
+    "typescript": "^5.8.3",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@midnight-dapps/compact-std": "workspace:*",
+    "@midnight-dapps/lunarswap-v1": "workspace:*",
+    "@midnight-ntwrk/compact-runtime": "^0.8.1",
+    "@midnight-ntwrk/ledger": "^4.0.0",
+    "@midnight-ntwrk/midnight-js-contracts": "^2.0.2",
+    "@midnight-ntwrk/midnight-js-types": "^2.0.2",
+    "fp-ts": "^2.16.2",
+    "io-ts": "^2.2.21",
+    "pino": "^9.7.0",
+    "rxjs": "^7.8.2"
+  }
+} 

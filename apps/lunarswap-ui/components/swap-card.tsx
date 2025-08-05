@@ -97,7 +97,11 @@ export function SwapCard() {
   // Get available tokens from pools
   useEffect(() => {
     const fetchAvailableTokens = async () => {
-      if (!midnightWallet.isConnected || !runtimeConfig || !midnightWallet.walletAPI) {
+      if (
+        !midnightWallet.isConnected ||
+        !runtimeConfig ||
+        !midnightWallet.walletAPI
+      ) {
         setAvailableTokens([]);
         return;
       }
@@ -111,11 +115,11 @@ export function SwapCard() {
           runtimeConfig.LUNARSWAP_ADDRESS,
         );
         await contractIntegration.joinContract();
-        
+
         const publicState = await contractIntegration.getPublicState();
         if (publicState) {
           const pairs = contractIntegration.getAllPairs();
-          
+
           // Extract unique tokens from all pairs
           const tokenSet = new Set<string>();
           for (const { pair } of pairs) {
@@ -125,12 +129,12 @@ export function SwapCard() {
           }
 
           // Filter popular tokens to only include those with pools
-          const available = popularTokens.filter((token: Token) => 
-            tokenSet.has(token.type)
+          const available = popularTokens.filter((token: Token) =>
+            tokenSet.has(token.type),
           );
-          
+
           setAvailableTokens(available);
-          
+
           // Set default tokens if none are selected
           if (!fromToken && available.length > 0) {
             setFromToken(available[0]);
@@ -152,7 +156,15 @@ export function SwapCard() {
     };
 
     fetchAvailableTokens();
-  }, [midnightWallet.isConnected, midnightWallet.providers, midnightWallet.walletAPI, midnightWallet.callback, runtimeConfig, fromToken, toToken]);
+  }, [
+    midnightWallet.isConnected,
+    midnightWallet.providers,
+    midnightWallet.walletAPI,
+    midnightWallet.callback,
+    runtimeConfig,
+    fromToken,
+    toToken,
+  ]);
 
   // Fetch pool reserves when tokens change
   useEffect(() => {
@@ -329,7 +341,15 @@ export function SwapCard() {
   };
 
   const handleSwap = async () => {
-    if (!fromToken || !toToken || !fromAmount || !toAmount || !midnightWallet.walletAPI || !midnightWallet.address || !runtimeConfig) {
+    if (
+      !fromToken ||
+      !toToken ||
+      !fromAmount ||
+      !toAmount ||
+      !midnightWallet.walletAPI ||
+      !midnightWallet.address ||
+      !runtimeConfig
+    ) {
       return;
     }
 

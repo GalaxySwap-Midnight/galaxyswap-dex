@@ -30,8 +30,10 @@ export async function loadConfig(): Promise<AppConfig> {
       NETWORK_ID: 'TestNet',
       PUBLIC_URL: 'http://127.0.0.1:8080',
       INDEXER_URI: 'https://indexer.testnet-02.midnight.network/api/v1/graphql',
-      INDEXER_WS_URI: 'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
-      LUNARSWAP_ADDRESS: '0200129e80a111c859f21c2aa752accc90448af7daff4b679fa236147ef30bbb9a35',
+      INDEXER_WS_URI:
+        'wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws',
+      LUNARSWAP_ADDRESS:
+        '0200129e80a111c859f21c2aa752accc90448af7daff4b679fa236147ef30bbb9a35',
       FAUCET_URL: 'https://faucet.testnet-02.midnight.network',
     };
   }
@@ -61,4 +63,4 @@ export function getFaucetUrl(): string {
 export function isMainnetEnabled(): boolean {
   // Mainnet is coming soon
   return false;
-} 
+}

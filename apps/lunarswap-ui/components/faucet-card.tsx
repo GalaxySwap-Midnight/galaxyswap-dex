@@ -1,7 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from '@/components/ui/card';
 import { useWallet } from '@/hooks/use-wallet';
 import { checkFaucetHealth, requestFaucetTokens } from '@/utils/faucet';
 import { Coins, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -13,7 +18,9 @@ export function FaucetCard() {
   const { address, isConnected } = useWallet();
   const [isRequesting, setIsRequesting] = useState(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-  const [faucetStatus, setFaucetStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [faucetStatus, setFaucetStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle');
   const [showCaptcha, setShowCaptcha] = useState(false);
 
   const handleCheckHealth = async () => {
@@ -45,24 +52,25 @@ export function FaucetCard() {
 
   const handleCaptchaVerify = async (captchaToken: string) => {
     setShowCaptcha(false);
-    
+
     if (!address) {
       toast.error('Wallet address not found');
       return;
     }
-    
+
     setIsRequesting(true);
     setFaucetStatus('idle');
 
     try {
       console.log('[FaucetCard] Requesting tokens for address:', address);
-      
+
       await requestFaucetTokens(address, captchaToken);
-      
+
       console.log('[FaucetCard] Token request successful');
       setFaucetStatus('success');
-      toast.success('DUST tokens requested successfully! They should arrive shortly.');
-      
+      toast.success(
+        'DUST tokens requested successfully! They should arrive shortly.',
+      );
     } catch (error) {
       console.error('[FaucetCard] Failed to request tokens:', error);
       setFaucetStatus('error');
@@ -85,8 +93,10 @@ export function FaucetCard() {
 
   const getButtonIcon = () => {
     if (isRequesting) return <Loader2 className="h-5 w-5 mr-2 animate-spin" />;
-    if (faucetStatus === 'success') return <CheckCircle className="h-5 w-5 mr-2 text-green-500" />;
-    if (faucetStatus === 'error') return <AlertCircle className="h-5 w-5 mr-2 text-red-500" />;
+    if (faucetStatus === 'success')
+      return <CheckCircle className="h-5 w-5 mr-2 text-green-500" />;
+    if (faucetStatus === 'error')
+      return <AlertCircle className="h-5 w-5 mr-2 text-red-500" />;
     return <Coins className="h-5 w-5 mr-2" />;
   };
 
@@ -124,11 +134,12 @@ export function FaucetCard() {
                 <Coins className="h-8 w-8 text-white" />
               </div>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-medium mb-2">Get Test DUST Tokens</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Request DUST tokens to test the Midnight network. These tokens are free and can be used for testing transactions.
+                Request DUST tokens to test the Midnight network. These tokens
+                are free and can be used for testing transactions.
               </p>
             </div>
 
@@ -149,7 +160,8 @@ export function FaucetCard() {
                   <span className="text-sm font-medium">Wallet Connected</span>
                 </div>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Ready to request tokens for: {address?.slice(0, 6)}...{address?.slice(-4)}
+                  Ready to request tokens for: {address?.slice(0, 6)}...
+                  {address?.slice(-4)}
                 </p>
               </div>
             )}
@@ -165,10 +177,12 @@ export function FaucetCard() {
             {getButtonIcon()}
             {getButtonText()}
           </Button>
-          
+
           <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
             <p>Tokens will be sent to your connected wallet address</p>
-            <p className="mt-1">This is a testnet faucet - tokens have no real value</p>
+            <p className="mt-1">
+              This is a testnet faucet - tokens have no real value
+            </p>
           </div>
         </CardFooter>
       </Card>
@@ -180,4 +194,4 @@ export function FaucetCard() {
       />
     </>
   );
-} 
+}
