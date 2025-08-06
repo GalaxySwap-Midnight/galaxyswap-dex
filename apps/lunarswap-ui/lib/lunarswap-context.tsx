@@ -110,7 +110,7 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error(
         '[LunarswapContext] Failed to initialize contract:',
-        errorMessage,
+        err,
       );
       setError(errorMessage);
       setStatus('error');

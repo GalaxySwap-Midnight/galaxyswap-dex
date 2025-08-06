@@ -17,19 +17,13 @@ import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
-import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
 import type {
-  LunarswapCircuitKeys,
-  LunarswapContract,
   LunarswapProviders,
+  LunarswapCircuitKeys,
 } from '@midnight-dapps/lunarswap-api';
-import {
-  Contract,
-  type LunarswapPrivateState,
-  LunarswapWitnesses,
+import type {
+  LunarswapPrivateState,
 } from '@midnight-dapps/lunarswap-v1';
-import { LunarswapIntegration } from '@/lib/lunarswap-integration';
-import { ensureLunarswapProofParams } from '@/utils/proof-params';
 import type {
   PrivateStateProvider,
   ProofProvider,
@@ -37,12 +31,10 @@ import type {
   WalletProvider,
   MidnightProvider,
 } from '@midnight-ntwrk/midnight-js-types';
-import { proofClient } from '@/providers/proof';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import type { ProviderCallbackAction, WalletAPI } from '@/lib/wallet-context';
+import { proofClient } from '@/providers/proof';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
-import { createCoinInfo, encodeCoinInfo } from '@midnight-ntwrk/ledger';
-import { encodeCoinPublicKey, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
+import type { ProviderCallbackAction, WalletAPI } from '@/lib/wallet-context';
 
 interface TokenData {
   symbol: string;
@@ -175,43 +167,6 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     calculateAmounts();
   }, [amountA, amountB, poolReserves]);
 
-  const customProviders: (
-    publicDataProvider: PublicDataProvider,
-    walletProvider: WalletProvider,
-    midnightProvider: MidnightProvider,
-    walletAPI: WalletAPI,
-    callback: (action: ProviderCallbackAction) => void,
-  ) => LunarswapProviders = (
-    publicDataProvider: PublicDataProvider,
-    walletProvider: WalletProvider,
-    midnightProvider: MidnightProvider,
-    walletAPI: WalletAPI,
-    callback: (action: ProviderCallbackAction) => void,
-  ) => {
-    const privateStateProvider: PrivateStateProvider<
-      string,
-      LunarswapPrivateState
-    > = levelPrivateStateProvider({
-      privateStateStoreName: 'lunarswap-private-state',
-    });
-    const proofProvider: ProofProvider<LunarswapCircuitKeys> = proofClient(
-      walletAPI.uris.proverServerUri,
-      callback,
-    );
-    return {
-      privateStateProvider,
-      publicDataProvider,
-      zkConfigProvider: new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
-        window.location.origin,
-        fetch.bind(window),
-        callback,
-      ),
-      proofProvider,
-      walletProvider,
-      midnightProvider,
-    };
-  };
-
   const handleAddLiquidity = async () => {
     if (!isConnected) {
       toast.error('Please connect your wallet first');
@@ -266,75 +221,42 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage tolerance
         );
 
-      // Prepare liquidity parameters
-      const liquidityParams = {
-        tokenA: pairData.tokenA.type,
-        tokenB: pairData.tokenB.type,
-        amountADesired: amountAOptimal,
-        amountBDesired: amountBOptimal,
-        amountAMin: amountAMin,
-        amountBMin: amountBMin,
-        recipient: walletAPI.coinPublicKey,
-        deadline: Math.floor(Date.now() / 1000) + 1200, // 20 minutes from now
-      };
-
-      await ensureLunarswapProofParams();
+      // Create LunarswapIntegration instance
+      const lunarswapIntegration = createContractIntegration(
+        providers,
+        walletAPI,
+        callback,
+        runtimeConfig.LUNARSWAP_ADDRESS,
+      );
 
       // Stage 2: Fetch proof parameters
       setTransactionState('fetching-params');
       console.log('[AddLiquidity] Fetching proof parameters...');
 
-      // Stage 3: Generate ZK proof
+      // Stage 3: Generate ZK proof and submit transaction
       setTransactionState('generating-proof');
-      console.log('[AddLiquidity] Generating ZK proof...');
+      console.log('[AddLiquidity] Generating ZK proof and submitting transaction...');
 
-      const contract: LunarswapContract = new Contract(LunarswapWitnesses());
-      const customProvider = customProviders(
-        publicDataProvider,
-        walletProvider,
-        midnightProvider,
-        walletAPI,
-        callback,
+      // Use the LunarswapIntegration to add liquidity
+      const txData = await lunarswapIntegration.addLiquidity(
+        pairData.tokenA.type,
+        pairData.tokenB.type,
+        BigInt(amountA),
+        BigInt(amountB),
+        BigInt(amountAMin),
+        BigInt(amountBMin),
+        walletAPI.coinPublicKey,
       );
 
-      await customProvider.privateStateProvider.set(
-        'lunarswapPrivateState',
-        {},
-      );
-      const found = await findDeployedContract(customProvider, {
-        contractAddress: runtimeConfig.LUNARSWAP_ADDRESS,
-        contract,
-        privateStateId: 'lunarswapPrivateState',
-      });
-
-      const coinInfoA = encodeCoinInfo(createCoinInfo(liquidityParams.tokenA, liquidityParams.amountADesired));
-      const coinInfoB = encodeCoinInfo(createCoinInfo(liquidityParams.tokenB, liquidityParams.amountBDesired));
-
-      const txData = await found.callTx.addLiquidity(
-        coinInfoA,
-        coinInfoB,
-        liquidityParams.amountAMin,
-        liquidityParams.amountBMin,
-        LunarswapIntegration.createRecipient(walletAPI.coinPublicKey),
-      );
-
-      // Stage 4: Submit transaction
-      setTransactionState('submitting-transaction');
-      console.log('[AddLiquidity] Submitting transaction...');
-
-      console.log('txData', txData);
-
-      // Stage 5: Confirming transaction
+      // Stage 4: Confirming transaction
       setTransactionState('confirming');
       console.log('[AddLiquidity] Confirming transaction...');
 
-      // Stage 6: Success
+      console.log('txData', txData);
+
+      // Stage 5: Success
       setTransactionState('success');
       toast.success('Liquidity added successfully!');
-
-      // Update the input amounts to reflect what was actually used
-      setAmountA(Number(amountAOptimal).toString());
-      setAmountB(Number(amountBOptimal).toString());
 
       // Refresh pool data after successful transaction
       const exists = await lunarswap.isPairExists(

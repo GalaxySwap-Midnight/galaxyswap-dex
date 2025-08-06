@@ -15,16 +15,22 @@ export class ZkConfigProviderWrapper<
   K extends string,
 > extends FetchZkConfigProvider<K> {
   private readonly cache: Map<CacheKey, ProverKey | VerifierKey | ZKIR>;
+  private contractOperations: string[] | null = null;
 
   constructor(
     baseURL: string,
-    fetchFunc: typeof fetch = fetch,
     private readonly callback: (
       action: 'downloadProverStarted' | 'downloadProverDone',
     ) => void,
+    fetchFunc: typeof fetch = fetch,
   ) {
     super(baseURL, fetchFunc);
     this.cache = new Map();
+  }
+
+  setContractOperations(operations: string[]): void {
+    this.contractOperations = operations;
+    console.log('[ZkConfigProviderWrapper] Set contract operations:', operations);
   }
 
   private generateCacheKey(
@@ -64,27 +70,26 @@ export class ZkConfigProviderWrapper<
   async getVerifierKeys(circuitIds: K[]): Promise<[K, VerifierKey][]> {
     // For lunarswap contracts, we need to provide verifier keys in the exact order
     // that matches the deployed contract's circuit order
-    // Based on the contract state error, this is the correct order:
-    const lunarswapCircuitOrder = [
-      'addLiquidity',
-      'removeLiquidity',
-      'swapExactTokensForTokens',
+    // Check if this looks like a lunarswap contract
+    const lunarswapCircuitIds = [
       'swapTokensForExactTokens',
-      'isPairExists',
-      'getAllPairLength',
-      'getPair',
-      'getPairReserves',
-      'getPairIdentity',
-      'getLpTokenName',
+      'getPairReserves', 
+      'addLiquidity',
       'getLpTokenSymbol',
-      'getLpTokenDecimals',
+      'getLpTokenName',
       'getLpTokenType',
       'getLpTokenTotalSupply',
-    ] as K[];
+      'getAllPairLength',
+      'getPairIdentity',
+      'isPairExists',
+      'removeLiquidity',
+      'getPair',
+      'getLpTokenDecimals',
+      'swapExactTokensForTokens',
+    ];
 
-    // Check if this looks like a lunarswap contract
-    const isLunarswap = lunarswapCircuitOrder.some((id) =>
-      circuitIds.includes(id),
+    const isLunarswap = lunarswapCircuitIds.some((id) =>
+      circuitIds.includes(id as K),
     );
 
     if (isLunarswap) {
@@ -93,29 +98,62 @@ export class ZkConfigProviderWrapper<
         {
           requested: circuitIds,
           requestedCount: circuitIds.length,
-          lunarswapCircuits: lunarswapCircuitOrder.length,
         },
       );
 
-      // For lunarswap, we need to provide verifier keys in the exact order
-      // that matches the deployed contract's circuit order
-      // However, if the requested circuits don't match our expected order,
-      // we should use the requested order to avoid mismatches
-      const orderedCircuitIds = lunarswapCircuitOrder.filter((id) =>
-        circuitIds.includes(id),
-      );
+      // For lunarswap contracts, we need to get the actual contract state operations
+      // to determine the correct order dynamically
+      try {
+        // Use the contract operations if available, otherwise fall back to the known order
+        let orderedCircuitIds: K[];
+        
+        if (this.contractOperations && this.contractOperations.length > 0) {
+          console.log(
+            '[ZkConfigProviderWrapper] Using dynamic contract operations order:',
+            this.contractOperations,
+          );
+          
+          // Filter the requested circuits to only include those that exist in the contract operations
+          orderedCircuitIds = this.contractOperations
+            .filter((op) => circuitIds.includes(op as K))
+            .map((op) => op as K);
+            
+          console.log(
+            '[ZkConfigProviderWrapper] Ordered circuit IDs based on dynamic contract operations:',
+            orderedCircuitIds,
+          );
+        } else {
+          console.log(
+            '[ZkConfigProviderWrapper] No contract operations available, using fallback order',
+          );
+          
+          // Fallback to the known lunarswap circuit order
+          orderedCircuitIds = lunarswapCircuitIds.filter((id) =>
+            circuitIds.includes(id as K),
+          ) as K[];
+        }
 
-      console.log(
-        '[ZkConfigProviderWrapper] Ordered circuit IDs:',
-        orderedCircuitIds,
-      );
-
-      // If we have fewer circuits than requested, there might be additional circuits
-      // that we don't have in our order. In this case, use the requested order.
-      if (orderedCircuitIds.length < circuitIds.length) {
-        console.log(
-          '[ZkConfigProviderWrapper] Warning: Requested circuits include additional circuits not in our order. Using requested order.',
+        // Always use the ordered circuit IDs for lunarswap contracts
+        // This ensures the verifier keys are in the correct order
+        const verifierKeys = await Promise.all(
+          orderedCircuitIds.map(async (circuitId) => {
+            console.log(`[ZkConfigProviderWrapper] Fetching verifier key for circuit: ${circuitId}`);
+            const verifierKey = await this.getVerifierKey(circuitId);
+            console.log(`[ZkConfigProviderWrapper] Verifier key for ${circuitId}:`, verifierKey ? 'FOUND' : 'NOT FOUND');
+            return [circuitId, verifierKey] as [K, VerifierKey];
+          }),
         );
+        
+        console.log('[ZkConfigProviderWrapper] Final verifier keys array length:', verifierKeys.length);
+        console.log('[ZkConfigProviderWrapper] Verifier keys circuit IDs:', verifierKeys.map(([id]) => id));
+        
+        return verifierKeys;
+      } catch (error) {
+        console.warn(
+          '[ZkConfigProviderWrapper] Failed to get dynamic order, falling back to requested order:',
+          error,
+        );
+        // Fallback to requested order
         const verifierKeys = await Promise.all(
           circuitIds.map(async (circuitId) => {
             const verifierKey = await this.getVerifierKey(circuitId);
@@ -124,14 +162,6 @@ export class ZkConfigProviderWrapper<
         );
         return verifierKeys;
       }
-
-      const verifierKeys = await Promise.all(
-        orderedCircuitIds.map(async (circuitId) => {
-          const verifierKey = await this.getVerifierKey(circuitId);
-          return [circuitId, verifierKey] as [K, VerifierKey];
-        }),
-      );
-      return verifierKeys;
     }
 
     // For other contracts, use the original order

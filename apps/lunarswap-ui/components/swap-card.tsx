@@ -59,164 +59,164 @@ export function SwapCard() {
   }, []);
 
   // Check contract status when wallet connects
-  useEffect(() => {
-    const checkContractStatus = async () => {
-      if (
-        !midnightWallet.walletAPI ||
-        !midnightWallet.isConnected ||
-        !runtimeConfig
-      ) {
-        setContractReady(false);
-        return;
-      }
+  // useEffect(() => {
+  //   const checkContractStatus = async () => {
+  //     if (
+  //       !midnightWallet.walletAPI ||
+  //       !midnightWallet.isConnected ||
+  //       !runtimeConfig
+  //     ) {
+  //       setContractReady(false);
+  //       return;
+  //     }
 
-      try {
-        const contractIntegration = createContractIntegration(
-          midnightWallet.providers,
-          midnightWallet.walletAPI,
-          midnightWallet.callback,
-          runtimeConfig.LUNARSWAP_ADDRESS,
-        );
-        const status = await contractIntegration.joinContract();
-        setContractReady(status.status === 'connected');
-      } catch (error) {
-        console.error('Contract status check failed:', error);
-        setContractReady(false);
-      }
-    };
+  //     try {
+  //       const contractIntegration = createContractIntegration(
+  //         midnightWallet.providers,
+  //         midnightWallet.walletAPI,
+  //         midnightWallet.callback,
+  //         runtimeConfig.LUNARSWAP_ADDRESS,
+  //       );
+  //       const status = await contractIntegration.joinContract();
+  //       setContractReady(status.status === 'connected');
+  //     } catch (error) {
+  //       console.error('Contract status check failed:', error);
+  //       setContractReady(false);
+  //     }
+  //   };
 
-    checkContractStatus();
-  }, [
-    midnightWallet.walletAPI,
-    midnightWallet.providers,
-    midnightWallet.isConnected,
-    midnightWallet.callback,
-    runtimeConfig,
-  ]);
+  //   checkContractStatus();
+  // }, [
+  //   midnightWallet.walletAPI,
+  //   midnightWallet.providers,
+  //   midnightWallet.isConnected,
+  //   midnightWallet.callback,
+  //   runtimeConfig,
+  // ]);
 
   // Get available tokens from pools
-  useEffect(() => {
-    const fetchAvailableTokens = async () => {
-      if (
-        !midnightWallet.isConnected ||
-        !runtimeConfig ||
-        !midnightWallet.walletAPI
-      ) {
-        setAvailableTokens([]);
-        return;
-      }
+  // useEffect(() => {
+  //   const fetchAvailableTokens = async () => {
+  //     if (
+  //       !midnightWallet.isConnected ||
+  //       !runtimeConfig ||
+  //       !midnightWallet.walletAPI
+  //     ) {
+  //       setAvailableTokens([]);
+  //       return;
+  //     }
 
-      setIsLoadingTokens(true);
-      try {
-        const contractIntegration = createContractIntegration(
-          midnightWallet.providers,
-          midnightWallet.walletAPI,
-          midnightWallet.callback,
-          runtimeConfig.LUNARSWAP_ADDRESS,
-        );
-        await contractIntegration.joinContract();
+  //     setIsLoadingTokens(true);
+  //     try {
+  //       const contractIntegration = createContractIntegration(
+  //         midnightWallet.providers,
+  //         midnightWallet.walletAPI,
+  //         midnightWallet.callback,
+  //         runtimeConfig.LUNARSWAP_ADDRESS,
+  //       );
+  //       await contractIntegration.joinContract();
 
-        const publicState = await contractIntegration.getPublicState();
-        if (publicState) {
-          const pairs = contractIntegration.getAllPairs();
+  //       const publicState = await contractIntegration.getPublicState();
+  //       if (publicState) {
+  //         const pairs = contractIntegration.getAllPairs();
 
-          // Extract unique tokens from all pairs
-          const tokenSet = new Set<string>();
-          for (const { pair } of pairs) {
-            // Add both tokens from each pair
-            tokenSet.add(Buffer.from(pair.token0.color).toString('hex'));
-            tokenSet.add(Buffer.from(pair.token1.color).toString('hex'));
-          }
+  //         // Extract unique tokens from all pairs
+  //         const tokenSet = new Set<string>();
+  //         for (const { pair } of pairs) {
+  //           // Add both tokens from each pair
+  //           tokenSet.add(Buffer.from(pair.token0.color).toString('hex'));
+  //           tokenSet.add(Buffer.from(pair.token1.color).toString('hex'));
+  //         }
 
-          // Filter popular tokens to only include those with pools
-          const available = popularTokens.filter((token: Token) =>
-            tokenSet.has(token.type),
-          );
+  //         // Filter popular tokens to only include those with pools
+  //         const available = popularTokens.filter((token: Token) =>
+  //           tokenSet.has(token.type),
+  //         );
 
-          setAvailableTokens(available);
+  //         setAvailableTokens(available);
 
-          // Set default tokens if none are selected
-          if (!fromToken && available.length > 0) {
-            setFromToken(available[0]);
-          }
-          if (!toToken && available.length > 1) {
-            setToToken(available[1]);
-          } else if (!toToken && available.length === 1) {
-            setToToken(available[0]);
-          }
-        } else {
-          setAvailableTokens([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch available tokens:', error);
-        setAvailableTokens([]);
-      } finally {
-        setIsLoadingTokens(false);
-      }
-    };
+  //         // Set default tokens if none are selected
+  //         if (!fromToken && available.length > 0) {
+  //           setFromToken(available[0]);
+  //         }
+  //         if (!toToken && available.length > 1) {
+  //           setToToken(available[1]);
+  //         } else if (!toToken && available.length === 1) {
+  //           setToToken(available[0]);
+  //         }
+  //       } else {
+  //         setAvailableTokens([]);
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to fetch available tokens:', error);
+  //       setAvailableTokens([]);
+  //     } finally {
+  //       setIsLoadingTokens(false);
+  //     }
+  //   };
 
-    fetchAvailableTokens();
-  }, [
-    midnightWallet.isConnected,
-    midnightWallet.providers,
-    midnightWallet.walletAPI,
-    midnightWallet.callback,
-    runtimeConfig,
-    fromToken,
-    toToken,
-  ]);
+  //   fetchAvailableTokens();
+  // }, [
+  //   midnightWallet.isConnected,
+  //   midnightWallet.providers,
+  //   midnightWallet.walletAPI,
+  //   midnightWallet.callback,
+  //   runtimeConfig,
+  //   fromToken,
+  //   toToken,
+  // ]);
 
   // Fetch pool reserves when tokens change
-  useEffect(() => {
-    const fetchReserves = async () => {
-      if (
-        !midnightWallet.walletAPI ||
-        !fromToken ||
-        !toToken ||
-        fromToken.symbol === toToken.symbol ||
-        !runtimeConfig
-      ) {
-        setPoolReserves(null);
-        return;
-      }
+  // useEffect(() => {
+  //   const fetchReserves = async () => {
+  //     if (
+  //       !midnightWallet.walletAPI ||
+  //       !fromToken ||
+  //       !toToken ||
+  //       fromToken.symbol === toToken.symbol ||
+  //       !runtimeConfig
+  //     ) {
+  //       setPoolReserves(null);
+  //       return;
+  //     }
 
-      try {
-        const contractIntegration = createContractIntegration(
-          midnightWallet.providers,
-          midnightWallet.walletAPI,
-          midnightWallet.callback,
-          runtimeConfig.LUNARSWAP_ADDRESS,
-        );
-        await contractIntegration.joinContract();
+  //     try {
+  //       const contractIntegration = createContractIntegration(
+  //         midnightWallet.providers,
+  //         midnightWallet.walletAPI,
+  //         midnightWallet.callback,
+  //         runtimeConfig.LUNARSWAP_ADDRESS,
+  //       );
+  //       await contractIntegration.joinContract();
 
-        const exists = await contractIntegration.isPairExists(
-          fromToken.symbol,
-          toToken.symbol,
-        );
-        if (exists) {
-          const reserves = await contractIntegration.getPairReserves(
-            fromToken.symbol,
-            toToken.symbol,
-          );
-          setPoolReserves(reserves);
-        } else {
-          setPoolReserves(null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch reserves:', error);
-        setPoolReserves(null);
-      }
-    };
+  //       const exists = await contractIntegration.isPairExists(
+  //         fromToken.symbol,
+  //         toToken.symbol,
+  //       );
+  //       if (exists) {
+  //         const reserves = await contractIntegration.getPairReserves(
+  //           fromToken.symbol,
+  //           toToken.symbol,
+  //         );
+  //         setPoolReserves(reserves);
+  //       } else {
+  //         setPoolReserves(null);
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to fetch reserves:', error);
+  //       setPoolReserves(null);
+  //     }
+  //   };
 
-    fetchReserves();
-  }, [
-    midnightWallet.walletAPI,
-    midnightWallet.providers,
-    midnightWallet.callback,
-    runtimeConfig,
-    fromToken,
-    toToken,
-  ]);
+  //   fetchReserves();
+  // }, [
+  //   midnightWallet.walletAPI,
+  //   midnightWallet.providers,
+  //   midnightWallet.callback,
+  //   runtimeConfig,
+  //   fromToken,
+  //   toToken,
+  // ]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback(

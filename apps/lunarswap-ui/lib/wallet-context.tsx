@@ -116,8 +116,8 @@ export const configureProviders = async (
     ),
     zkConfigProvider: new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
       window.location.origin,
-      fetch.bind(window),
       callback,
+      fetch.bind(window),
     ),
     proofProvider: noopProofClient(),
     walletProvider: walletAndMidnightProvider,
@@ -299,8 +299,8 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     () =>
       new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
         window.location.origin,
-        fetch.bind(window),
         providerCallback,
+        fetch.bind(window),
       ),
     [],
   );
@@ -341,9 +341,11 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
           tx: UnbalancedTransaction,
           newCoins: CoinInfo[],
         ): Promise<BalancedTransaction> {
-          console.log('[DEBUG] balanceTx', tx.toString(), newCoins);
+          console.log('[DEBUG] tx', tx.toString());
+          console.log('[DEBUG] newCoins', newCoins);
           console.dir(
             {
+              tx,
               imbalances: tx.imbalances(true),
               deltas: tx.guaranteedCoins?.deltas,
             },

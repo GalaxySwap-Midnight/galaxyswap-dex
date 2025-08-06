@@ -7,7 +7,7 @@ import type {
 } from '@midnight-ntwrk/midnight-js-types';
 import {
   Lunarswap,
-  LunarswapCircuitKeys,
+  type LunarswapCircuitKeys,
   type LunarswapProviders,
   LunarswapPrivateStateId,
 } from '@midnight-dapps/lunarswap-api';
@@ -41,7 +41,7 @@ import {
   getZswapNetworkId,
 } from '@midnight-ntwrk/midnight-js-network-id';
 import { encodeCoinInfo } from '@midnight-ntwrk/compact-runtime';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
+import { createCoinInfo, encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
 import {
   ShieldedAddress,
   MidnightBech32m,
@@ -143,6 +143,28 @@ export class LunarswapIntegration {
     };
 
     try {
+      // Step 1: Get the contract state operations to determine the correct verifier key order
+      const currentContractState = await this.providers.publicDataProvider.queryContractState(targetAddress);
+      if (!currentContractState) {
+        throw new Error(`No contract deployed at contract address '${targetAddress}'`);
+      }      
+      console.log('[LunarswapIntegration] Full contract state:', currentContractState);
+      
+      const operations = currentContractState.operations();
+      console.log('[LunarswapIntegration] Contract state operations:', operations);
+      console.dir(operations, { depth: null });
+      console.log('[LunarswapIntegration] Contract state operations length:', operations.length);
+      console.log('[LunarswapIntegration] Contract state operations types:', operations.map(op => typeof op));
+      console.log('[LunarswapIntegration] Contract state operations details:', operations.map((op, index) => ({ index, op, type: typeof op })));
+      
+      // Step 2: Store the operations order in the ZK config provider for dynamic verifier key ordering
+      if (this.providers.zkConfigProvider && 'setContractOperations' in this.providers.zkConfigProvider) {
+        // Filter operations to only include strings (circuit names)
+        const stringOperations = operations.filter((op): op is string => typeof op === 'string');
+        (this.providers.zkConfigProvider as { setContractOperations: (operations: string[]) => void }).setContractOperations(stringOperations);
+      }
+      
+      // Step 3: Use the original join method
       this.lunarswap = await Lunarswap.join(this.providers, {
         bytes: new Uint8Array(Buffer.from(targetAddress, 'hex')),
       });
@@ -154,7 +176,7 @@ export class LunarswapIntegration {
         message: 'Successfully connected to Lunarswap contract',
       };
 
-      //await this.getPublicState();
+      await this.getPublicState();
 
       return this._statusInfo;
     } catch (error) {
@@ -166,7 +188,7 @@ export class LunarswapIntegration {
         message: 'Failed to connect to Lunarswap contract',
       };
 
-      return this._statusInfo;
+      throw error;
     }
   }
 
@@ -243,8 +265,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
-      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
+      const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const pairIdentity = this.lunarswapSimulator.getPairIdentity(
@@ -283,8 +305,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
-      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
+      const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const identity = this.lunarswapSimulator.getPairIdentity(
@@ -320,8 +342,8 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, amountIn);
-    const tokenOutInfo = LunarswapIntegration.createCoinInfo(
+    const tokenInInfo = LunarswapIntegration.toCoinInfo(tokenIn, amountIn);
+    const tokenOutInfo = LunarswapIntegration.toCoinInfo(
       tokenOut,
       BigInt(0),
     );
@@ -360,8 +382,8 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenInInfo = LunarswapIntegration.createCoinInfo(tokenIn, BigInt(0));
-    const tokenOutInfo = LunarswapIntegration.createCoinInfo(
+    const tokenInInfo = LunarswapIntegration.toCoinInfo(tokenIn, BigInt(0));
+    const tokenOutInfo = LunarswapIntegration.toCoinInfo(
       tokenOut,
       BigInt(0),
     );
@@ -400,14 +422,14 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, amountA);
-    const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, amountB);
+    const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, amountA);
+    const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, amountB);
     const recipientAddress = LunarswapIntegration.createRecipient(
       recipientCoinPublicKey,
     );
 
     // Add console logs for debugging
-    console.log('addLiquidity called with:', {
+    console.log('[DEBUG] addLiquidity called with:', {
       tokenA,
       tokenB,
       amountA,
@@ -416,11 +438,11 @@ export class LunarswapIntegration {
       minAmountB,
       recipientCoinPublicKey,
     });
-    console.log('addLiquidity tokenAInfo:', tokenAInfo);
-    console.log('addLiquidity tokenBInfo:', tokenBInfo);
-    console.log('addLiquidity recipientAddress:', recipientAddress);
+    console.log('[DEBUG] addLiquidity tokenAInfo:', tokenAInfo);
+    console.log('[DEBUG] addLiquidity tokenBInfo:', tokenBInfo);
+    console.log('[DEBUG] addLiquidity recipientAddress:', recipientAddress);
     console.log(
-      'addLiquidity wallet coinPublicKey:',
+      '[DEBUG] addLiquidity wallet coinPublicKey:',
       this.walletAPI.coinPublicKey,
     );
 
@@ -453,9 +475,9 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
-    const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
-    const liquidityInfo = LunarswapIntegration.createCoinInfo(
+    const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
+    const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
+    const liquidityInfo = LunarswapIntegration.toCoinInfo(
       'LP',
       BigInt(liquidity),
     );
@@ -525,27 +547,8 @@ export class LunarswapIntegration {
   /**
    * Create CoinInfo from token symbol/address and amount
    */
-  static createCoinInfo(type: string, value: bigint): CoinInfo {
-    console.log('[DEBUG] createCoinInfo type:', type);
-    console.log('[DEBUG] createCoinInfo value:', value);
-
-    // Convert hex string to bytes and ensure it's exactly 32 bytes
-    const colorBytes = new Uint8Array(Buffer.from(type, 'hex'));
-
-    // If the color is longer than 32 bytes, truncate it
-    // If it's shorter than 32 bytes, pad it with zeros
-    const color = new Uint8Array(32);
-    if (colorBytes.length >= 32) {
-      color.set(colorBytes.slice(0, 32));
-    } else {
-      color.set(colorBytes);
-    }
-
-    return {
-      color,
-      value,
-      nonce: new Uint8Array(32),
-    };
+  static toCoinInfo(type: string, value: bigint): CoinInfo {
+    return encodeCoinInfo(createCoinInfo(type, value));
   }
 
   /**
@@ -586,8 +589,8 @@ export class LunarswapIntegration {
     }
 
     try {
-      const tokenAInfo = LunarswapIntegration.createCoinInfo(tokenA, BigInt(0));
-      const tokenBInfo = LunarswapIntegration.createCoinInfo(tokenB, BigInt(0));
+      const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
+      const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
       const pairIdentity = await this.lunarswap.getPairIdentity(

@@ -60,12 +60,12 @@ module LunarswapLibrary {
         const used = CoinInfo {
             color: coin.color,
             value: amount,
-            nonce: coin.nonce
+            nonce: evolve_nonce(0, coin.nonce)
         };
         const remainder = CoinInfo {
             color: coin.color,
             value: Uint128_sub(coin.value, amount),
-            nonce: coin.nonce
+            nonce: evolve_nonce(1, coin.nonce)
         };
         return SplitCoinResult { used, remainder };
     }

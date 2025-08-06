@@ -4,6 +4,6 @@
   "PUBLIC_URL": "http://127.0.0.1:8080",
   "INDEXER_URI": "https://indexer.testnet-02.midnight.network/api/v1/graphql",
   "INDEXER_WS_URI": "wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws",
-  "LUNARSWAP_ADDRESS": "02007a81de46aa79c5f1b022cf6e3798fbb43e1dfa8c940ea5b44ee22ca08a76a350",
+  "LUNARSWAP_ADDRESS": "0200f372e06f57cfdb3108a4b9bb29d50ff94086e53914965ba3758c652980522acb",
   "FAUCET_URL": "https://faucet.testnet-02.midnight.network"
 }

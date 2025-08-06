@@ -189,8 +189,11 @@ module LunarswapPair {
                 MINIMUM_LIQUIDITY()
             );
             assert(liquidity > 0) "LunarswapPair: New pair Insufficient liquidity minted";
-            LunarswapLiquidity_mint(identity, eitherZeroSenderAddress(), MINIMUM_LIQUIDITY());
+            LunarswapLiquidity_mint(identity, burn_address(), MINIMUM_LIQUIDITY());
             LunarswapLiquidity_mint(identity, to, liquidity);
+            // Send the minimum liquidity to the contract address itself to lock the minimum liquidity
+            //send(liquidityCoinInfo, burn_address(), MINIMUM_LIQUIDITY());
+
             // For the initial mint, set the liquidity reserve to MINIMUM_LIQUIDITY() + liquidity
             // to reflect the total minted LP tokens (including the locked minimum).
             return _update(

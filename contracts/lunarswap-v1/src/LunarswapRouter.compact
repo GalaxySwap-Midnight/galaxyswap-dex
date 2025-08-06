@@ -122,8 +122,6 @@ module LunarswapRouter {
         if (splitToken1.remainder.value > 0) {
             send_immediate(splitToken1.remainder, to, splitToken1.remainder.value);
         }
-        // receive(token0);
-        // receive(token1);
 
         // Sort tokens before getting identity and updating pair
         const pair = LunarswapFactory_getPair(identity);

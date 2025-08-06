@@ -153,6 +153,67 @@ describe('addLiquidity', () => {
       expect(pair.kLast).toBe(0n);
     });
 
+    it('should add liquidity to a new USDC/NIGHT pair with 1000 and 800 amounts', () => {
+      // Mint tokens for LP user with amounts that ensure sqrt > MINIMUM_LIQUIDITY
+      const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 1000n);
+      const nightCoin = night.mint(createEitherFromHex(LP_USER), 800n);
+
+      // Add liquidity to create a new pair
+      const recipient = createEitherFromHex(LP_USER);
+      const result = calculateAddLiquidityAmounts(
+        1000n, // desired USDC
+        800n, // desired NIGHT
+        0n, // reserve USDC
+        0n, // reserve NIGHT
+        SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage
+      );
+      lunarswap.addLiquidity(
+        usdcCoin,
+        nightCoin,
+        result.amountAMin,
+        result.amountBMin,
+        recipient,
+      );
+
+      // Use getPairIdentity to get the correct order for addLiquidity and getPair
+      const pair = lunarswap.getPair(usdcCoin, nightCoin);
+
+      expect(pair).toBeDefined();
+
+      // Check token reserves (tokens are sorted by color, so we need to check which is token0/token1)
+      // The pair stores tokens in sorted order, so we need to check which token is which
+      const expectedValues = getExpectedTokenValues(
+        usdcCoin,
+        nightCoin,
+        1000n,
+        800n,
+        lunarswap,
+      );
+      expect(pair.token0.value).toBe(expectedValues.token0Value);
+      expect(pair.token1.value).toBe(expectedValues.token1Value);
+
+      // Check liquidity (should be sqrt(1000 * 800) - MINIMUM_LIQUIDITY = 894 - 1 = 893)
+      // Total LP tokens = MINIMUM_LIQUIDITY (1) + liquidity (893) = 894
+      const lpTotalSupply = lunarswap.getLpTokenTotalSupply(
+        usdcCoin,
+        nightCoin,
+      );
+      // Total LP tokens = MINIMUM_LIQUIDITY (1) + liquidity (sqrt(800000) - 1)
+      // sqrt(800000) = 894 (rounded down), so liquidity = 893, total = 894
+      expect(lpTotalSupply.value).toBe(894n);
+
+      // Check price and volume cumulative values
+      // For first liquidity provision, these should be 0 since no trades have occurred
+      expect(pair.price0VolCumulative).toBe(0n);
+      expect(pair.price1VolCumulative).toBe(0n);
+      expect(pair.volume0Cumulative).toBe(0n);
+      expect(pair.volume1Cumulative).toBe(0n);
+
+      // Check kLast (should be 0 if fees are off, or balance0 * balance1 if fees are on)
+      // Since this is a new pair and fees are likely off, kLast should be 0
+      expect(pair.kLast).toBe(0n);
+    });
+
     /**
      * Tests adding liquidity to an existing USDC/NIGHT pair
      *
@@ -712,22 +773,22 @@ describe('addLiquidity', () => {
      * Tests insufficient token amounts error
      *
      * Mathematical calculations:
-     * - Input: 100 USDC, 50 NIGHT
-     * - Liquidity = sqrt(100 * 50) - MINIMUM_LIQUIDITY(1000)
-     * - Liquidity = sqrt(5000) - 1000 = 70.7 - 1000 = -929.3
-     * - Since liquidity < 0, subtraction underflow occurs
+     * - Input: 1 USDC, 1 NIGHT
+     * - Liquidity = sqrt(1 * 1) - MINIMUM_LIQUIDITY(1)
+     * - Liquidity = sqrt(1) - 1 = 1 - 1 = 0
+     * - Since liquidity = 0, "Insufficient liquidity minted" error occurs
      *
-     * Error: "MathU128: subtraction underflow" - liquidity calculation fails
+     * Error: "LunarswapPair: New pair Insufficient liquidity minted" - liquidity calculation fails
      */
     it('should fail when adding liquidity with insufficient token amounts', () => {
-      const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 100n);
-      const nightCoin = night.mint(createEitherFromHex(LP_USER), 50n);
+      const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 1n);
+      const nightCoin = night.mint(createEitherFromHex(LP_USER), 1n);
       const recipient = createEitherFromHex(LP_USER);
 
       // Try to add liquidity with amounts too small to meet minimum liquidity
       expect(() => {
-        lunarswap.addLiquidity(usdcCoin, nightCoin, 90n, 45n, recipient);
-      }).toThrow('MathU128: subtraction underflow');
+        lunarswap.addLiquidity(usdcCoin, nightCoin, 1n, 1n, recipient);
+      }).toThrow('LunarswapPair: New pair Insufficient liquidity minted');
     });
 
     /**
