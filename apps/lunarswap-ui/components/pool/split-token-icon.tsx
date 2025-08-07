@@ -62,7 +62,7 @@ export function SplitTokenIcon({
       {/* Gap in the middle */}
       <div
         className="absolute top-0 left-1/2 w-px h-full bg-white/20 transform -translate-x-1/2"
-        style={{ width: '5px' }}
+        style={{ width: '8px' }}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { Identicon } from '@/components/identicon';
 
 interface TokenInputProps {
@@ -17,6 +17,7 @@ interface TokenInputProps {
   readonly?: boolean;
   disabled?: boolean;
   isActive?: boolean;
+  isLoading?: boolean;
 }
 
 export function TokenInput({
@@ -28,6 +29,7 @@ export function TokenInput({
   readonly = false,
   disabled = false,
   isActive = false,
+  isLoading = false,
 }: TokenInputProps) {
   return (
     <div
@@ -43,14 +45,19 @@ export function TokenInput({
         </div>
       )}
       <div className="flex justify-between items-center gap-3">
-        <Input
-          type="text"
-          placeholder="0"
-          value={amount}
-          onChange={(e) => onChange(e.target.value)}
-          className="border-0 bg-transparent text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto flex-1 min-w-0"
-          readOnly={readonly}
-        />
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Input
+            type="text"
+            placeholder="0"
+            value={amount}
+            onChange={(e) => onChange(e.target.value)}
+            className="border-0 bg-transparent text-2xl font-medium focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto flex-1 min-w-0"
+            readOnly={readonly}
+          />
+          {isLoading && (
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          )}
+        </div>
         <button
           type="button"
           onClick={onSelectToken}

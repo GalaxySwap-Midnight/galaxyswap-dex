@@ -10,8 +10,8 @@ import { useState } from 'react';
 
 const navItems = [
   { href: '/', label: 'Trade' },
-  { href: '/pool', label: 'Pool' },
   { href: '/explore', label: 'Explore' },
+  { href: '/pool', label: 'Pool' },
 ];
 
 export function Header() {

@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Buffer } from 'buffer';
 import { popularTokens } from '@/lib/token-config';
+import { decodeCoinInfo } from '@midnight-ntwrk/ledger';
 
 interface Token {
   symbol: string;
@@ -37,53 +38,33 @@ export function TokenSelectModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { lunarswap, status } = useLunarswapContext();
+  const { status, allPairs } = useLunarswapContext();
   const { isConnected } = useWallet();
   const navigate = useNavigate();
 
-  // Get available tokens from pools
+  // Filter available tokens from global context
+  // TODO: switch to the context
   useEffect(() => {
-    const fetchAvailableTokens = async () => {
-      if (!isConnected || !lunarswap || status !== 'connected') {
-        setAvailableTokens([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const publicState = await lunarswap.getPublicState();
-        if (publicState) {
-          const pairs = lunarswap.getAllPairs();
-
-          // Extract unique tokens from all pairs
-          const tokenSet = new Set<string>();
-          for (const { pair } of pairs) {
-            // Add both tokens from each pair
-            tokenSet.add(Buffer.from(pair.token0.color).toString('hex'));
-            tokenSet.add(Buffer.from(pair.token1.color).toString('hex'));
-          }
-
-          // Filter popular tokens to only include those with pools
-          const available = popularTokens.filter((token) =>
-            tokenSet.has(token.type),
-          );
-
-          setAvailableTokens(available);
-        } else {
-          setAvailableTokens([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch available tokens:', error);
-        setAvailableTokens([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (show) {
-      fetchAvailableTokens();
+    if (!show || status !== 'connected' || allPairs.length === 0) {
+      setAvailableTokens([]);
+      return;
     }
-  }, [show, isConnected, lunarswap, status]);
+
+    // Extract unique tokens from all pairs
+    const tokenSet = new Set<string>();
+    for (const { pair } of allPairs) {
+      const token0Color = decodeCoinInfo(pair.token0).type;
+      const token1Color = decodeCoinInfo(pair.token1).type;
+      // Add both tokens from each pair
+      tokenSet.add(token0Color);
+      tokenSet.add(token1Color);
+    }
+
+    // Filter popular tokens to only include those with pools
+    const available = popularTokens.filter((token) => tokenSet.has(token.type));
+
+    setAvailableTokens(available);
+  }, [show, status, allPairs]);
 
   const filteredTokens = availableTokens.filter(
     (token) =>

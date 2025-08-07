@@ -146,16 +146,15 @@ module LunarswapFactory {
      *
      * @param {Bytes<32>} identity - The unique identity hash for the new pair.
      * @param {CoinInfo} token0    - The first token in the pair.
-     * @param {CoinInfo} token1    - The second token in the pair.
      *
      * @throws {Error} "LunarswapFactory: Invalid token color" if either token color is zero.
      *
      * @returns [] - No return values.
      */
-    export circuit createPair(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): [] {
+    export circuit createPair(identity: Bytes<32>, token0: CoinInfo): [] {
         // TODO: I am not sure if the Coin.Color can be set to zero.
         assert (!Utils_isKeyOrAddressZero(right<ZswapCoinPublicKey, ContractAddress>( ContractAddress { bytes: token0.color }))) "LunarswapFactory: Invalid token color";
-        const pair = LunarswapPair_initializePair(identity, token0, token1); 
+        const pair = LunarswapPair_initializePair(identity); 
         return pool.insert(identity, pair);
     }
 
@@ -179,10 +178,20 @@ module LunarswapFactory {
      *
      * @returns {Pair} - The updated pair data.
      */
-    export circuit updatePair(pair: Pair, identity: Bytes<32>): Pair {
+    export circuit updatePair(unsavedPair: UnsavedPair, identity: Bytes<32>): Pair {
         assert (isIdentityExists(identity)) "LunarswapFactory: updatePair() - Pair does not exist";
-        pool.insert(identity, disclose(pair));
-        return pair;
+        const existingPair = getPair(identity);
+        const updatedPair = Pair {
+            token0: pair.token0.write_coin()
+            token1: existingPair.token1,
+            price0VolCumulative: existingPair.price0VolCumulative,
+            price1VolCumulative: existingPair.price1VolCumulative,
+            volume0Cumulative: existingPair.volume0Cumulative,
+            volume1Cumulative: existingPair.volume1Cumulative,
+            kLast: existingPair.kLast,
+        };
+        pool.insert(identity, disclose(updatedPair));
+        return updatedPair;
     }
 
     /**

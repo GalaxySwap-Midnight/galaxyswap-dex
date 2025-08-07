@@ -15,6 +15,7 @@ import {
 } from './lunarswap-integration';
 import { useRuntimeConfiguration } from './runtime-configuration';
 import { useMidnightWallet } from './wallet-context';
+import type { Pair } from '@midnight-dapps/lunarswap-v1';
 
 interface LunarswapContextType {
   lunarswap: LunarswapIntegration | null;
@@ -23,6 +24,9 @@ interface LunarswapContextType {
   isLoading: boolean;
   error: string | null;
   refreshContract: () => Promise<void>;
+  publicState: unknown | null;
+  allPairs: Array<Pool>;
+  refreshPublicState: () => Promise<void>;
 }
 
 const LunarswapContext = createContext<LunarswapContextType | null>(null);
@@ -41,6 +45,18 @@ interface LunarswapProviderProps {
   children: ReactNode;
 }
 
+export type Pool = {
+  identity: string;
+  pair: Pair;
+};
+
+export type Token = {
+  symbol: string;
+  name: string;
+  address: string;
+  type: string;
+};
+
 export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   const runtimeConfig = useRuntimeConfiguration();
   const midnightWallet = useMidnightWallet();
@@ -51,6 +67,9 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publicState, setPublicState] = useState<unknown | null>(null);
+  const [allPairs, setAllPairs] = useState<Array<Pool>>([]);
+  const [allTokens, setAllTokens] = useState<Array<Token>>([]);
 
   // Initialize or update contract integration
   const initializeLunarswap = useCallback(async () => {
@@ -108,10 +127,7 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       console.log('[LunarswapContext] Contract join result:', result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error(
-        '[LunarswapContext] Failed to initialize contract:',
-        err,
-      );
+      console.error('[LunarswapContext] Failed to initialize contract:', err);
       setError(errorMessage);
       setStatus('error');
       setStatusInfo({
@@ -135,6 +151,49 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     await initializeLunarswap();
   }, [initializeLunarswap]);
 
+  // Refresh public state
+  const refreshPublicState = useCallback(async () => {
+    if (!lunarswap || status !== 'connected') {
+      setPublicState(null);
+      setAllPairs([]);
+      return;
+    }
+
+    try {
+      console.log('[LunarswapContext] Fetching public state...');
+      
+      // Add a small delay to ensure contract is fully initialized
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const state = await lunarswap.getPublicState();
+      setPublicState(state);
+
+      if (state) {
+        console.log('[LunarswapContext] Fetching all pairs...');
+        const pairs = lunarswap.getAllPairs();
+        setAllPairs(pairs);
+        console.log('[LunarswapContext] Fetched pairs:', pairs.length);
+      } else {
+        setAllPairs([]);
+      }
+    } catch (err) {
+      console.error('[LunarswapContext] Failed to fetch public state:', err);
+      
+      // If contract is not initialized, try again after a longer delay
+      if (err instanceof Error && err.message.includes('Contract not initialized')) {
+        console.log('[LunarswapContext] Contract not initialized, retrying after delay...');
+        setTimeout(() => {
+          if (status === 'connected' && lunarswap) {
+            refreshPublicState();
+          }
+        }, 3000);
+      }
+      
+      setPublicState(null);
+      setAllPairs([]);
+    }
+  }, [lunarswap, status]);
+
   // Initialize contract when dependencies change
   useEffect(() => {
     console.log(
@@ -156,6 +215,30 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     midnightWallet.providers,
   ]);
 
+  // Fetch public state when contract is connected and refresh every 5 seconds
+  useEffect(() => {
+    if (status === 'connected' && lunarswap) {
+      // Initial fetch with delay to ensure contract is ready
+      const initialTimer = setTimeout(() => {
+        refreshPublicState();
+      }, 2000);
+      
+      // Set up 5-second interval for continuous updates
+      const intervalTimer = setInterval(() => {
+        console.log('[LunarswapContext] Refreshing public state (5s interval)...');
+        refreshPublicState();
+      }, 5000);
+      
+      return () => {
+        clearTimeout(initialTimer);
+        clearInterval(intervalTimer);
+      };
+    }
+    
+    setPublicState(null);
+    setAllPairs([]);
+  }, [status, lunarswap, refreshPublicState]);
+
   const contextValue: LunarswapContextType = {
     lunarswap,
     status,
@@ -163,6 +246,9 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     isLoading,
     error,
     refreshContract,
+    publicState,
+    allPairs,
+    refreshPublicState,
   };
 
   return (

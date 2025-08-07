@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
@@ -13,9 +13,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Copy, ExternalLink, Search, Grid3X3, List, Clock } from 'lucide-react';
+import { Search, Grid3X3, List, Clock } from 'lucide-react';
 import { popularTokens } from '@/lib/token-config';
 import { useViewPreference } from '@/hooks/use-view-preference';
+import { useWallet } from '@/hooks/use-wallet';
+import { useLunarswapContext } from '@/lib/lunarswap-context';
+import { Buffer } from 'buffer';
 
 interface Token {
   symbol: string;
@@ -36,18 +39,89 @@ function TokensContent() {
   }, []);
 
   const viewPreference = useViewPreference();
+  const { isConnected } = useWallet();
+  const { status, isLoading, allPairs } = useLunarswapContext();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(
     viewPreference === 'horizontal' ? 'grid' : 'list',
   );
+  const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
 
   // Update view mode when view preference changes
   useEffect(() => {
     setViewMode(viewPreference === 'horizontal' ? 'grid' : 'list');
   }, [viewPreference]);
 
-  const tokens: Token[] = Object.values(popularTokens);
+  // Filter tokens based on global allPairs
+  useEffect(() => {
+    if (!isConnected || status !== 'connected' || allPairs.length === 0) {
+      setAvailableTokens([]);
+      return;
+    }
+
+    console.log('Filtering tokens based on allPairs:', allPairs.length);
+
+    // Extract unique tokens from all pairs
+    const tokenSet = new Set<string>();
+    for (const { pair } of allPairs) {
+      const token0Color = Buffer.from(pair.token0.color).toString('hex');
+      const token1Color = Buffer.from(pair.token1.color).toString('hex');
+      tokenSet.add(token0Color);
+      tokenSet.add(token1Color);
+      console.log('Added token colors:', {
+        token0Color: token0Color.slice(-8),
+        token1Color: token1Color.slice(-8),
+      });
+    }
+
+    console.log(
+      'All token colors from pools:',
+      Array.from(tokenSet).map((color) => color.slice(-8)),
+    );
+
+    // Filter popular tokens to only include those with pools
+    const available = popularTokens.filter((token) => {
+      const tokenTypeSuffix = token.type.slice(-8);
+      const hasMatch = Array.from(tokenSet).some(
+        (color) => color.slice(-8) === tokenTypeSuffix,
+      );
+      console.log(
+        `Token ${token.symbol}: type suffix ${tokenTypeSuffix}, has match: ${hasMatch}`,
+      );
+      return hasMatch;
+    });
+
+    console.log(
+      'Available tokens after filtering:',
+      available.map((t) => t.symbol),
+    );
+
+    // Only set available tokens if we have a successful connection and pools
+    if (isConnected && status === 'connected') {
+      if (available.length === 0 && allPairs.length > 0) {
+        console.log(
+          'No matching tokens found in pools, showing all popular tokens',
+        );
+        setAvailableTokens(popularTokens);
+      } else {
+        setAvailableTokens(available);
+      }
+    } else {
+      setAvailableTokens([]);
+    }
+  }, [isConnected, status, allPairs]);
+
+  const tokens: Token[] = isConnected && status === 'connected' ? availableTokens : [];
+  
+  // Debug logging
+  console.log('Tokens page state:', {
+    isConnected,
+    status,
+    availableTokensLength: availableTokens.length,
+    tokensLength: tokens.length,
+    allPairsLength: allPairs.length
+  });
 
   const filteredTokens = tokens.filter(
     (token) =>
@@ -267,8 +341,8 @@ function TokensContent() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Supported Tokens</h1>
             <p className="text-muted-foreground">
-              Complete list of tokens available on Lunarswap with their contract
-              addresses and types.
+              Tokens that are actively used in liquidity pools on Lunarswap with
+              their contract addresses and types.
             </p>
           </div>
 
@@ -306,20 +380,46 @@ function TokensContent() {
           {/* Results count */}
           <div className="mb-4">
             <p className="text-sm text-muted-foreground">
-              Showing {filteredTokens.length} of {tokens.length} tokens
+              {isLoading
+                ? 'Loading tokens from pools...'
+                : !isConnected
+                  ? 'Connect your wallet to view tokens from active pools'
+                  : `Showing ${filteredTokens.length} of ${tokens.length} tokens from active pools`}
             </p>
           </div>
 
           {/* Token Display */}
-          {filteredTokens.length === 0 ? (
+          {!isConnected ? (
             <div className="text-center py-12">
               <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                No tokens found
+                Connect Your Wallet
               </h3>
               <p className="text-sm text-muted-foreground">
-                Try adjusting your search query or clear the search to see all
-                tokens.
+                Please connect your wallet to view supported tokens from active
+                liquidity pools.
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                Loading Tokens...
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Fetching tokens from active liquidity pools.
+              </p>
+            </div>
+          ) : filteredTokens.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                {searchQuery ? 'No tokens found' : 'No supported tokens'}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? 'Try adjusting your search query or clear the search to see all supported tokens.'
+                  : 'No tokens are currently supported in active liquidity pools.'}
               </p>
               {searchQuery && (
                 <Button

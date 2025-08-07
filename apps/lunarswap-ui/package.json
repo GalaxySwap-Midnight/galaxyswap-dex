@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "pnpm build && http-server --port 8080 ./dist --proxy 'http://127.0.0.1:8080?'",
+    "serve": "http-server --port 8080 ./dist --proxy 'http://127.0.0.1:8080?'",
     "dev": "vite",
     "build": "tsc && vite build --mode testnet && pnpm copy-lunarswap-keys",
     "copy-lunarswap-keys": "mkdir -p ./dist/keys && mkdir -p ./dist/zkir && cp -r ../../contracts/lunarswap-v1/dist/artifacts/Lunarswap/keys/* ./dist/keys && cp -r ../../contracts/lunarswap-v1/dist/artifacts/Lunarswap/zkir/* ./dist/zkir",
@@ -32,7 +33,6 @@
     "@hookform/resolvers": "^5.1.1",
     "@midnight-dapps/compact-std": "workspace:*",
     "@midnight-dapps/lunarswap-api": "workspace:*",
-    "@midnight-dapps/lunarswap-api-rx": "workspace:*",
     "@midnight-dapps/lunarswap-sdk": "workspace:*",
     "@midnight-dapps/lunarswap-v1": "workspace:*",
     "@midnight-ntwrk/dapp-connector-api": "^3.0.0",

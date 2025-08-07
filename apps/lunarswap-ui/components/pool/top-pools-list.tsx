@@ -1,56 +1,21 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUpRight, Droplets } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
 import { Badge } from '@/components/ui/badge';
-import { useEffect, useState } from 'react';
-import type { Pair } from '@midnight-dapps/lunarswap-v1';
 
 export function TopPoolsList() {
   const navigate = useNavigate();
   const { isConnected } = useWallet();
-  const { lunarswap, status, isLoading } = useLunarswapContext();
-  const [poolData, setPoolData] = useState<Array<{
-    identity: string;
-    pair: Pair;
-  }> | null>(null);
-  const [poolLoading, setPoolLoading] = useState(false);
+  const { status, isLoading, allPairs } = useLunarswapContext();
 
   const handleExploreMorePools = () => {
     navigate('/explore', { state: { selectedOption: 'pools' } });
   };
-
-  // Fetch pool data when contract is connected
-  useEffect(() => {
-    const fetchPoolData = async () => {
-      if (!isConnected || !lunarswap || status !== 'connected') {
-        setPoolData(null);
-        return;
-      }
-
-      setPoolLoading(true);
-      try {
-        const publicState = await lunarswap.getPublicState();
-        if (publicState) {
-          const pairs = lunarswap.getAllPairs();
-          setPoolData(pairs);
-        } else {
-          setPoolData([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch pool data:', error);
-        setPoolData([]);
-      } finally {
-        setPoolLoading(false);
-      }
-    };
-
-    fetchPoolData();
-  }, [isConnected, lunarswap, status]);
 
   // Show wallet connection message when not connected
   if (!isConnected) {
@@ -78,7 +43,7 @@ export function TopPoolsList() {
   }
 
   // Show loading while contract is connecting
-  if (isLoading || poolLoading) {
+  if (isLoading) {
     return (
       <div>
         <h3 className="text-xl font-bold mb-4">Top pools by TVL</h3>
@@ -125,7 +90,7 @@ export function TopPoolsList() {
     <div>
       <h3 className="text-xl font-bold mb-4">Top pools by TVL</h3>
 
-      {!poolData || poolData.length === 0 ? (
+      {!allPairs || allPairs.length === 0 ? (
         <Card className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3">
@@ -141,7 +106,7 @@ export function TopPoolsList() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {poolData.slice(0, 5).map((pool, index) => (
+          {allPairs.slice(0, 5).map((pool, index) => (
             <Card
               key={pool.identity}
               className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden hover:border-blue-500/50 transition-colors"
@@ -173,7 +138,9 @@ export function TopPoolsList() {
                       </div>
                       <div>
                         <div className="font-medium text-sm">
-                          {pool.pair.token0.color}/{pool.pair.token1.color}
+                          {(() => {
+                            return `${Buffer.from(pool.pair.token0.color).toString('hex').slice(0, 4)}/${Buffer.from(pool.pair.token1.color).toString('hex').slice(0, 4)}`;
+                          })()}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           {pool.identity.slice(0, 8)}...

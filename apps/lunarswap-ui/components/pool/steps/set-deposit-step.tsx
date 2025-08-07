@@ -21,9 +21,7 @@ import type {
   LunarswapProviders,
   LunarswapCircuitKeys,
 } from '@midnight-dapps/lunarswap-api';
-import type {
-  LunarswapPrivateState,
-} from '@midnight-dapps/lunarswap-v1';
+import type { LunarswapPrivateState } from '@midnight-dapps/lunarswap-v1';
 import type {
   PrivateStateProvider,
   ProofProvider,
@@ -56,7 +54,16 @@ interface SetDepositStepProps {
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
   const runtimeConfig = useRuntimeConfiguration();
-  const { isConnected, address, providers, walletAPI, callback, publicDataProvider, walletProvider, midnightProvider } = useWallet();
+  const {
+    isConnected,
+    address,
+    providers,
+    walletAPI,
+    callback,
+    publicDataProvider,
+    walletProvider,
+    midnightProvider,
+  } = useWallet();
   const { lunarswap, status, isLoading } = useLunarswapContext();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -235,7 +242,9 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
       // Stage 3: Generate ZK proof and submit transaction
       setTransactionState('generating-proof');
-      console.log('[AddLiquidity] Generating ZK proof and submitting transaction...');
+      console.log(
+        '[AddLiquidity] Generating ZK proof and submitting transaction...',
+      );
 
       // Use the LunarswapIntegration to add liquidity
       const txData = await lunarswapIntegration.addLiquidity(

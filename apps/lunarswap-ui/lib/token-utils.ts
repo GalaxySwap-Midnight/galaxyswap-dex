@@ -1,4 +1,4 @@
-import { popularTokens } from './token-config';
+import { popularTokens, type Token } from './token-config';
 
 // Generate a consistent color based on token symbol
 export function getTokenColor(symbol: string): string {
@@ -37,6 +37,44 @@ export function getTokenColor(symbol: string): string {
   };
 
   return colorMap[symbol] || `bg-gray-${Math.abs(hash % 5) + 4}00`;
+}
+
+/**
+ * Get a token by its color (type field)
+ */
+export function getTokenByColor(color: string): Token | undefined {
+  // First try exact match
+  let token = popularTokens.find((token) => token.type === color);
+
+  // If no exact match, try to find by partial match (last 4 characters)
+  if (!token) {
+    const shortColor = color.slice(-4);
+    token = popularTokens.find((token) => token.type.endsWith(shortColor));
+  }
+
+  // If still no match, try to find by the last 8 characters
+  if (!token) {
+    const shortColor = color.slice(-8);
+    token = popularTokens.find((token) => token.type.endsWith(shortColor));
+  }
+
+  return token;
+}
+
+/**
+ * Get token symbol by color
+ */
+export function getTokenSymbolByColor(color: string): string {
+  const token = getTokenByColor(color);
+  return token ? token.symbol : color.slice(0, 4);
+}
+
+/**
+ * Get token name by color
+ */
+export function getTokenNameByColor(color: string): string {
+  const token = getTokenByColor(color);
+  return token ? token.name : color.slice(0, 4);
 }
 
 // Get token details from DEMO_TOKENS

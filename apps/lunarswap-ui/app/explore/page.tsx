@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/header';
 import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
@@ -15,20 +15,18 @@ import {
   Droplets,
   ArrowRightLeft,
   Clock,
-  ArrowRight,
-  TrendingUp,
-  Users,
-  DollarSign,
+  ArrowRight
 } from 'lucide-react';
 import { popularTokens } from '@/lib/token-config';
+import { getTokenSymbolByColor } from '@/lib/token-utils';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
 import { Input } from '@/components/ui/input';
-import { Copy, ExternalLink, Search, Grid3X3, List } from 'lucide-react';
+import { Copy, Search, Grid3X3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Identicon } from '@/components/identicon';
 import { useViewPreference } from '@/hooks/use-view-preference';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import type { Pair } from '@midnight-dapps/lunarswap-v1';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 type ExploreOption = 'tokens' | 'pools' | 'transactions';
@@ -46,7 +44,7 @@ export default function ExplorePage() {
 
   const viewPreference = useViewPreference();
   const { isConnected } = useWallet();
-  const { lunarswap, status, isLoading } = useLunarswapContext();
+  const { status, isLoading, allPairs } = useLunarswapContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedOption, setSelectedOption] = useState<ExploreOption>('tokens');
@@ -62,44 +60,10 @@ export default function ExplorePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(
     viewPreference === 'horizontal' ? 'grid' : 'list',
   );
-  const [poolData, setPoolData] = useState<Array<{
-    identity: string;
-    pair: Pair;
-  }> | null>(null);
-  const [poolLoading, setPoolLoading] = useState(false);
-
   // Update view mode when view preference changes
   useEffect(() => {
     setViewMode(viewPreference === 'horizontal' ? 'grid' : 'list');
   }, [viewPreference]);
-
-  // Fetch pool data when contract is connected
-  useEffect(() => {
-    const fetchPoolData = async () => {
-      if (!isConnected || !lunarswap || status !== 'connected') {
-        setPoolData(null);
-        return;
-      }
-
-      setPoolLoading(true);
-      try {
-        const publicState = await lunarswap.getPublicState();
-        if (publicState) {
-          const pairs = lunarswap.getAllPairs();
-          setPoolData(pairs);
-        } else {
-          setPoolData([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch pool data:', error);
-        setPoolData([]);
-      } finally {
-        setPoolLoading(false);
-      }
-    };
-
-    fetchPoolData();
-  }, [isConnected, lunarswap, status]);
 
   const exploreOptions = [
     {
@@ -376,7 +340,7 @@ export default function ExplorePage() {
     }
 
     // Show loading while contract is connecting
-    if (isLoading || poolLoading) {
+    if (isLoading) {
       return (
         <div className="mt-8">
           <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30">
@@ -416,8 +380,8 @@ export default function ExplorePage() {
           <div>
             <h3 className="text-2xl font-bold mb-2">Top Pools by TVL</h3>
             <p className="text-muted-foreground">
-              {poolData
-                ? `${poolData.length} active liquidity pools`
+              {allPairs
+                ? `${allPairs.length} active liquidity pools`
                 : 'No pools found'}
             </p>
           </div>
@@ -430,7 +394,7 @@ export default function ExplorePage() {
           </Button>
         </div>
 
-        {!poolData || poolData.length === 0 ? (
+        {!allPairs || allPairs.length === 0 ? (
           <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30">
             <CardContent className="p-8 text-center">
               <Droplets className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -456,43 +420,63 @@ export default function ExplorePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {poolData.map((pool, index) => (
+                    {allPairs.map((pool, index) => (
                       <tr
                         key={pool.identity}
                         className="border-b border-gray-200 dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
                         <td className="py-3 px-4">{index + 1}</td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center">
-                            <div className="relative h-8 w-8 mr-3">
-                              <div className="absolute top-0 left-0 h-6 w-6 rounded-full overflow-hidden bg-blue-100 dark:bg-blue-900">
-                                <img
-                                  src="/placeholder.svg?height=24&width=24"
-                                  alt=""
-                                  width={24}
-                                  height={24}
-                                />
-                              </div>
-                              <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full overflow-hidden bg-green-100 dark:bg-green-900">
-                                <img
-                                  src="/placeholder.svg?height=24&width=24"
-                                  alt=""
-                                  width={24}
-                                  height={24}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium">
-                                {pool.pair.token0.color}/
-                                {pool.pair.token1.color}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {pool.identity.slice(0, 8)}...
-                                {pool.identity.slice(-8)}
-                              </div>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            className="flex items-center w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded p-2 -m-2"
+                            onClick={() =>
+                              navigate(`/explore/pool/${pool.identity}`)
+                            }
+                          >
+                            {(() => {
+                              return (
+                                <>
+                                  <SplitTokenIcon
+                                    tokenASymbol={getTokenSymbolByColor(
+                                      Buffer.from(
+                                        pool.pair.token0.color,
+                                      ).toString('hex'),
+                                    )}
+                                    tokenBSymbol={getTokenSymbolByColor(
+                                      Buffer.from(
+                                        pool.pair.token1.color,
+                                      ).toString('hex'),
+                                    )}
+                                    size={32}
+                                    className="mr-3"
+                                  />
+                                  <div>
+                                    <div className="font-medium">
+                                      {getTokenSymbolByColor(
+                                        Buffer.from(
+                                          pool.pair.token0.color,
+                                        ).toString('hex'),
+                                      )}
+                                      /
+                                      {getTokenSymbolByColor(
+                                        Buffer.from(
+                                          pool.pair.token1.color,
+                                        ).toString('hex'),
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      <span className="font-semibold mr-1">
+                                        Pool ID:
+                                      </span>
+                                      {pool.identity.slice(0, 8)}...
+                                      {pool.identity.slice(-8)}
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </button>
                         </td>
                         <td className="py-3 px-4">
                           <Badge variant="secondary" className="text-xs">

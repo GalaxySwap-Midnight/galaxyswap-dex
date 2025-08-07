@@ -7,6 +7,20 @@ export interface Token {
 
 export const popularTokens: Token[] = [
   {
+    symbol: 'TA',
+    name: 'Test A',
+    type: '02000083ebc824e4f7aa34a10bc8132c57e10edeffbf982100affa5e3f0e394632c4',
+    address:
+      '0200d4b9a49d299004c58fc3a9b98a3582cb863ded1eed67a26d9a420be0d106a0ab',
+  },
+  {
+    symbol: 'TB',
+    name: 'Test B',
+    type: '0200ece07b651d2806ffc57a3130fb29778dfe731ac1e2d1657cc646bea3ecf4d8bc',
+    address:
+      '02007c516935a083b8a6f895a5a3ddacba36b7722eff5f68fcd15f0c9adc8b9c61f9',
+  },
+  {
     symbol: 'TUSD',
     name: 'Test USD',
     type: '020044c5e6f0e5e31c4db5ae99e28bb2d9bfe5416fc81a07c6f182188d74bd1968ac',

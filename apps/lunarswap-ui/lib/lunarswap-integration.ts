@@ -41,7 +41,7 @@ import {
   getZswapNetworkId,
 } from '@midnight-ntwrk/midnight-js-network-id';
 import { encodeCoinInfo } from '@midnight-ntwrk/compact-runtime';
-import { createCoinInfo, encodeCoinPublicKey } from '@midnight-ntwrk/ledger';
+import { createCoinInfo, encodeCoinPublicKey, encodeQualifiedCoinInfo } from '@midnight-ntwrk/ledger';
 import {
   ShieldedAddress,
   MidnightBech32m,
@@ -144,26 +144,41 @@ export class LunarswapIntegration {
 
     try {
       // Step 1: Get the contract state operations to determine the correct verifier key order
-      const currentContractState = await this.providers.publicDataProvider.queryContractState(targetAddress);
+      const currentContractState =
+        await this.providers.publicDataProvider.queryContractState(
+          targetAddress,
+        );
       if (!currentContractState) {
-        throw new Error(`No contract deployed at contract address '${targetAddress}'`);
-      }      
-      console.log('[LunarswapIntegration] Full contract state:', currentContractState);
-      
-      const operations = currentContractState.operations();
-      console.log('[LunarswapIntegration] Contract state operations:', operations);
-      console.dir(operations, { depth: null });
-      console.log('[LunarswapIntegration] Contract state operations length:', operations.length);
-      console.log('[LunarswapIntegration] Contract state operations types:', operations.map(op => typeof op));
-      console.log('[LunarswapIntegration] Contract state operations details:', operations.map((op, index) => ({ index, op, type: typeof op })));
-      
-      // Step 2: Store the operations order in the ZK config provider for dynamic verifier key ordering
-      if (this.providers.zkConfigProvider && 'setContractOperations' in this.providers.zkConfigProvider) {
-        // Filter operations to only include strings (circuit names)
-        const stringOperations = operations.filter((op): op is string => typeof op === 'string');
-        (this.providers.zkConfigProvider as { setContractOperations: (operations: string[]) => void }).setContractOperations(stringOperations);
+        throw new Error(
+          `No contract deployed at contract address '${targetAddress}'`,
+        );
       }
-      
+      console.log(
+        '[LunarswapIntegration] Full contract state:',
+        currentContractState,
+      );
+
+      const operations = currentContractState.operations();
+      console.log(
+        '[LunarswapIntegration] Contract state operations:',
+        operations,
+      );
+      console.dir(operations, { depth: null });
+      console.log(
+        '[LunarswapIntegration] Contract state operations length:',
+        operations.length,
+      );
+      console.log(
+        '[LunarswapIntegration] Contract state operations types:',
+        operations.map((op) => typeof op),
+      );
+      console.log(
+        '[LunarswapIntegration] Contract state operations details:',
+        operations.map((op, index) => ({ index, op, type: typeof op })),
+      );
+
+      // Note: We're using a fixed order for lunarswap verifier keys instead of dynamic ordering
+
       // Step 3: Use the original join method
       this.lunarswap = await Lunarswap.join(this.providers, {
         bytes: new Uint8Array(Buffer.from(targetAddress, 'hex')),
@@ -343,10 +358,7 @@ export class LunarswapIntegration {
     }
 
     const tokenInInfo = LunarswapIntegration.toCoinInfo(tokenIn, amountIn);
-    const tokenOutInfo = LunarswapIntegration.toCoinInfo(
-      tokenOut,
-      BigInt(0),
-    );
+    const tokenOutInfo = LunarswapIntegration.toCoinInfo(tokenOut, BigInt(0));
     const recipientAddress = LunarswapIntegration.createRecipient(
       recipientCoinPublicKey,
     );
@@ -383,10 +395,7 @@ export class LunarswapIntegration {
     }
 
     const tokenInInfo = LunarswapIntegration.toCoinInfo(tokenIn, BigInt(0));
-    const tokenOutInfo = LunarswapIntegration.toCoinInfo(
-      tokenOut,
-      BigInt(0),
-    );
+    const tokenOutInfo = LunarswapIntegration.toCoinInfo(tokenOut, amountOut);
     const recipientAddress = LunarswapIntegration.createRecipient(
       recipientCoinPublicKey,
     );

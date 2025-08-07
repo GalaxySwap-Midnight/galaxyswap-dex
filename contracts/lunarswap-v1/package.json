@@ -17,7 +17,7 @@
   "scripts": {
     "compact": "pnpm exec compact-compiler",
     "compact:fast": "pnpm exec compact-compiler --skip-zk",
-    "build": "pnpm exec compact-builder && tsc",
+    "build": "rm -rf dist ./src/artifacts && pnpm exec compact-builder && tsc",
     "test": "vitest run --printConsoleTrace",
     "test:coverage": "vitest run --coverage --printConsoleTrace",
     "test:watch": "vitest --printConsoleTrace",

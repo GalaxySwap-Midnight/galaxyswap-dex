@@ -14,6 +14,7 @@ import PoolPage from '@/app/pool/page';
 import NewPositionPage from '@/app/pool/new/page';
 import TokensPage from '@/app/tokens/page';
 import ExplorePage from '@/app/explore/page';
+import PoolDetailPage from '@/app/explore/pool/[id]/page';
 import '../app/globals.css';
 import pino from 'pino';
 import type { ReactNode } from 'react';
@@ -52,6 +53,10 @@ const App = () => {
                     <Route path="/pool/new" element={<NewPositionPage />} />
                     <Route path="/tokens" element={<TokensPage />} />
                     <Route path="/explore" element={<ExplorePage />} />
+                    <Route
+                      path="/explore/pool/:id"
+                      element={<PoolDetailPage />}
+                    />
                   </Routes>
                 </BrowserRouter>
               </NetworkProvider>
