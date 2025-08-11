@@ -122,18 +122,18 @@ module LunarswapRouter {
 
         // Mint LP tokens and update the pair with the optimal amounts
         const [updatedPair, liquidity] = LunarswapPair_mint(
-            to,
             identity,
             pair,
             amount0Optimal,
             amount1Optimal,
             reserve0,
             reserve1,
+            to
         );
 
         // Update the pair with the optimal amounts
         LunarswapFactory_updatePair(identity, updatedPair);
-        LunarswapFactory_updateReserves(identity, splitToken0.used, splitToken1.used);
+        LunarswapFactory_addReserves(identity, splitToken0.used, splitToken1.used);
 
         // Send the remainder of the tokens to the user
         if (splitToken0.remainder.value > 0) {
@@ -174,7 +174,7 @@ module LunarswapRouter {
      * @throws {Error} "LunarswapRouter: Insufficient B amount" if calculated amount1 is below minimum.
      * @throws {Error} "LunarswapRouter: Insufficient A amount" if calculated amount0 is below minimum or exceeds desired.
      *
-     * @returns {[Uint<128>, Uint<128>, Uint<128>, Uint<128>]} - The optimal amounts and reserves [amount0Optimal, amount1Optimal, reserve0, reserve1].
+     * @returns {[Uint<128>, Uint<128>, QualifiedCoinInfo, QualifiedCoinInfo]} - The optimal amounts and reserves [amount0Optimal, amount1Optimal, reserve0, reserve1].
      */
     circuit _addLiquidity(
         token0: CoinInfo,
@@ -184,22 +184,24 @@ module LunarswapRouter {
         amount0Min: Uint<128>,
         amount1Min: Uint<128>,
         identity: Bytes<32>
-    ): [Uint<128>, Uint<128>, Uint<128>, Uint<128>] {
+    ): [Uint<128>, Uint<128>, QualifiedCoinInfo, QualifiedCoinInfo] {
+        // TODO: rename isPairExists
         if (!LunarswapFactory_isIdentityExists(identity)) {
             LunarswapFactory_createPair(identity, token0, token1); 
-            return [amount0Desired, amount1Desired, 0, 0];
+            // TODO: double check if default is zero value and zero color or not.
+            return [amount0Desired, amount1Desired, default<QualifiedCoinInfo>, default<QualifiedCoinInfo>];
         } else {
             const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, token0, token1);
-            if (reserve0 == 0 && reserve1 == 0) {
+            if (reserve0.value == 0 && reserve1.value == 0) {
                 return [amount0Desired, amount1Desired, reserve0, reserve1];
             } else {
-                const amount1Optimal = LunarswapLibrary_quote(amount0Desired, reserve0, reserve1);
+                const amount1Optimal = LunarswapLibrary_quote(amount0Desired, reserve0.value, reserve1.value);
                 if (amount1Optimal <= amount1Desired) {
                     // TODO: convert assert message to token1
                     assert (amount1Optimal >= amount1Min) "LunarswapRouter: Insufficient B amount";
                     return [amount0Desired, amount1Optimal, reserve0, reserve1];
                 } else {
-                    const amount0Optimal = LunarswapLibrary_quote(amount1Desired, reserve1, reserve0);
+                    const amount0Optimal = LunarswapLibrary_quote(amount1Desired, reserve1.value, reserve0.value);
                     // TODO: convert assert message to token0
                     assert (amount0Optimal <= amount0Desired) "LunarswapRouter: Insufficient A amount";
                     assert (amount0Optimal >= amount0Min) "LunarswapRouter: Insufficient A amount";
@@ -222,8 +224,8 @@ module LunarswapRouter {
      *
      * @param {Bytes<32>} identity - The unique identity hash of the pair.
      * @param {Pair} pair - The current pair state.
-     * @param {Uint<128>} reserve0 - The current reserve of token0.
-     * @param {Uint<128>} reserve1 - The current reserve of token1.
+     * @param {QualifiedCoinInfo} reserve0 - The current reserve of token0.
+     * @param {QualifiedCoinInfo} reserve1 - The current reserve of token1.
      * @param {CoinInfo} liquidity - The LP tokens to remove.
      * @param {Uint<128>} amount0Min - The minimum amount of token0 to remove.
      * @param {Uint<128>} amount1Min - The minimum amount of token1 to remove.
@@ -234,13 +236,16 @@ module LunarswapRouter {
     export circuit removeLiquidity(
         identity: Bytes<32>,
         pair: Pair,
-        reserve0: Uint<128>,
-        reserve1: Uint<128>,
+        token0: CoinInfo,
+        token1: CoinInfo,
+        reserve0: QualifiedCoinInfo,
+        reserve1: QualifiedCoinInfo,
         liquidity: CoinInfo,
         amount0Min: Uint<128>,
         amount1Min: Uint<128>,
         to: Either<ZswapCoinPublicKey, ContractAddress>,
     ): [Uint<128>, Uint<128>] {
+        // TODO: double check the totalSupply is correct.
         const totalSupply = LunarswapLiquidity_totalSupply(identity);
 
         assert (totalSupply.value > 0) "LunarswapRouter: totalSupply is zero";
@@ -252,20 +257,18 @@ module LunarswapRouter {
 
         // Burn the liquidity and get the amounts
         const [updatedPair, amount0, amount1] = LunarswapPair_burn(
-            to,
             identity,
             pair,
             liquidity,
             pair.token0Type,
             pair.token1Type,
             reserve0,
-            reserve1
+            reserve1,
+            to
         );
 
-        const reserve0 = 
-
         LunarswapFactory_updatePair(identity, updatedPair);
-        LunarswapFactory_updateReserves(identity, amount0, amount1);
+        LunarswapFactory_removeReserves(identity, token0, token1, amount0, amount1, to);
 
         return [amount0, amount1];
     }
@@ -287,8 +290,8 @@ module LunarswapRouter {
      * @param {CoinInfo} tokenOut - The output token.
      * @param {Uint<128>} amountIn - The amount of input tokens to swap.
      * @param {Uint<128>} amountOutMin - The minimum amount of output tokens to receive.
-     * @param {Uint<128>} reserve0 - The current reserve of token0.
-     * @param {Uint<128>} reserve1 - The current reserve of token1.
+     * @param {QualifiedCoinInfo} reserve0 - The current reserve of token0.
+     * @param {QualifiedCoinInfo} reserve1 - The current reserve of token1.
      * @param {Either<ZswapCoinPublicKey, ContractAddress>} to - The recipient of the output tokens.
      *
      * @returns {Uint<128>} - The amount of input tokens used.
@@ -300,30 +303,28 @@ module LunarswapRouter {
         tokenOut: CoinInfo,
         amountIn: Uint<128>,
         amountOutMin: Uint<128>,
-        reserve0: Uint<128>,
-        reserve1: Uint<128>,
+        reserve0: QualifiedCoinInfo,
+        reserve1: QualifiedCoinInfo,
         to: Either<ZswapCoinPublicKey, ContractAddress>,
     ): Uint<128> {
-        const [token0, token1] = LunarswapLibrary_sortCoins(tokenIn, tokenOut);
+        const [token0, token1] = LunarswapLibrary_sortCoin(tokenIn, tokenOut);
         const [reserveIn, reserveOut] = (token0.color == tokenIn.color) ? [reserve0, reserve1] : [reserve1, reserve0];
-        const amountOut = LunarswapLibrary_getAmountOut(amountIn, reserveIn, reserveOut);
+        const amountOut = LunarswapLibrary_getAmountOut(amountIn, reserveIn.value, reserveOut.value);
 
         assert (amountOut >= amountOutMin) "LunarswapRouter: swapExactTokensForTokens() - Insufficient output amount";
 
         const splitTokenIn = LunarswapLibrary_splitCoin(tokenIn, amountIn);
-        receive(splitTokenIn.used);
-        if (splitTokenIn.remainder.value > 0) {
-            send_immediate(splitTokenIn.remainder, to, splitTokenIn.remainder.value);
-        }
+        receive(splitTokenIn.used); 
 
         const isToken0 = token0.color == tokenIn.color;
 
         // Calculate intermediate balances (after input is received but before output is sent)
         const [balance0, balance1] = isToken0
-            ? [addChecked(reserve0, splitTokenIn.used.value), reserve1]
-            : [reserve0, addChecked(reserve1, splitTokenIn.used.value)];
+            ? [addChecked(reserve0.value, splitTokenIn.used.value), reserve1.value]
+            : [reserve0.value, addChecked(reserve1.value, splitTokenIn.used.value)];
 
         const [amount0Out, amount1Out] = isToken0 ? [0 as Uint<128>, amountOut] : [amountOut, 0 as Uint<128>];
+
         const updatedPair = LunarswapPair_swap(
             identity,
             pair,
@@ -335,7 +336,24 @@ module LunarswapRouter {
             reserve1,
             to
         );
-        LunarswapFactory_updatePair(identity, updatedPair, updatedToken0, updatedToken1);
+
+        LunarswapFactory_updatePair(identity, updatedPair);
+
+        const tokenInSwap = splitTokenIn.used;
+        const tokenOutSwap = (amount0Out > 0) ? CoinInfo {
+            color: token0.color,
+            value: amount0Out,
+            nonce: token0.nonce,
+        } : CoinInfo {
+            color: token1.color,
+            value: amount1Out,
+            nonce: token1.nonce,
+        };
+        LunarswapFactory_swapReserves(identity, tokenInSwap, tokenOutSwap);
+
+        if (splitTokenIn.remainder.value > 0) {
+            send_immediate(splitTokenIn.remainder, to, splitTokenIn.remainder.value);
+        }
         return amountOut;
     }
 
@@ -380,10 +398,7 @@ module LunarswapRouter {
         assert (amountIn <= amountInMax) "LunarswapRouter: swapTokensForExactTokens() - Insufficient input amount";
 
         const splitTokenIn = LunarswapLibrary_splitCoin(tokenIn, amountIn);
-        receive(splitTokenIn.used);
-        if (splitTokenIn.remainder.value > 0) {
-            send_immediate(splitTokenIn.remainder, to, splitTokenIn.remainder.value);
-        }
+        receive(splitTokenIn.used); 
 
         const isToken0 = token0.color == tokenIn.color;
 
@@ -404,7 +419,23 @@ module LunarswapRouter {
             reserve1,
             to
         );
-        LunarswapFactory_updatePair(identity, updatedPair, updatedToken0, updatedToken1);
+        LunarswapFactory_updatePair(identity, updatedPair);
+
+        const tokenInSwap = splitTokenIn.used;
+        const tokenOutSwap = (amount0Out > 0) ? CoinInfo {
+            color: token0.color,
+            value: amount0Out,
+            nonce: token0.nonce,
+        } : CoinInfo {
+            color: token1.color,
+            value: amount1Out,
+            nonce: token1.nonce,
+        };
+        LunarswapFactory_swapReserves(identity, tokenInSwap, tokenOutSwap);
+
+        if (splitTokenIn.remainder.value > 0) {
+            send_immediate(splitTokenIn.remainder, to, splitTokenIn.remainder.value);
+        }
         return amountIn;
     }
 }

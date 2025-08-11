@@ -126,14 +126,14 @@ module LunarswapFactory {
      */
     export circuit getReserves(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): [QualifiedCoinInfo, QualifiedCoinInfo] {
         assert (isIdentityExists(identity)) "LunarswapFactory: getReserves() - Pair does not exist";
-        const reserve0 = reserve.lookup(identity).lookup(token0.color);
-        const reserve1 = reserve.lookup(identity).lookup(token1.color);
+        const reserve0 = reserves.lookup(identity).lookup(token0.color);
+        const reserve1 = reserves.lookup(identity).lookup(token1.color);
         return [reserve0, reserve1];
     }
 
     /**
-     * @title updateReserves circuit
-     * @description Updates the reserves for a given pair identity with new token0 and token1 CoinInfo.
+     * @title addReserves circuit
+     * @description Adds the reserves for a given pair identity with new token0 and token1 CoinInfo.
      *
      * @param {Bytes<32>} identity - The unique identity hash of the pair.
      * @param {CoinInfo} token0    - The first token's CoinInfo.
@@ -141,9 +141,68 @@ module LunarswapFactory {
      *
      * @returns [] - No return values.
      */
-    export circuit updateReserves(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): [] {
-        reserve.lookup(identity).insert_coin(token0.color, token0, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
-        reserve.lookup(identity).insert_coin(token1.color, token1, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+    export circuit addReserves(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): [] {
+        // TODO: should I check for the default case if the reserve is still empty or not initialized?
+        reserves.lookup(identity).insert_coin(token0.color, token0, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+        reserves.lookup(identity).insert_coin(token1.color, token1, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+        return [];
+    }
+
+    /**
+     * @title removeReserves circuit
+     * @description Removes the reserves for a given pair identity with new token0 and token1 CoinInfo.
+     *
+     * @param {Bytes<32>} identity - The unique identity hash of the pair.
+     * @param {CoinInfo} token0    - The first token's CoinInfo.
+     * @param {CoinInfo} token1    - The second token's CoinInfo.
+     * @param {Uint<128>} amount0 - The amount of token0 to remove.
+     * @param {Uint<128>} amount1 - The amount of token1 to remove.
+     * @param {Either<ZswapCoinPublicKey, ContractAddress>} to - The recipient of the removed tokens.
+     *
+     * @returns [] - No return values.
+     */
+    export circuit removeReserves(
+        identity: Bytes<32>,
+        token0: CoinInfo,
+        token1: CoinInfo,
+        amount0: Uint<128>,
+        amount1: Uint<128>,
+        to: Either<ZswapCoinPublicKey, ContractAddress>
+    ): [] {
+        const [reserve0, reserve1] = getReserves(identity, token0, token1);
+        send(reserve0, to, amount0);
+        send(reserve1, to, amount1);
+        return [];
+    }
+
+    /**
+     * @title swapReserves circuit
+     * @description Swaps reserves between two tokens for a given pair identity.
+     *
+     * @remarks
+     * This circuit allows updating the reserves for a pair by either adding to the reserve
+     * of `tokenIn` if its value is greater than zero, or sending out from the reserve of
+     * `tokenOut` if its value is greater than zero.
+     *
+     * @param {Bytes<32>} identity - The unique identity hash of the pair.
+     * @param {CoinInfo} tokenIn   - The input token information (to add to reserves).
+     * @param {CoinInfo} tokenOut  - The output token information (to remove from reserves).
+     *
+     * @returns [] - No return values.
+     */
+    export circuit swapReserves(
+        identity: Bytes<32>, 
+        tokenIn: CoinInfo, 
+        tokenOut: CoinInfo, 
+    ): [] {
+        const [reserve0, reserve1] = getReserves(identity, token0, token1);
+        if (tokenIn.value > 0) {
+            reserves.lookup(identity).insert_coin(tokenIn.color, tokenIn, right<ZswapCoinPublicKey, ContractAddress>(kernel.self()));
+        } else if (tokenOut.value > 0) {
+           const reserveOut = reserve.lookup(identity).lookup(tokenOut.color);
+           send(reserveOut, to, tokenOut.value);
+        }
+        
         return [];
     }
     
@@ -164,15 +223,16 @@ module LunarswapFactory {
      *
      * @param {Bytes<32>} identity - The unique identity hash for the new pair.
      * @param {CoinInfo} token0    - The first token in the pair.
+     * @param {CoinInfo} token1    - The second token in the pair.
      *
      * @throws {Error} "LunarswapFactory: Invalid token color" if either token color is zero.
      *
      * @returns [] - No return values.
      */
-    export circuit createPair(identity: Bytes<32>, token0: CoinInfo): [] {
+    export circuit createPair(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): [] {
         // TODO: I am not sure if the Coin.Color can be set to zero.
         assert (!Utils_isKeyOrAddressZero(right<ZswapCoinPublicKey, ContractAddress>( ContractAddress { bytes: token0.color }))) "LunarswapFactory: Invalid token color";
-        const pair = LunarswapPair_initializePair(identity); 
+        const pair = LunarswapPair_initializePair(identity, token0, token1); 
         return pool.insert(identity, pair);
     } 
 

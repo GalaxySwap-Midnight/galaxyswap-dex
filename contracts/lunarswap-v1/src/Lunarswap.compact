@@ -180,13 +180,18 @@ export circuit removeLiquidity(
     const [token0, token1, amount0Min, amount1Min] = LunarswapLibrary_sortCoinsAndAmounts(tokenA, tokenB, amountAMin, amountBMin);
     const identity = LunarswapLibrary_getIdentity(token0, token1);
     const pair = LunarswapFactory_getPair(identity);
+    const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, token0, token1);
+
+    assert (pair.token0Type == token0.color) "Lunarswap: removeLiquidity() - mismatched token0 color";
+    assert (pair.token1Type == token1.color) "Lunarswap: removeLiquidity() - mismatched token1 color";
+    assert (pair.lpTokenType == liquidity.color) "Lunarswap: removeLiquidity() - mismatched LP token color";
     
     const [amount0, amount1] = disclose(
         LunarswapRouter_removeLiquidity(
             identity,
             pair,
-            pair.token0.value,
-            pair.token1.value,
+            reserve0,
+            reserve1,
             liquidity,
             amount0Min,
             amount1Min,

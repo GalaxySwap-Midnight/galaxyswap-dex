@@ -9,6 +9,7 @@ module ILunarswapPair {
      *
      * @field {Bytes<32>} token0Type - The color (type) of the first token in the pair.
      * @field {Bytes<32>} token1Type - The color (type) of the second token in the pair.
+     * @field {Bytes<32>} lpTokenType - The color (type) of the LP token in the pair.
      * @field {Uint<128>} price0VolCumulative - Cumulative sum of (price0 * volume), representing Token 1 per Token 0.
      * @field {Uint<128>} price1VolCumulative - Cumulative sum of (price1 * volume), representing Token 0 per Token 1.
      * @field {Uint<128>} volume0Cumulative - Cumulative trading volume of token0.
@@ -18,6 +19,7 @@ module ILunarswapPair {
     export struct Pair {
         token0Type: Bytes<32>,
         token1Type: Bytes<32>,
+        lpTokenType: Bytes<32>,
         price0VolCumulative: Uint<128>,
         price1VolCumulative: Uint<128>,
         volume0Cumulative: Uint<128>,
