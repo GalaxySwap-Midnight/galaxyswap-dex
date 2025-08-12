@@ -35,7 +35,7 @@ const getExpectedTokenValues = (
 
   // Determine which input token corresponds to token0
   const isAToken0 =
-    Buffer.compare(tokenA.color, pairFromContract.token0.color) === 0;
+    Buffer.compare(tokenA.color, pairFromContract.token0Type) === 0;
 
   return {
     token0Value: isAToken0 ? valueA : valueB,
@@ -228,8 +228,8 @@ describe('Lunarswap', () => {
       const result7 = calculateAddLiquidityAmounts(
         5000n, // desired USDC
         2500n, // desired NIGHT
-        reserveUSDC, // actual reserve USDC
-        reserveNIGHT, // actual reserve NIGHT
+        reserveUSDC.value, // actual reserve USDC
+        reserveNIGHT.value, // actual reserve NIGHT
         SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage
       );
       lunarswap.addLiquidity(
@@ -276,8 +276,9 @@ describe('Lunarswap', () => {
         5000n,
         lunarswap,
       );
-      expect(pair.token0.value).toBe(expectedValues.token0Value);
-      expect(pair.token1.value).toBe(expectedValues.token1Value);
+      const [reserve0, reserve1] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      expect(reserve0.value).toBe(expectedValues.token0Value);
+      expect(reserve1.value).toBe(expectedValues.token1Value);
     });
 
     it('should retrieve USDC/DUST pair from ledger after creation', () => {
@@ -313,8 +314,9 @@ describe('Lunarswap', () => {
         10000n,
         lunarswap,
       );
-      expect(pair.token0.value).toBe(expectedValues.token0Value);
-      expect(pair.token1.value).toBe(expectedValues.token1Value);
+      const [reserve0, reserve1] = lunarswap.getPairReserves(usdcCoin, dustCoin);
+      expect(reserve0.value).toBe(expectedValues.token0Value);
+      expect(reserve1.value).toBe(expectedValues.token1Value);
       expect(lunarswap.getLpTokenTotalSupply(usdcCoin, dustCoin).value).toBe(
         14142n,
       );
@@ -354,8 +356,9 @@ describe('Lunarswap', () => {
         12000n,
         lunarswap,
       );
-      expect(pair.token0.value).toBe(expectedValues.token0Value);
-      expect(pair.token1.value).toBe(expectedValues.token1Value);
+      const [reserve0, reserve1] = lunarswap.getPairReserves(nightCoin, dustCoin);
+      expect(reserve0.value).toBe(expectedValues.token0Value);
+      expect(reserve1.value).toBe(expectedValues.token1Value);
       expect(lunarswap.getLpTokenTotalSupply(nightCoin, dustCoin).value).toBe(
         9797n,
       );

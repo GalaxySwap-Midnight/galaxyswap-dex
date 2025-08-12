@@ -98,13 +98,13 @@ describe('swap', () => {
         const amountIn = 2000n;
         const swapUsdcCoin = usdc.mint(recipient, amountIn);
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
 
         // Calculate expected output using the AMM formula
         const fee = 30n; // 0.3% fee
         const amountInWithFee = amountIn * (10000n - fee);
-        const numerator = amountInWithFee * preReserves[1];
-        const denominator = preReserves[0] * 10000n + amountInWithFee;
+        const numerator = amountInWithFee * preReserves[1].value;
+        const denominator = preReserves[0].value * 10000n + amountInWithFee;
         const expectedAmountOut = numerator / denominator;
 
         // Use the new slippage calculation function
@@ -122,11 +122,11 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
 
         expect(postK).toBeGreaterThan(preK);
-        expect(postReserves[1]).toBeLessThan(preReserves[1]);
-        expect(postReserves[1]).toBeGreaterThan(0n);
+        expect(postReserves[1].value).toBeLessThan(preReserves[1].value);
+        expect(postReserves[1].value).toBeGreaterThan(0n);
       });
     });
 
@@ -380,7 +380,7 @@ describe('swap', () => {
         const swapUsdcCoin = usdc.mint(recipient, amountIn);
 
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
 
         lunarswap.swapExactTokensForTokens(
           swapUsdcCoin, // Use fresh token coin for swap
@@ -391,7 +391,7 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
 
         // K should increase slightly due to fees
         expect(postK).toBeGreaterThan(preK);
@@ -402,7 +402,7 @@ describe('swap', () => {
         const amountOutMin = 0n;
         const swapUsdcCoin = usdc.mint(recipient, amountIn);
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
         lunarswap.swapExactTokensForTokens(
           swapUsdcCoin,
           nightCoin,
@@ -411,9 +411,9 @@ describe('swap', () => {
           recipient,
         );
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
         expect(postK).toBeGreaterThan(preK);
-        const actualAmountOut = preReserves[1] - postReserves[1];
+        const actualAmountOut = preReserves[1].value - postReserves[1].value;
         expect(actualAmountOut).toBeGreaterThan(0n);
       });
     });
@@ -478,7 +478,7 @@ describe('swap', () => {
         const amountInMax = 2500n;
         const swapUsdcCoin = usdc.mint(recipient, amountInMax);
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
         lunarswap.swapTokensForExactTokens(
           swapUsdcCoin,
           nightCoin,
@@ -487,10 +487,10 @@ describe('swap', () => {
           recipient,
         );
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
         expect(postK).toBeGreaterThan(preK);
-        expect(postReserves[1]).toBeLessThan(preReserves[1]);
-        expect(postReserves[1]).toBeGreaterThan(0n);
+        expect(postReserves[1].value).toBeLessThan(preReserves[1].value);
+        expect(postReserves[1].value).toBeGreaterThan(0n);
       });
 
       it('should swap tokens for exact tokens (NIGHT to USDC) with correct reserves update', () => {
@@ -501,8 +501,8 @@ describe('swap', () => {
         const swapNightCoin = night.mint(recipient, amountInMax);
 
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preUsdcReserve = preReserves[0];
-        const preNightReserve = preReserves[1];
+        const preUsdcReserve = preReserves[0].value;
+        const preNightReserve = preReserves[1].value;
 
         lunarswap.swapTokensForExactTokens(
           swapNightCoin, // Use fresh token coin for swap
@@ -513,8 +513,8 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postUsdcReserve = postReserves[0];
-        const postNightReserve = postReserves[1];
+        const postUsdcReserve = postReserves[0].value;
+        const postNightReserve = postReserves[1].value;
 
         // Verify basic reserve updates
         expect(postUsdcReserve).toBe(preUsdcReserve - amountOut);
@@ -532,8 +532,8 @@ describe('swap', () => {
         const swapUsdcCoin = usdc.mint(recipient, amountInMax);
 
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preUsdcReserve = preReserves[0];
-        const preNightReserve = preReserves[1];
+        const preUsdcReserve = preReserves[0].value;
+        const preNightReserve = preReserves[1].value;
 
         lunarswap.swapTokensForExactTokens(
           swapUsdcCoin, // Use fresh token coin for swap
@@ -544,8 +544,8 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        expect(postReserves[1]).toBe(preNightReserve - amountOut);
-        expect(postReserves[0]).toBeGreaterThan(preUsdcReserve);
+        expect(postReserves[1].value).toBe(preNightReserve - amountOut);
+        expect(postReserves[0].value).toBeGreaterThan(preUsdcReserve);
       });
 
       it('should handle large output amounts correctly', () => {
@@ -564,11 +564,11 @@ describe('swap', () => {
             recipient,
           );
           const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-          const actualNightDelta = preNightReserve - postReserves[1];
+          const actualNightDelta = preNightReserve.value - postReserves[1].value;
           expect(actualNightDelta).toBeGreaterThanOrEqual(amountOut - 1n);
           expect(actualNightDelta).toBeLessThanOrEqual(amountOut + 1n);
           // Also check input constraint
-          const actualUsdcDelta = postReserves[0] - preUsdcReserve;
+          const actualUsdcDelta = postReserves[0].value - preUsdcReserve.value;
           expect(actualUsdcDelta).toBeLessThanOrEqual(amountInMax);
         } catch (e) {
           expect(() => {
@@ -599,8 +599,8 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        expect(postReserves[1]).toBe(preNightReserve - amountOut);
-        expect(postReserves[0]).toBeGreaterThan(preUsdcReserve);
+        expect(postReserves[1].value).toBe(preNightReserve.value - amountOut);
+        expect(postReserves[0].value).toBeGreaterThan(preUsdcReserve.value);
       });
 
       it('should handle equal token amounts in reserves', () => {
@@ -890,7 +890,7 @@ describe('swap', () => {
         const swapUsdcCoin = usdc.mint(recipient, amountInMax);
 
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
 
         lunarswap.swapTokensForExactTokens(
           swapUsdcCoin, // Use fresh token coin for swap
@@ -901,7 +901,7 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
 
         // K should increase slightly due to fees
         expect(postK).toBeGreaterThan(preK);
@@ -912,7 +912,7 @@ describe('swap', () => {
         const amountInMax = 3000n;
         const swapUsdcCoin = usdc.mint(recipient, amountInMax);
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preK = preReserves[0] * preReserves[1];
+        const preK = preReserves[0].value * preReserves[1].value;
         lunarswap.swapTokensForExactTokens(
           swapUsdcCoin,
           nightCoin,
@@ -921,9 +921,9 @@ describe('swap', () => {
           recipient,
         );
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postK = postReserves[0] * postReserves[1];
+        const postK = postReserves[0].value * postReserves[1].value;
         expect(postK).toBeGreaterThan(preK);
-        const actualAmountIn = postReserves[0] - preReserves[0];
+        const actualAmountIn = postReserves[0].value - preReserves[0].value;
         expect(actualAmountIn).toBeGreaterThan(0n);
         expect(actualAmountIn).toBeLessThanOrEqual(amountInMax);
       });
@@ -936,7 +936,7 @@ describe('swap', () => {
         const swapUsdcCoin = usdc.mint(recipient, amountInMax);
 
         const preReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const preUsdcReserve = preReserves[0];
+        const preUsdcReserve = preReserves[0].value;
 
         lunarswap.swapTokensForExactTokens(
           swapUsdcCoin, // Use fresh token coin for swap
@@ -947,7 +947,7 @@ describe('swap', () => {
         );
 
         const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-        const postUsdcReserve = postReserves[0];
+        const postUsdcReserve = postReserves[0].value;
 
         const actualAmountIn = postUsdcReserve - preUsdcReserve;
         expect(actualAmountIn).toBeLessThanOrEqual(amountInMax);
@@ -1005,7 +1005,7 @@ describe('swap', () => {
         recipient,
       );
       const midReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-      const midUsdcReserve = midReserves[0];
+      const midUsdcReserve = midReserves[0].value;
       // Second swap: tokens for exact tokens
       const amountOut2 = 400n;
       const amountInMax2 = 1200n;
@@ -1021,7 +1021,7 @@ describe('swap', () => {
       const postUsdcReserve = postReserves[0];
       const _postNightReserve = postReserves[1];
       // For the second swap, check USDC output delta
-      const usdcDelta = midUsdcReserve - postUsdcReserve;
+      const usdcDelta = midUsdcReserve - postUsdcReserve.value;
       expect(usdcDelta).toBe(amountOut2);
     });
 
@@ -1051,9 +1051,9 @@ describe('swap', () => {
         recipient,
       );
       const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-      const postNightReserve = postReserves[1];
+      const postNightReserve = postReserves[1].value;
       // For the reverse swap, NIGHT is the input, so delta should be positive (post - mid)
-      const actualDelta = postNightReserve - midNightReserve;
+      const actualDelta = postNightReserve - midNightReserve.value;
       expect(actualDelta).toBe(reverseAmountIn);
     });
   });

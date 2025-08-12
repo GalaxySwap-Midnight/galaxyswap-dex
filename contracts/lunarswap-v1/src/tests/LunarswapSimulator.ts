@@ -216,7 +216,7 @@ export class LunarswapSimulator
     tokenA: CoinInfo,
     tokenB: CoinInfo,
     sender?: CoinPublicKey,
-  ): [bigint, bigint] {
+  ): [QualifiedCoinInfo, QualifiedCoinInfo] {
     const context = sender
       ? {
           ...this.circuitContext,
@@ -260,6 +260,40 @@ export class LunarswapSimulator
         }
       : this.circuitContext;
     const result = this.contract.circuits.getAllPairLength(context);
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public getSortedCoins(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+    sender?: CoinPublicKey,
+  ): [CoinInfo, CoinInfo] {
+    const context = sender
+      ? {
+          ...this.circuitContext,
+          currentZswapLocalState: emptyZswapLocalState(sender),
+        }
+      : this.circuitContext;
+    const result = this.contract.circuits.getSortedCoins(context, tokenA, tokenB);
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public getSortedCoinsAndAmounts(
+    tokenA: CoinInfo,
+    tokenB: CoinInfo,
+    amountAMin: bigint,
+    amountBMin: bigint,
+    sender?: CoinPublicKey,
+  ): [CoinInfo, CoinInfo, bigint, bigint] { 
+    const context = sender
+      ? {
+          ...this.circuitContext,
+          currentZswapLocalState: emptyZswapLocalState(sender),
+        }
+      : this.circuitContext;
+    const result = this.contract.circuits.getSortedCoinsAndAmounts(context, tokenA, tokenB, amountAMin, amountBMin);
     this.circuitContext = result.context;
     return result.result;
   }

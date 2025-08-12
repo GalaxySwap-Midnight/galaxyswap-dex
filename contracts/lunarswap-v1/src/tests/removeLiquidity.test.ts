@@ -36,7 +36,7 @@ const getExpectedTokenValues = (
 
   // Determine which input token corresponds to token0
   const isAToken0 =
-    Buffer.compare(tokenA.color, pairFromContract.token0.color) === 0;
+    Buffer.compare(tokenA.color, pairFromContract.token0Type) === 0;
 
   return {
     token0Value: isAToken0 ? valueA : valueB,
@@ -121,8 +121,8 @@ describe('removeLiquidity', () => {
       const { amountAMin, amountBMin } = calculateRemoveLiquidityMinimums(
         lpTokensToRemove,
         initialLpTotalSupply.value,
-        reserveA,
-        reserveB,
+        reserveA.value,
+        reserveB.value,
         SLIPPAGE_TOLERANCE.LOW,
       );
 
@@ -150,15 +150,9 @@ describe('removeLiquidity', () => {
       );
 
       // Verify reserves decreased proportionally
-      const expectedValues = getExpectedTokenValues(
-        usdcCoin,
-        nightCoin,
-        1415n, // Correct reserve for USDC after removal (2000 - 585)
-        708n, // Correct reserve for NIGHT after removal (1000 - 292)
-        lunarswap,
-      );
-      expect(updatedPair.token0.value).toBe(expectedValues.token0Value);
-      expect(updatedPair.token1.value).toBe(expectedValues.token1Value);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      expect(reserveUSDC.value).toBe(1415n);
+      expect(reserveNIGHT.value).toBe(708n);
     });
 
     /**
@@ -218,8 +212,8 @@ describe('removeLiquidity', () => {
       const { amountAMin, amountBMin } = calculateRemoveLiquidityMinimums(
         removableLpTokens,
         initialLpTotalSupply.value,
-        reserveA,
-        reserveB,
+        reserveA.value,
+        reserveB.value,
         SLIPPAGE_TOLERANCE.LOW,
       );
 
@@ -244,15 +238,9 @@ describe('removeLiquidity', () => {
       expect(updatedLpTotalSupply.value).toBe(1000n);
 
       // Verify reserves are reduced but not zero
-      const expectedValues = getExpectedTokenValues(
-        usdcCoin,
-        nightCoin,
-        1415n, // MINIMUM_LIQUIDITY worth of USDC
-        708n, // MINIMUM_LIQUIDITY worth of NIGHT
-        lunarswap,
-      );
-      expect(updatedPair.token0.value).toBe(expectedValues.token0Value);
-      expect(updatedPair.token1.value).toBe(expectedValues.token1Value);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      expect(reserveUSDC.value).toBe(1415n);
+      expect(reserveNIGHT.value).toBe(708n);
     });
 
     /**
@@ -310,8 +298,8 @@ describe('removeLiquidity', () => {
       const { amountAMin, amountBMin } = calculateRemoveLiquidityMinimums(
         lpTokensToRemove,
         initialLpTotalSupply.value,
-        reserveA,
-        reserveB,
+        reserveA.value,
+        reserveB.value,
         SLIPPAGE_TOLERANCE.LOW,
       );
 
@@ -337,16 +325,9 @@ describe('removeLiquidity', () => {
         initialLpTotalSupply.value - lpTokensToRemove,
       );
 
-      // Verify reserves decreased proportionally
-      const expectedValues = getExpectedTokenValues(
-        usdcCoin,
-        nightCoin,
-        1801n, // 2000 - 199
-        901n, // 1000 - 99
-        lunarswap,
-      );
-      expect(updatedPair.token0.value).toBe(expectedValues.token0Value);
-      expect(updatedPair.token1.value).toBe(expectedValues.token1Value);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      expect(reserveUSDC.value).toBe(1801n);
+      expect(reserveNIGHT.value).toBe(901n);
     });
   });
 
@@ -406,8 +387,8 @@ describe('removeLiquidity', () => {
       const { amountAMin, amountBMin } = calculateRemoveLiquidityMinimums(
         lpTokensToRemove,
         initialLpTotalSupply.value,
-        reserveA,
-        reserveB,
+        reserveA.value,
+        reserveB.value,
         SLIPPAGE_TOLERANCE.LOW,
       );
 
@@ -433,16 +414,9 @@ describe('removeLiquidity', () => {
         initialLpTotalSupply.value - lpTokensToRemove,
       );
 
-      // Verify reserves decreased proportionally
-      const expectedValues = getExpectedTokenValues(
-        nightCoin,
-        dustCoin,
-        5601n, // 8000 - 2399
-        8401n, // 12000 - 3599
-        lunarswap,
-      );
-      expect(updatedPair.token0.value).toBe(expectedValues.token0Value);
-      expect(updatedPair.token1.value).toBe(expectedValues.token1Value);
+      const [reserveNIGHT, reserveDUST] = lunarswap.getPairReserves(nightCoin, dustCoin);
+      expect(reserveNIGHT.value).toBe(5601n);
+      expect(reserveDUST.value).toBe(8401n);
     });
   });
 
@@ -507,7 +481,7 @@ describe('removeLiquidity', () => {
           600n, // amountBMin higher than expected (~500)
           recipient,
         );
-      }).toThrow('LunarswapRouter: Insufficient A amount');
+      }).toThrow('LunarswapRouter: removeLiquidity() - Insufficient A amount');
     });
 
     /**
@@ -565,7 +539,7 @@ describe('removeLiquidity', () => {
           0n, // amountBMin
           recipient,
         );
-      }).toThrow('LunarswapPair: burn() - Insufficient liquidity burned');
+      }).toThrow('LunarswapPair: _burn() - Insufficient liquidity burned');
     });
 
     /**
@@ -622,7 +596,7 @@ describe('removeLiquidity', () => {
           500n, // amountBMin
           recipient,
         );
-      }).toThrow('LunarswapPair: burn() - Insufficient reserves for token0');
+      }).toThrow('LunarswapPair: _burn() - Insufficient reserves for token0');
     });
 
     /**
@@ -796,8 +770,8 @@ describe('removeLiquidity', () => {
           calculateRemoveLiquidityMinimums(
             firstRemoval,
             currentLpTotalSupply.value,
-            reserveA1,
-            reserveB1,
+            reserveA1.value,
+            reserveB1.value,
             SLIPPAGE_TOLERANCE.LOW,
           );
 
@@ -832,8 +806,8 @@ describe('removeLiquidity', () => {
           calculateRemoveLiquidityMinimums(
             secondRemoval,
             currentLpTotalSupply.value,
-            reserveA2,
-            reserveB2,
+            reserveA2.value,
+            reserveB2.value,
             SLIPPAGE_TOLERANCE.LOW,
           );
 
@@ -868,8 +842,8 @@ describe('removeLiquidity', () => {
           calculateRemoveLiquidityMinimums(
             thirdRemoval,
             currentLpTotalSupply.value,
-            reserveA3,
-            reserveB3,
+            reserveA3.value,
+            reserveB3.value,
             SLIPPAGE_TOLERANCE.LOW,
           );
 
@@ -891,8 +865,9 @@ describe('removeLiquidity', () => {
 
         // Should have some LP tokens remaining
         expect(finalLpTotalSupply.value).toBeGreaterThan(0n);
-        expect(finalPair.token0.value).toBeGreaterThan(0n);
-        expect(finalPair.token1.value).toBeGreaterThan(0n);
+        const [reserve0, reserve1] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+        expect(reserve0.value).toBeGreaterThan(0n);
+        expect(reserve1.value).toBeGreaterThan(0n);
       } catch (e: unknown) {
         // If it fails, it should be due to insufficient liquidity
         let message = '';
@@ -958,7 +933,7 @@ describe('removeLiquidity', () => {
           50n,
           recipient,
         );
-      }).toThrow('LunarswapRouter: mismatched LP token color');
+      }).toThrow('Lunarswap: removeLiquidity() - mismatched LP token color');
     });
 
     /**
@@ -1171,7 +1146,7 @@ describe('removeLiquidity', () => {
           200n, // amountBMin much higher than expected (~99)
           recipient,
         );
-      }).toThrow('LunarswapRouter: Insufficient A amount');
+      }).toThrow('LunarswapRouter: removeLiquidity() - Insufficient A amount');
     });
 
     /**
@@ -1226,7 +1201,7 @@ describe('removeLiquidity', () => {
           50n,
           recipient,
         );
-      }).toThrow('LunarswapRouter: mismatched LP token color');
+      }).toThrow('Lunarswap: removeLiquidity() - mismatched LP token color');
     });
 
     /**

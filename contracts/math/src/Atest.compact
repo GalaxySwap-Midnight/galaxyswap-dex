@@ -24,8 +24,6 @@ circuit updateReserves(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo, 
     return [];
 }
 
-circuit 
-
 circuit testPair(token0: CoinInfo, token1: CoinInfo): [] {
     const identity = persistent_hash<Vector<2, CoinInfo>>([token0, token1]);
     const foundPair = pool.lookup(identity);

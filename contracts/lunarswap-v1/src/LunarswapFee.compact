@@ -97,7 +97,7 @@ module LunarswapFee {
     // TODO: what is the difference between Admin and feeToSetter. 
     export circuit setFeeTo(feeTo_: ZswapCoinPublicKey): [] {
         // TODO: add access control.
-        assert (msgSender() == _feeToSetter) "LunarswapFactory: forbidden";
+        assert (msgSender() == _feeToSetter) "LunarswapFee: setFeeTo() - forbidden";
         _feeTo = feeTo_;
         return [];
     }
@@ -123,7 +123,7 @@ module LunarswapFee {
      */
     export circuit setFeeToSetter(feeToSetter_: ZswapCoinPublicKey): [] {
         // TODO: add access control.
-        assert (msgSender() == _feeToSetter) "LunarswapFactory: forbidden";
+        assert (msgSender() == _feeToSetter) "LunarswapFee: setFeeToSetter() - forbidden";
         _feeToSetter = feeToSetter_;
         return [];
     }  

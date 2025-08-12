@@ -296,36 +296,21 @@ module LunarswapLibrary {
      *
      * @returns {Bytes<32>} - The unique identity hash for the pair.
      */
-    export circuit getIdentity(token0: CoinInfo, token1: CoinInfo): Bytes<32> {
+    export circuit getIdentity(type0: Bytes<32>, type1: Bytes<32>, isPairId: Boolean): Bytes<32> {
         // TODO: maybe we can use another cheaper way here.
-        return persistent_hash<Vector<3, Bytes<32>>>([
-            pad(32, "pair-id"), 
-            token0.color, 
-            token1.color
-        ]);
-    }
-
-    /**
-     * @title getQualifiedIdentity circuit
-     * @description Generates a unique identity hash for a qualified token pair.
-     * 
-     * @remarks
-     * This circuit creates a deterministic hash for qualified token pairs, similar to
-     * getIdentity but for QualifiedCoinInfo types which include Merkle tree indices.
-     *
-     * @circuitInfo k=11, rows=800
-     *
-     * @param {QualifiedCoinInfo} token0 - The first qualified token in the pair (sorted).
-     * @param {QualifiedCoinInfo} token1 - The second qualified token in the pair (sorted).
-     *
-     * @returns {Bytes<32>} - The unique identity hash for the qualified pair.
-     */
-    export circuit getQualifiedIdentity(token0: QualifiedCoinInfo, token1: QualifiedCoinInfo): Bytes<32> {
-        return persistent_hash<Vector<3, Bytes<32>>>([
-            pad(32, "pair-id"), 
-            token0.color, 
-            token1.color
-        ]);
+        if (isPairId) {
+            return persistent_hash<Vector<3, Bytes<32>>>([
+                pad(32, "pair-id"), 
+                type0, 
+                type1
+            ]);
+        } else {
+            return persistent_hash<Vector<3, Bytes<32>>>([
+                pad(32, "reserve-id"), 
+                type0, 
+                type1
+            ]);
+        }
     }
 
     /**

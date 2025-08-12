@@ -119,11 +119,16 @@ module LunarswapPair {
      */
     export circuit initializePair(identity: Bytes<32>, token0: CoinInfo, token1: CoinInfo): Pair {
         LunarswapLiquidity_initializePairLpToken(identity);
+        const reserve0Type = LunarswapLibrary_getIdentity(identity, token0.color, false);
+        const reserve1Type = LunarswapLibrary_getIdentity(identity, token1.color, false);
+
         return Pair {
             token0Type: token0.color,
             token1Type: token1.color,
             // TODO: calculate the expected lpTokenType
             lpTokenType: default<Bytes<32>>,
+            reserve0Type: reserve0Type,
+            reserve1Type: reserve1Type,
             price0VolCumulative: default<Uint<128>>,
             price1VolCumulative: default<Uint<128>>,
             volume0Cumulative: default<Uint<128>>,
@@ -194,9 +199,10 @@ module LunarswapPair {
                 disclose(Uint128_sqrt(Uint128_mulChecked(amount0, amount1))), 
                 MINIMUM_LIQUIDITY()
             );
-            assert(liquidity > 0) "LunarswapPair: New pair Insufficient liquidity minted";
+            assert(liquidity > 0) "LunarswapPair: mint() - New pair insufficient liquidity minted";
             // TODO: WARNING! to be revised to prevent from inflation attack.
-            // LunarswapLiquidity_mint(identity, burn_address(), MINIMUM_LIQUIDITY());
+            // TODO: IMPORTANT! that should be minted to the burn address, not the recipient.
+            LunarswapLiquidity_mint(identity, to, MINIMUM_LIQUIDITY());
             const lpTokens = LunarswapLiquidity_mint(identity, to, liquidity);
             // Send the minimum liquidity to the contract address itself to lock the minimum liquidity
             // send_immediate(minLiquidityCoinInfo, burn_address(), MINIMUM_LIQUIDITY());
@@ -223,8 +229,8 @@ module LunarswapPair {
                 disclose(Uint128_div(Uint128_mulChecked(amount1, totalSupply), reserve1.value))
             ); 
             // TODO: that is TBD later in the future after doing benchmarks on the performance of MathU256
-            assert (liquidity <= MAX_UINT128()) "LunarswapPair: liquidity overflows MAX_U128 supported size in ERC20";
-            assert(liquidity > 0) "LunarswapPair: Existing pair Insufficient liquidity minted";
+            assert (liquidity <= MAX_UINT128()) "LunarswapPair: mint() - liquidity overflows MAX_U128 supported size in ERC20";
+            assert(liquidity > 0) "LunarswapPair: mint() - Existing pair insufficient liquidity minted";
             const lpTokens = LunarswapLiquidity_mint(identity, to, liquidity);
             const updatedPair = _update(
                 pair,
@@ -280,7 +286,7 @@ module LunarswapPair {
                     const numerator = Uint128_mulChecked(Uint128_sub(rootK, rootKLast), totalSupply);
                     const denominator = Uint128_addChecked(Uint128_mulChecked(rootK, 5), rootKLast);
                     const liquidity = disclose(Uint128_div(numerator, denominator));
-                    assert (liquidity <= MAX_UINT128()) "LunarswapPair: liquidity overflows MAX_U128 supported size in ERC20";
+                    assert (liquidity <= MAX_UINT128()) "LunarswapPair: _mintFee() - liquidity overflows MAX_U128 supported size in ERC20";
                     if (liquidity as Uint<128> > 0) {
                         // Mint Liquidity Tokens for the protocol fee recipient
                         // TODO: Maybe needed to be double checked.
@@ -327,8 +333,8 @@ module LunarswapPair {
         // function for each token contract of that address. But here we don't have the token contract,
         // so we use the reserves as the balance because the tokens in the reserves are not 
         // transferred to the recipient yet.
-        const balance0 = reserve0;
-        const balance1 = reserve1;
+        const balance0 = reserve0.value;
+        const balance1 = reserve1.value;
         const totalSupply = LunarswapLiquidity_totalSupply(identity).value;
 
         const [isFeeOn, kLast] = _mintFee(identity, reserve0.value, reserve1.value, pair.kLast);
@@ -363,9 +369,11 @@ module LunarswapPair {
      * @param {Pair} pair - The current pair state.
      * @param {Bytes<32>} token0Type - The first token in the pair.
      * @param {Bytes<32>} token1Type - The second token in the pair.
+     * @param {Uint<128>} balance0 - The balance of token0.
+     * @param {Uint<128>} balance1 - The balance of token1.
      * @param {QualifiedCoinInfo} reserve0 - The current reserve of token0.
      * @param {QualifiedCoinInfo} reserve1 - The current reserve of token1.
-     * @param {Uint<128>} liquidity - The liquidity amount to burn.
+     * @param {CoinInfo} liquidity - The liquidity amount to burn.
      * @param {Uint<128>} totalSupply - The total supply of LP tokens.
      * @param {Boolean} isFeeOn - Whether protocol fees are enabled.
      * @param {Uint<128>} kLast - The k value from the last fee calculation.
@@ -411,11 +419,11 @@ module LunarswapPair {
         );
         
         // Validate that calculated amounts are positive
-        assert (amount0 > 0 && amount1 > 0) "LunarswapPair: burn() - Insufficient liquidity burned";
+        assert (amount0 > 0 && amount1 > 0) "LunarswapPair: _burn() - Insufficient liquidity burned";
         
         // Early validation: Check if reserves are sufficient for the calculated amounts
-        assert (reserve0.value >= amount0) "LunarswapPair: burn() - Insufficient reserves for token0";
-        assert (reserve1.value >= amount1) "LunarswapPair: burn() - Insufficient reserves for token1";
+        assert (reserve0.value >= amount0) "LunarswapPair: _burn() - Insufficient reserves for token0";
+        assert (reserve1.value >= amount1) "LunarswapPair: _burn() - Insufficient reserves for token1";
         
         LunarswapLiquidity_burn(identity, liquidity, liquidity.value);
 
@@ -465,7 +473,7 @@ module LunarswapPair {
      * @param {QualifiedCoinInfo} reserve1 - The current reserve of token1.
      * @param {Either<ZswapCoinPublicKey, ContractAddress>} to - The recipient of the output tokens.
      *
-     * @returns {[Pair, Uint<128>, Uint<128>]} - The updated pair state after the swap, amountIn, amountOut.
+     * @returns {Pair} - The updated pair state after the swap.
      *
      * @throws {Error} "LunarswapPair: swap() - Insufficient output amount" if both output amounts are zero.
      * @throws {Error} "LunarswapPair: swap() - Insufficient liquidity" if reserves are insufficient for the output.
@@ -483,22 +491,15 @@ module LunarswapPair {
         reserve0: QualifiedCoinInfo,
         reserve1: QualifiedCoinInfo,
         to: Either<ZswapCoinPublicKey, ContractAddress>,
-    ): [Pair, Uint<128>, Uint<128>] {
+    ): Pair {
         assert (amount0Out > 0 || amount1Out > 0) "LunarswapPair: swap() - Insufficient output amount";
-        assert (amount0Out < reserve0 && amount1Out < reserve1) "LunarswapPair: swap() - Insufficient liquidity";
-        
-        // Send the output tokens to the recipient
-        // if (amount0Out > 0) { 
-        //     send(pair.token0, to, amount0Out); 
-        // } else if (amount1Out > 0) {
-        //     send(pair.token1, to, amount1Out);
-        // }
+        assert (amount0Out < reserve0.value && amount1Out < reserve1.value) "LunarswapPair: swap() - Insufficient liquidity";
 
         const updatedBalance0 = amount0Out > 0 ? Uint128_sub(balance0, amount0Out) : balance0;
         const updatedBalance1 = amount1Out > 0 ? Uint128_sub(balance1, amount1Out) : balance1;
 
-        const amount0In = updatedBalance0 > Uint128_sub(reserve0, amount0Out) ? Uint128_sub(updatedBalance0, Uint128_sub(reserve0, amount0Out)) : 0;
-        const amount1In = updatedBalance1 > Uint128_sub(reserve1, amount1Out) ? Uint128_sub(updatedBalance1, Uint128_sub(reserve1, amount1Out)) : 0;
+        const amount0In = updatedBalance0 > Uint128_sub(reserve0.value, amount0Out) ? Uint128_sub(updatedBalance0, Uint128_sub(reserve0.value, amount0Out)) : 0;
+        const amount1In = updatedBalance1 > Uint128_sub(reserve1.value, amount1Out) ? Uint128_sub(updatedBalance1, Uint128_sub(reserve1.value, amount1Out)) : 0;
 
         assert (amount0In > 0 || amount1In > 0) "LunarswapPair: swap() - Insufficient input amount";
 
@@ -526,7 +527,7 @@ module LunarswapPair {
             reserve1,
             pair.kLast
         );
-        return [updatedPair, amount0Out, amount1Out];
+        return updatedPair;
     }
 
     /**
@@ -576,6 +577,8 @@ module LunarswapPair {
             token0Type: pair.token0Type,
             token1Type: pair.token1Type,
             lpTokenType: lpTokenType,
+            reserve0Type: pair.reserve0Type,
+            reserve1Type: pair.reserve1Type,
             price0VolCumulative: price0VolCumulative,
             price1VolCumulative: price1VolCumulative,
             volume0Cumulative: volume0Cumulative,
