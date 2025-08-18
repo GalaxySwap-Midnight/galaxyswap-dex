@@ -85,12 +85,12 @@ describe('swap', () => {
 
       // Verify reserves are set correctly
       const reserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-      expect(reserves[0]).toBeGreaterThan(0n);
-      expect(reserves[1]).toBeGreaterThan(0n);
+      expect(reserves[0].value).toBeGreaterThan(0n);
+      expect(reserves[1].value).toBeGreaterThan(0n);
 
-      // Verify we can find the pair identity
-      const identity = lunarswap.getPairIdentity(usdcCoin, nightCoin);
-      expect(identity).toBeDefined();
+      // Verify we can find the pair pairId
+      const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
+      expect(pairId).toBeDefined();
     });
 
     describe('Normal Cases', () => {
@@ -464,12 +464,12 @@ describe('swap', () => {
 
       // Verify reserves are set correctly
       const reserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-      expect(reserves[0]).toBeGreaterThan(0n);
-      expect(reserves[1]).toBeGreaterThan(0n);
+      expect(reserves[0].value).toBeGreaterThan(0n);
+      expect(reserves[1].value).toBeGreaterThan(0n);
 
-      // Verify we can find the pair identity
-      const identity = lunarswap.getPairIdentity(usdcCoin, nightCoin);
-      expect(identity).toBeDefined();
+      // Verify we can find the pair pairId
+      const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
+      expect(pairId).toBeDefined();
     });
 
     describe('Normal Cases', () => {

@@ -87,7 +87,7 @@ export const getPairIdentityInfo = async (
 ): Promise<void> => {
   logger.info('Getting pair identity...');
   try {
-    const identity = await lunarswap.getPairIdentity(tokenA, tokenB);
+    const identity = await lunarswap.getPairId(tokenA, tokenB);
     logger.info('');
     logger.info('🆔 Pair Identity:');
     logger.info(`   Token A: ${Buffer.from(tokenA.color).toString('hex')}`);

@@ -12,7 +12,7 @@ module ILunarswapFactory {
 
     /**
      * @title pool ledger
-     * @description Stores all trading pairs in the factory, mapping a unique pair identity (Bytes<32>)
+     * @description Stores all trading pairs in the factory, mapping a unique pair pairId (Bytes<32>)
      *              to its corresponding Pair struct. This ledger enables efficient lookup and management
      *              of all created pairs within the Lunarswap protocol.
      *
@@ -22,7 +22,7 @@ module ILunarswapFactory {
 
     /**
      * @title reserves ledger
-     * @description Maintains the reserves for each trading pair. It maps a unique pair identity (Bytes<32>)
+     * @description Maintains the reserves for each trading pair. It maps a unique pair pairId (Bytes<32>)
      *              to a nested map of token color (Bytes<32>) to its QualifiedCoinInfo. This structure allows
      *              for tracking and updating the reserves of each token within every pair.
      *

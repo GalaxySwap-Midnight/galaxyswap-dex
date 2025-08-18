@@ -4,7 +4,7 @@ import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
 import { ProtectedRoute } from '@/components/protected-route';
 import { ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 
 export const metadata = {
@@ -14,6 +14,8 @@ export const metadata = {
 };
 
 export default function NewPositionPage() {
+  const location = useLocation();
+  
   useEffect(() => {
     document.title = 'Create New Liquidity Position';
   }, []);
@@ -39,7 +41,7 @@ export default function NewPositionPage() {
 
             <h1 className="text-3xl font-bold mb-6">New position</h1>
 
-            <NewPositionWizard />
+            <NewPositionWizard initialTokens={location.state} />
           </div>
         </main>
       </div>

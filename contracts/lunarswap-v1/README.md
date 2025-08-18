@@ -178,8 +178,8 @@ const exists = await lunarswap.isPairExists(tokenA, tokenB);
 // Get pair reserves
 const [reserveA, reserveB] = await lunarswap.getPairReserves(tokenA, tokenB);
 
-// Get pair identity
-const identity = await lunarswap.getPairIdentity(tokenA, tokenB);
+// Get pair pairId
+const pairId = await lunarswap.getPairId(tokenA, tokenB);
 ```
 
 ### LP Token Operations

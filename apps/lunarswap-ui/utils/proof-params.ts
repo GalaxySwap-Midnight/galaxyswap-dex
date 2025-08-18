@@ -2,7 +2,7 @@
  * Utility to download required proof parameters for lunarswap circuits
  */
 
-const LUNARSWAP_K_VALUES = [10, 11, 12, 14, 15, 16, 17, 18] as const;
+const LUNARSWAP_K_VALUES = [18, 19, 14, 12, 11, 10, 15, 16, 17] as const;
 
 interface DownloadParamsResult {
   success: boolean;

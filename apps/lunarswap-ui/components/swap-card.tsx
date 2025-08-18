@@ -10,14 +10,14 @@ import {
 } from './ui/tooltip';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { SLIPPAGE_TOLERANCE, calculateAmountOut, calculateAmountIn } from '@midnight-dapps/lunarswap-sdk';
+import { SLIPPAGE_TOLERANCE, calculateAmountOut, calculateAmountIn, computeAmountInMax, computeAmountOutMin } from '@midnight-dapps/lunarswap-sdk';
 import { ArrowDown, Fuel, Info, Settings, Loader2 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { TokenInput } from './token-input';
 import { TokenSelectModal } from './token-select-modal';
 import { Buffer } from 'buffer';
-import { popularTokens } from '@/lib/token-config';
+import { popularTokens, getAvailableTokensForSelection } from '@/lib/token-config';
 import { decodeCoinInfo } from '@midnight-ntwrk/ledger';
 
 interface Token {
@@ -30,7 +30,16 @@ interface Token {
 type SwapType = 'EXACT_INPUT' | 'EXACT_OUTPUT';
 type ActiveField = 'from' | 'to' | null;
 
-export function SwapCard() {
+interface SwapCardProps {
+  initialTokens?: {
+    fromToken?: string;
+    toToken?: string;
+    fromTokenType?: string;
+    toTokenType?: string;
+  };
+}
+
+export function SwapCard({ initialTokens }: SwapCardProps) {
   const midnightWallet = useWallet();
   const { status, allPairs, lunarswap } = useLunarswapContext();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -40,6 +49,8 @@ export function SwapCard() {
   const [fromToken, setFromToken] = useState<Token | null>(null);
   const [toToken, setToToken] = useState<Token | null>(null);
   const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
+  const [availableTokensForFrom, setAvailableTokensForFrom] = useState<Token[]>([]);
+  const [availableTokensForTo, setAvailableTokensForTo] = useState<Token[]>([]);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
@@ -57,7 +68,92 @@ export function SwapCard() {
     setIsHydrated(true);
   }, []);
 
-  // Get available tokens from global context
+  // Set initial tokens from navigation state
+  useEffect(() => {
+    if (initialTokens?.fromToken && initialTokens?.toToken && availableTokens.length > 0) {
+      const fromTokenData = availableTokens.find(t => t.symbol === initialTokens.fromToken);
+      const toTokenData = availableTokens.find(t => t.symbol === initialTokens.toToken);
+      
+      if (fromTokenData) {
+        setFromToken(fromTokenData);
+      }
+      if (toTokenData) {
+        setToToken(toTokenData);
+      }
+    }
+  }, [initialTokens, availableTokens]);
+
+  // Function to get available tokens for a specific selected token
+  const getAvailableTokensForToken = useCallback((selectedToken: Token | null, allTokens: Token[]) => {
+    console.log('getAvailableTokensForToken called with:', {
+      selectedToken: selectedToken?.symbol,
+      allTokensCount: allTokens.length,
+      allPairsCount: allPairs.length
+    });
+    
+    if (!selectedToken || allPairs.length === 0) {
+      console.log('Returning all tokens (no selected token or no pairs)');
+      return allTokens;
+    }
+
+    const selectedTokenType = selectedToken.type.replace(/^0x/i, '').toLowerCase();
+    const selectedTokenTypeWithoutPrefix = selectedTokenType.replace(/^0200/, '');
+
+    // Find all pairs that contain the selected token
+    const relevantPairs = allPairs.filter(pair => {
+      const token0Type = Array.from(pair.pair.token0Type)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toLowerCase();
+      const token1Type = Array.from(pair.pair.token1Type)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toLowerCase();
+
+      return token0Type === selectedTokenTypeWithoutPrefix || 
+             token1Type === selectedTokenTypeWithoutPrefix ||
+             token0Type === selectedTokenType || 
+             token1Type === selectedTokenType;
+    });
+
+    // Get the other token from each relevant pair
+    const availableTokenTypes = new Set<string>();
+    relevantPairs.forEach(pair => {
+      const token0Type = Array.from(pair.pair.token0Type)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toLowerCase();
+      const token1Type = Array.from(pair.pair.token1Type)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toLowerCase();
+
+      if (token0Type === selectedTokenTypeWithoutPrefix || token0Type === selectedTokenType) {
+        availableTokenTypes.add(token1Type);
+      } else {
+        availableTokenTypes.add(token0Type);
+      }
+    });
+
+    // Filter tokens that match the available types
+    const filteredTokens = allTokens.filter(token => {
+      const tokenType = token.type.replace(/^0x/i, '').toLowerCase();
+      const tokenTypeWithoutPrefix = tokenType.replace(/^0200/, '');
+      
+      const hasMatch = availableTokenTypes.has(tokenType) || 
+             availableTokenTypes.has(tokenTypeWithoutPrefix) ||
+             availableTokenTypes.has(`0200${tokenTypeWithoutPrefix}`) ||
+             availableTokenTypes.has(tokenType.replace(/^0200/, ''));
+      
+      console.log(`Token ${token.symbol}: ${tokenType} has match: ${hasMatch}`);
+      return hasMatch;
+    });
+    
+    console.log('getAvailableTokensForToken returning:', filteredTokens.map(t => t.symbol));
+    return filteredTokens;
+  }, [allPairs]);
+
+  // Get available tokens from global context - run immediately when component mounts
   useEffect(() => {
     console.log('Swap card - Getting available tokens:', {
       status,
@@ -65,129 +161,119 @@ export function SwapCard() {
       fromToken: fromToken?.symbol,
       toToken: toToken?.symbol
     });
-    console.dir(allPairs, { depth: null });
 
-    if (status !== 'connected' || allPairs.length === 0) {
+    // Set loading state when starting to fetch tokens
+    setIsLoadingTokens(true);
+
+    // If we have pairs but status is not connected yet, still try to get tokens
+    if (allPairs.length === 0) {
       console.log('Swap card - No pairs available, setting empty tokens');
       setAvailableTokens([]);
+      setAvailableTokensForFrom([]);
+      setAvailableTokensForTo([]);
+      setIsLoadingTokens(false);
       return;
     }
 
-    // Extract unique tokens from all pairs
-    const tokenSet = new Set<string>();
-    for (const { pair } of allPairs) {
-      const token0Color = decodeCoinInfo(pair.token0).type;
-      const token1Color = decodeCoinInfo(pair.token1).type;
-      tokenSet.add(token0Color);
-      tokenSet.add(token1Color);
-      console.log('Swap card - Added token colors:', {
-        token0Color,
-        token1Color
-      });
-    }
-
-    console.log('Swap card - All token colors from pools:', 
-      Array.from(tokenSet).map(color => color.slice(-8))
-    );
-    console.log('Swap card - Full token colors from pools:', Array.from(tokenSet));
-    console.log('Swap card - Full token types from config:', popularTokens.map(t => ({ symbol: t.symbol, type: t.type })));
-
-    // Filter popular tokens to only include those with pools
-    const available = popularTokens.filter((token: Token) => {
-      // Try exact match first
-      let hasMatch = tokenSet.has(token.type);
-      
-      // If no exact match, try matching the last 8 characters
-      if (!hasMatch && token.type) {
-        const tokenTypeSuffix = token.type.slice(-8);
-        hasMatch = Array.from(tokenSet).some(color => {
-          const colorMatch = color === tokenTypeSuffix;
-          console.log(`Swap card - Comparing: pool color "${color}" vs token suffix "${tokenTypeSuffix}" = ${colorMatch}`);
-          return colorMatch;
-        });
-      }
-      
-      console.log(`Swap card - Token ${token.symbol}: type ${token.type.slice(-8)}, has match: ${hasMatch}`);
-      return hasMatch;
-    });
+    // Use the new function to get tokens from available pools
+    const available = getAvailableTokensForSelection(allPairs);
 
     console.log('Swap card - Available tokens after filtering:', available.map(t => t.symbol));
-    console.log('Swap card - All popular tokens:', popularTokens.map(t => ({ symbol: t.symbol, type: t.type.slice(-8) })));
+    console.log('Swap card - All pairs:', allPairs.map(pair => ({
+      token0Type: Array.from(pair.pair.token0Type).map(b => b.toString(16).padStart(2, '0')).join(''),
+      token1Type: Array.from(pair.pair.token1Type).map(b => b.toString(16).padStart(2, '0')).join('')
+    })));
+    console.log('Swap card - Popular tokens:', popularTokens.map(t => ({
+      symbol: t.symbol,
+      type: t.type.replace(/^0x/i, '').toLowerCase()
+    })));
 
-    // If no tokens match, show all popular tokens for debugging
-    if (available.length === 0 && allPairs.length > 0) {
-      console.log('Swap card - No matching tokens found, showing all popular tokens for debugging');
-      setAvailableTokens(popularTokens.filter(t => t.type)); // Only show tokens with valid types
-    } else {
+    // Only set available tokens if we have matches from pools
+    if (available.length > 0) {
+      console.log('Swap card - Setting available tokens:', available.map(t => t.symbol));
       setAvailableTokens(available);
-    }
-
-    // Set default tokens if none are selected
-    if (!fromToken && available.length > 0) {
-      console.log('Swap card - Setting default from token:', available[0].symbol);
-      setFromToken(available[0]);
-    }
-    if (!toToken && available.length > 1) {
-      console.log('Swap card - Setting default to token:', available[1].symbol);
-      setToToken(available[1]);
-    } else if (!toToken && available.length === 1) {
-      console.log('Swap card - Setting default to token (same as from):', available[0].symbol);
-      setToToken(available[0]);
-    }
-  }, [status, allPairs, fromToken, toToken]);
-
-  // Get pool reserves from global public state
-  useEffect(() => {
-    console.log('Getting reserves from public state for:', {
-      fromToken: fromToken?.symbol,
-      toToken: toToken?.symbol,
-      allPairsLength: allPairs.length,
-      status
-    });
-
-    if (
-      !fromToken ||
-      !toToken ||
-      fromToken.symbol === toToken.symbol ||
-      status !== 'connected' ||
-      allPairs.length === 0
-    ) {
-      console.log('Skipping reserves fetch - conditions not met');
-      setPoolReserves(null);
-      return;
-    }
-
-    // Find the pair in the global allPairs data
-    const pair = allPairs.find(p => {
-      const token0Type = decodeCoinInfo(p.pair.token0).type;
-      const token1Type = decodeCoinInfo(p.pair.token1).type;
-      
-      // Check if this pair matches our tokens
-      return (token0Type === fromToken.type && token1Type === toToken.type) ||
-             (token0Type === toToken.type && token1Type === fromToken.type);
-    });
-
-    if (pair) {
-      const token0Type = decodeCoinInfo(pair.pair.token0).type;
-      
-      // Determine which token is which based on the order in the pair
-      let reserve0: bigint;
-      let reserve1: bigint;
-      if (token0Type === fromToken.type) {
-        reserve0 = pair.pair.token0.value;
-        reserve1 = pair.pair.token1.value;
-      } else {
-        reserve0 = pair.pair.token1.value;
-        reserve1 = pair.pair.token0.value;
-      }
-      
-      console.log('Found pair reserves:', [reserve0.toString(), reserve1.toString()]);
-      setPoolReserves([reserve0, reserve1]);
     } else {
-      console.log('Pair not found in public state');
-      setPoolReserves(null);
+      console.log('Swap card - No matching tokens found in pools, setting empty list');
+      setAvailableTokens([]);
     }
-  }, [allPairs, fromToken, toToken, status]);
+
+    // No default token selection - let user choose
+    console.log('Swap card - No default tokens set, user must select');
+    
+    // Clear loading state after token processing is complete
+    setIsLoadingTokens(false);
+  }, [status, allPairs]);
+
+  // Update contextual token lists when tokens change or when availableTokens are loaded
+  useEffect(() => {
+    if (availableTokens.length > 0) {
+      const fromTokens = getAvailableTokensForToken(toToken, availableTokens);
+      const toTokens = getAvailableTokensForToken(fromToken, availableTokens);
+      
+      console.log('SwapCard - Setting contextual tokens:', {
+        fromToken: fromToken?.symbol,
+        toToken: toToken?.symbol,
+        fromTokens: fromTokens.map(t => t.symbol),
+        toTokens: toTokens.map(t => t.symbol)
+      });
+      
+      setAvailableTokensForFrom(fromTokens);
+      setAvailableTokensForTo(toTokens);
+    } else {
+      // Clear contextual tokens if no available tokens
+      setAvailableTokensForFrom([]);
+      setAvailableTokensForTo([]);
+    }
+  }, [fromToken, toToken, availableTokens, getAvailableTokensForToken]);
+
+  // Get pool reserves via integration API (reliable across schema changes)
+  useEffect(() => {
+    const fetchReserves = async () => {
+      console.log('Getting reserves via integration for:', {
+        fromToken: fromToken?.symbol,
+        toToken: toToken?.symbol,
+        status
+      });
+
+      if (!fromToken || !toToken || fromToken.symbol === toToken.symbol) {
+        setPoolReserves(null);
+        return;
+      }
+
+      if (status !== 'connected' || !lunarswap) {
+        setPoolReserves(null);
+        return;
+      }
+
+      try {
+        // Fetch reserves with fromToken first, toToken second
+        // This ensures consistent ordering: [fromTokenReserve, toTokenReserve]
+        const reserves = await lunarswap.getPairReserves(
+          fromToken.type,
+          toToken.type,
+        );
+        if (reserves) {
+          const [fromTokenReserve, toTokenReserve] = reserves;
+          console.log('Found pair reserves:', {
+            fromToken: fromToken.symbol,
+            toToken: toToken.symbol,
+            fromTokenReserve: fromTokenReserve.toString(),
+            toTokenReserve: toTokenReserve.toString()
+          });
+          // Store reserves in consistent order: [fromTokenReserve, toTokenReserve]
+          setPoolReserves([fromTokenReserve, toTokenReserve]);
+        } else {
+          console.log('No reserves found for selected tokens');
+          setPoolReserves(null);
+        }
+      } catch (err) {
+        console.log('Failed to fetch reserves for selected tokens', err);
+        setPoolReserves(null);
+      }
+    };
+
+    fetchReserves();
+  }, [fromToken, toToken, status, lunarswap]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback(
@@ -198,8 +284,9 @@ export function SwapCard() {
 
       try {
         const amountIn = BigInt(inputAmount);
-        const reserveIn = poolReserves[0];
-        const reserveOut = poolReserves[1];
+        // poolReserves[0] = fromTokenReserve, poolReserves[1] = toTokenReserve
+        const reserveIn = poolReserves[0];  // fromTokenReserve
+        const reserveOut = poolReserves[1]; // toTokenReserve
 
         if (amountIn === 0n || reserveIn === 0n || reserveOut === 0n) {
           return '';
@@ -225,8 +312,9 @@ export function SwapCard() {
 
       try {
         const amountOut = BigInt(outputAmount);
-        const reserveIn = poolReserves[0];
-        const reserveOut = poolReserves[1];
+        // poolReserves[0] = fromTokenReserve, poolReserves[1] = toTokenReserve
+        const reserveIn = poolReserves[0];  // fromTokenReserve
+        const reserveOut = poolReserves[1]; // toTokenReserve
 
         if (amountOut === 0n || reserveIn === 0n || reserveOut === 0n) {
           return '';
@@ -305,11 +393,18 @@ export function SwapCard() {
     [calculateInputAmount, poolReserves, fromToken, toToken],
   );
 
-  const handleTokenSelect = (token: Token) => {
-    if (selectingToken === 'from') {
-      setFromToken(token);
+  const handleTokenSelect = (token: Token | null) => {
+    if (token === null) {
+      // Clear both selected tokens when clearing
+      setFromToken(null);
+      setToToken(null);
     } else {
-      setToToken(token);
+      // Set the selected token
+      if (selectingToken === 'from') {
+        setFromToken(token);
+      } else {
+        setToToken(token);
+      }
     }
     setShowTokenModal(false);
 
@@ -322,6 +417,43 @@ export function SwapCard() {
   const openTokenModal = (type: 'from' | 'to') => {
     setSelectingToken(type);
     setShowTokenModal(true);
+  };
+
+  // Get the appropriate token list based on which field is being selected
+  const getTokensForSelection = () => {
+    let tokens;
+    
+    // If no token is selected in the other field, show all available tokens
+    if (selectingToken === 'from' && !toToken) {
+      tokens = availableTokens;
+    } else if (selectingToken === 'to' && !fromToken) {
+      tokens = availableTokens;
+    } else {
+      // If a token is selected in the other field, show contextual tokens
+      if (selectingToken === 'from') {
+        tokens = availableTokensForFrom.length > 0 ? availableTokensForFrom : availableTokens;
+      } else {
+        tokens = availableTokensForTo.length > 0 ? availableTokensForTo : availableTokens;
+      }
+    }
+    
+    // If no tokens available, return empty array
+    if (tokens.length === 0) {
+      console.log('getTokensForSelection - No tokens available, returning empty array');
+      return [];
+    }
+    
+    console.log('getTokensForSelection returning:', {
+      selectingToken,
+      fromToken: fromToken?.symbol,
+      toToken: toToken?.symbol,
+      tokens: tokens.map(t => t.symbol),
+      availableTokensForFrom: availableTokensForFrom.map(t => t.symbol),
+      availableTokensForTo: availableTokensForTo.map(t => t.symbol),
+      availableTokens: availableTokens.map(t => t.symbol)
+    });
+    
+    return tokens;
   };
 
   const handleSwap = async () => {
@@ -337,6 +469,42 @@ export function SwapCard() {
       return;
     }
 
+    // Additional validation
+    if (!poolReserves) {
+      toast.error('Pool reserves not available. Please try again.');
+      return;
+    }
+
+    const fromAmountBigInt = BigInt(fromAmount);
+    const toAmountBigInt = BigInt(toAmount);
+    
+    // Check if amounts are reasonable
+    if (fromAmountBigInt <= 0n || toAmountBigInt <= 0n) {
+      toast.error('Invalid amounts. Please enter valid amounts.');
+      return;
+    }
+
+    // Check if reserves are valid
+    const [fromTokenReserve, toTokenReserve] = poolReserves;
+    if (fromTokenReserve <= 0n || toTokenReserve <= 0n) {
+      toast.error('Invalid pool reserves. Please try again.');
+      return;
+    }
+
+    // Check if the swap amounts are reasonable relative to reserves
+    if (swapType === 'EXACT_INPUT' && fromAmountBigInt > fromTokenReserve) {
+      toast.error('Input amount exceeds available liquidity.');
+      return;
+    }
+    
+    if (swapType === 'EXACT_OUTPUT' && toAmountBigInt > toTokenReserve) {
+      toast.error('Output amount exceeds available liquidity.');
+      return;
+    }
+
+    // Check if user has sufficient balance (basic check)
+    // Note: This is a UI-level check, the contract will do the final validation
+
     setIsSwapping(true);
     try {
       // Use the global lunarswap context instead of creating a new integration
@@ -347,22 +515,66 @@ export function SwapCard() {
       }
 
       if (swapType === 'EXACT_INPUT') {
+        // For EXACT_INPUT, we need to apply slippage tolerance to amountOutMin
+        const calculatedAmountOut = toAmountBigInt;
+        const amountOutMin = computeAmountOutMin(calculatedAmountOut, slippageTolerance);
+        
+        // Validate slippage-adjusted amount
+        if (amountOutMin <= 0n) {
+          toast.error('Invalid slippage calculation. Please try again.');
+          return;
+        }
+        
+        console.log('EXACT_INPUT swap:', {
+          fromToken: fromToken.symbol,
+          toToken: toToken.symbol,
+          fromTokenType: fromToken.type,
+          toTokenType: toToken.type,
+          amountIn: fromAmount,
+          calculatedAmountOut: calculatedAmountOut.toString(),
+          amountOutMin: amountOutMin.toString(),
+          slippageTolerance,
+          poolReserves: poolReserves.map(r => r.toString())
+        });
+
         const result = await lunarswap.swapExactTokensForTokens(
-          fromToken.type,
-          toToken.type,
-          BigInt(fromAmount),
-          BigInt(toAmount),
+          fromToken.type,  // tokenIn
+          toToken.type,    // tokenOut
+          fromAmountBigInt, // amountIn
+          amountOutMin,    // amountOutMin (with slippage)
           midnightWallet.walletAPI.coinPublicKey,
         );
         toast.success(
           `Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`,
         );
       } else {
+        // For EXACT_OUTPUT, we need to apply slippage tolerance to amountInMax
+        const calculatedAmountIn = fromAmountBigInt;
+        const amountInMax = computeAmountInMax(calculatedAmountIn, slippageTolerance);
+        
+        // Validate slippage-adjusted amount
+        if (amountInMax <= 0n) {
+          toast.error('Invalid slippage calculation. Please try again.');
+          return;
+        }
+        
+        console.log('EXACT_OUTPUT swap:', {
+          fromToken: fromToken.symbol,
+          toToken: toToken.symbol,
+          fromTokenType: fromToken.type,
+          toTokenType: toToken.type,
+          calculatedAmountIn: calculatedAmountIn.toString(),
+          amountInMax: amountInMax.toString(),
+          slippageTolerance,
+          toAmount: toAmount,
+          poolReserves: poolReserves.map(r => r.toString())
+        });
+
         const result = await lunarswap.swapTokensForExactTokens(
-          fromToken.type,
-          toToken.type,
-          BigInt(fromAmount),
-          BigInt(toAmount),
+          fromToken.type,  // tokenIn
+          toToken.type,    // tokenOut
+          toAmountBigInt,  // amountOut (exact)
+          amountInMax,     // amountInMax (with slippage)
           midnightWallet.walletAPI.coinPublicKey,
         );
         toast.success(
@@ -376,7 +588,19 @@ export function SwapCard() {
       setActiveField(null);
     } catch (error) {
       console.error('Swap failed:', error);
-      toast.error('Swap failed. Please try again.');
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Insufficient input amount')) {
+          toast.error('Swap failed: Insufficient input amount. The calculated amount may be too low due to price impact or insufficient liquidity.');
+        } else if (error.message.includes('Insufficient output amount')) {
+          toast.error('Swap failed: Insufficient output amount. The trade may have failed due to high slippage or insufficient liquidity.');
+        } else {
+          toast.error(`Swap failed: ${error.message}`);
+        }
+      } else {
+        toast.error('Swap failed. Please try again.');
+      }
     } finally {
       setIsSwapping(false);
     }
@@ -424,11 +648,6 @@ export function SwapCard() {
   return (
     <TooltipProvider>
       <Card className="w-full max-w-md mx-auto border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Swap</h2>
-          </div>
-        </CardHeader>
         <CardContent className="space-y-4">
           <TokenInput
             token={fromToken}
@@ -504,8 +723,6 @@ export function SwapCard() {
         <CardFooter className="flex flex-col gap-3">
           <TooltipProvider>
             <div className="flex items-center justify-center w-full text-xs text-gray-500 dark:text-gray-400">
-              <Fuel className="h-3.5 w-3.5 mr-1 text-gray-400" />
-              <span>Network fee applies</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -544,6 +761,9 @@ export function SwapCard() {
         show={showTokenModal}
         onClose={() => setShowTokenModal(false)}
         onSelect={handleTokenSelect}
+        customTokens={getTokensForSelection()}
+        selectedToken={selectingToken === 'from' ? fromToken : toToken}
+        isLoading={isLoadingTokens}
       />
     </TooltipProvider>
   );

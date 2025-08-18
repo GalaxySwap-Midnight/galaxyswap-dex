@@ -71,17 +71,17 @@ module LunarswapLiquidity {
      * initializing the supply to zero in the total supply map.
      *
      * Requirements:
-     * - The pair identity must not already have LP tokens initialized
+     * - The pair pairId must not already have LP tokens initialized
      *
-     * @param {Bytes<32>} identity - The unique identity hash of the trading pair.
+     * @param {Bytes<32>} pairId - The unique pairId hash of the trading pair.
      *
      * @throws {Error} "LunarswapLiquidity: initializePairLpToken() - Lp token already exists" if LP tokens already exist for this pair.
      *
      * @returns [] - No return values.
      */
-    export circuit initializePairLpToken(identity: Bytes<32>): [] {
-        assert (!_totalSupply.member(identity)) "LunarswapLiquidity: initializePairLpToken() - Lp token already exists";
-        _totalSupply.insert(identity, default<QualifiedCoinInfo>);
+    export circuit initializePairLpToken(pairId: Bytes<32>): [] {
+        assert (!_totalSupply.member(pairId)) "LunarswapLiquidity: initializePairLpToken() - Lp token already exists";
+        _totalSupply.insert(pairId, default<QualifiedCoinInfo>);
         return [];
     }
 
@@ -143,20 +143,20 @@ module LunarswapLiquidity {
      * 
      * @remarks
      * This circuit retrieves the total supply of liquidity provider tokens for a given
-     * trading pair identity.
+     * trading pair pairId.
      *
      * Requirements:
-     * - The pair identity must have LP tokens initialized
+     * - The pair pairId must have LP tokens initialized
      *
-     * @param {Bytes<32>} identity - The unique identity hash of the trading pair.
+     * @param {Bytes<32>} pairId - The unique pairId hash of the trading pair.
      *
      * @throws {Error} "LunarswapLiquidity: totalSupply() - Lp token not found" if LP tokens don't exist for this pair.
      *
      * @returns {Uint<128>} - The total supply of LP tokens for the pair.
      */
-    export circuit totalSupply(identity: Bytes<32>): QualifiedCoinInfo {
-        assert (_totalSupply.member(identity)) "LunarswapLiquidity: totalSupply() - Lp token not found";
-        return _totalSupply.lookup(identity);
+    export circuit totalSupply(pairId: Bytes<32>): QualifiedCoinInfo {
+        assert (_totalSupply.member(pairId)) "LunarswapLiquidity: totalSupply() - Lp token not found";
+        return _totalSupply.lookup(pairId);
     }
 
     /**
@@ -168,24 +168,24 @@ module LunarswapLiquidity {
      * specified recipient. It also updates the total supply for the pair.
      *
      * Requirements:
-     * - The pair identity must have LP tokens initialized
+     * - The pair pairId must have LP tokens initialized
      * - The amount must be greater than zero
      *
-     * @param {Bytes<32>} identity - The unique identity hash of the trading pair.
+     * @param {Bytes<32>} pairId - The unique pairId hash of the trading pair.
      * @param {Either<ZswapCoinPublicKey, ContractAddress>} recipient - The recipient of the minted LP tokens.
      * @param {Uint<128>} amount - The amount of LP tokens to mint.
      *
      * @returns {CoinInfo} - The minted LP token coin.
      */
     export circuit mint(
-        identity: Bytes<32>,
+        pairId: Bytes<32>,
         recipient: Either<ZswapCoinPublicKey, ContractAddress>,
         amount: Uint<128>
     ): CoinInfo {
         _counter.increment(1);
         const newNonce = evolve_nonce(_counter, _nonce);
-        // identity is dealed as a domainSep in the mint_token circuit
-        const ret = mint_token(identity, amount, newNonce, recipient);
+        // pairId is dealed as a domainSep in the mint_token circuit
+        const ret = mint_token(pairId, amount, newNonce, recipient);
 
         if (Bytes32_isZero(_type)) {
             _type = ret.color;
@@ -194,10 +194,10 @@ module LunarswapLiquidity {
         const newTotalSupply = QualifiedCoinInfo {
             nonce: ret.nonce,
             color: ret.color,
-            value: Uint128_addChecked(_totalSupply.lookup(identity).value, amount),
-            mt_index: _totalSupply.lookup(identity).mt_index,
+            value: Uint128_addChecked(_totalSupply.lookup(pairId).value, amount),
+            mt_index: _totalSupply.lookup(pairId).mt_index,
         };
-        _totalSupply.insert(identity, newTotalSupply);
+        _totalSupply.insert(pairId, newTotalSupply);
         
         return ret;
     }
@@ -213,9 +213,9 @@ module LunarswapLiquidity {
      *
      * Requirements:
      * - The coin value must be sufficient for the burn amount
-     * - The pair identity must have LP tokens initialized
+     * - The pair pairId must have LP tokens initialized
      *
-     * @param {Bytes<32>} identity - The unique identity hash of the trading pair.
+     * @param {Bytes<32>} pairId - The unique pairId hash of the trading pair.
      * @param {CoinInfo} coin - The LP token coin to burn.
      * @param {Uint<128>} amount - The amount of LP tokens to burn.
      *
@@ -225,11 +225,11 @@ module LunarswapLiquidity {
      * @returns {SendResult} - The result of the burn operation including any change.
      */
     export circuit burn(
-        identity: Bytes<32>, 
+        pairId: Bytes<32>, 
         coin: CoinInfo, 
         amount: Uint<128>
     ): SendResult {
-        assert _totalSupply.member(identity) "LunarswapLiquidity: totalSupply() - Lp token not found";
+        assert _totalSupply.member(pairId) "LunarswapLiquidity: totalSupply() - Lp token not found";
         assert coin.value >= amount "LunarswapLiquidity: burn() - Insufficient coin value";
 
         receive(coin);
@@ -237,10 +237,10 @@ module LunarswapLiquidity {
         const newTotalSupply = QualifiedCoinInfo {
             nonce: coin.nonce,
             color: coin.color,
-            value: Uint128_sub(_totalSupply.lookup(identity).value, amount),
-            mt_index: _totalSupply.lookup(identity).mt_index, // TODO: needs review
+            value: Uint128_sub(_totalSupply.lookup(pairId).value, amount),
+            mt_index: _totalSupply.lookup(pairId).mt_index, // TODO: needs review
         };
-        _totalSupply.insert(identity, newTotalSupply);
+        _totalSupply.insert(pairId, newTotalSupply);
         
         const ret = send_immediate(coin, burn_address(), amount);
         if (ret.change.is_some) {

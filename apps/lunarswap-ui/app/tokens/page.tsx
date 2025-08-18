@@ -65,8 +65,8 @@ function TokensContent() {
     // Extract unique tokens from all pairs
     const tokenSet = new Set<string>();
     for (const { pair } of allPairs) {
-      const token0Color = Buffer.from(pair.token0.color).toString('hex');
-      const token1Color = Buffer.from(pair.token1.color).toString('hex');
+      const token0Color = Buffer.from(pair.token0Type).toString('hex');
+      const token1Color = Buffer.from(pair.token1Type).toString('hex');
       tokenSet.add(token0Color);
       tokenSet.add(token1Color);
       console.log('Added token colors:', {

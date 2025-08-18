@@ -15,7 +15,7 @@ import type { Ledger, Pair } from '@midnight-dapps/lunarswap-v1';
 interface PoolData {
   isLoading: boolean;
   ledger: Ledger | null;
-  allPairs: Array<{ identity: string; pair: Pair }>;
+  allPairs: Array<{ pairId: string; pair: Pair }>;
   refreshPoolData: () => Promise<void>;
   checkPairExists: (tokenA: string, tokenB: string) => Promise<boolean>;
   getPairReserves: (
@@ -43,7 +43,7 @@ export const PoolProvider = ({ children }: PoolProviderProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [allPairs, setAllPairs] = useState<
-    Array<{ identity: string; pair: Pair }>
+    Array<{ pairId: string; pair: Pair }>
   >([]);
 
   // Fetch pool data when contract is ready

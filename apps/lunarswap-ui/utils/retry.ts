@@ -37,6 +37,7 @@ export function retry<T>(
           console.error(
             `[${operationName}] Operation failed: ${error.message}`,
           );
+          console.error(error);
 
           if (retryCount <= 0) {
             console.error(

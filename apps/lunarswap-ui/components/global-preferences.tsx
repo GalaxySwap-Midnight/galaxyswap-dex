@@ -36,37 +36,6 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { cn } from '../utils/cn';
-import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import {
-  LunarswapContract,
-  LunarswapPrivateStateId,
-  LunarswapProviders,
-} from '@midnight-dapps/lunarswap-api';
-import {
-  PrivateStateProvider,
-  ZKConfigProvider,
-} from '@midnight-ntwrk/midnight-js-types';
-import { LunarswapCircuitKeys } from '@midnight-dapps/lunarswap-api';
-import { ProofProvider } from '@midnight-ntwrk/midnight-js-types';
-import { ZkConfigProviderWrapper } from '@/providers/zk-config';
-import { proofClient } from '@/providers/proof';
-import {
-  Contract,
-  LunarswapPrivateState,
-  LunarswapWitnesses,
-} from '@midnight-dapps/lunarswap-v1';
-import {
-  ContractProviders,
-  findDeployedContract,
-} from '@midnight-ntwrk/midnight-js-contracts';
-import { configureProviders } from '@/lib/wallet-context';
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
-import {
-  getLedgerNetworkId,
-  getZswapNetworkId,
-  NetworkId,
-  setNetworkId,
-} from '@midnight-ntwrk/midnight-js-network-id';
 
 interface GlobalPreferencesProps {
   inline?: boolean;

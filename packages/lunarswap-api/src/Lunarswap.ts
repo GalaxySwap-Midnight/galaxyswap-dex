@@ -76,8 +76,8 @@ export interface ILunarswap {
   getPairReserves(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
-  ): Promise<[bigint, bigint]>;
-  getPairIdentity(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Uint8Array>;
+  ): Promise<[QualifiedCoinInfo, QualifiedCoinInfo]>;
+  getPairId(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Uint8Array>;
   getLpTokenName(): Promise<string>;
   getLpTokenSymbol(): Promise<string>;
   getLpTokenDecimals(): Promise<bigint>;
@@ -382,19 +382,19 @@ export class Lunarswap implements ILunarswap {
   async getPairReserves(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
-  ): Promise<[bigint, bigint]> {
+  ): Promise<[QualifiedCoinInfo, QualifiedCoinInfo]> {
     const txData = await this.deployedContract.callTx.getPairReserves(
       tokenA,
       tokenB,
     );
-    return [txData.private.result[0], txData.private.result[1]];
+    return txData.private.result;
   }
 
-  async getPairIdentity(
+  async getPairId(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
   ): Promise<Uint8Array> {
-    const txData = await this.deployedContract.callTx.getPairIdentity(
+    const txData = await this.deployedContract.callTx.getPairId(
       tokenA,
       tokenB,
     );

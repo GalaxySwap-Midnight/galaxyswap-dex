@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { ChevronDown, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Identicon } from '@/components/identicon';
-import { popularTokens } from '@/lib/token-config';
+import { popularTokens, getAvailableTokensForSelection } from '@/lib/token-config';
+import { useLunarswapContext } from '@/lib/lunarswap-context';
 
 interface TokenSelectorProps {
   selectedToken: any;
@@ -28,8 +29,15 @@ export function TokenSelector({
 }: TokenSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { allPairs, status } = useLunarswapContext();
 
-  const filteredTokens = popularTokens.filter(
+  // Get available tokens from pools, fallback to all popular tokens if empty
+  let availableTokens = allPairs.length > 0 ? getAvailableTokensForSelection(allPairs) : popularTokens;
+  if (!availableTokens || availableTokens.length === 0) {
+    availableTokens = popularTokens;
+  }
+  
+  const filteredTokens = availableTokens.filter(
     (token) =>
       token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),

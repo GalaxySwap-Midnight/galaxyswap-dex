@@ -6,14 +6,14 @@ pragma language_version >= 0.14.0;
  * 
  * @remarks
  * The LunarswapLibrary contains essential utility functions used throughout the Lunarswap protocol.
- * It provides mathematical operations, token manipulation utilities, sorting functions, and identity
+ * It provides mathematical operations, token manipulation utilities, sorting functions, and pairId
  * generation that are fundamental to the protocol's operation.
  * 
  * Key Functionalities:
  * - Mathematical operations (addition, multiplication, division, square root)
  * - Token sorting and ordering utilities
  * - Coin splitting and value manipulation
- * - Pair identity generation and management
+ * - Pair pairId generation and management
  * - Price calculation and quoting
  * - Type conversion between CoinInfo and QualifiedCoinInfo
  */
@@ -282,7 +282,7 @@ module LunarswapLibrary {
 
     /**
      * @title getIdentity circuit
-     * @description Generates a unique identity hash for a token pair.
+     * @description Generates a unique pairId hash for a token pair.
      * 
      * @remarks
      * This circuit creates a deterministic hash that uniquely identifies a trading pair
@@ -294,7 +294,7 @@ module LunarswapLibrary {
      * @param {CoinInfo} token0 - The first token in the pair (sorted).
      * @param {CoinInfo} token1 - The second token in the pair (sorted).
      *
-     * @returns {Bytes<32>} - The unique identity hash for the pair.
+     * @returns {Bytes<32>} - The unique pairId hash for the pair.
      */
     export circuit getIdentity(type0: Bytes<32>, type1: Bytes<32>, isPairId: Boolean): Bytes<32> {
         // TODO: maybe we can use another cheaper way here.

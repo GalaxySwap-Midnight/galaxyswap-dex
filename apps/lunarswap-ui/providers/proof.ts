@@ -16,10 +16,19 @@ export const proofClient = <K extends string>(
       tx: UnprovenTransaction,
       proveTxConfig?: ProveTxConfig<K>,
     ): Promise<UnbalancedTransaction> => {
+      console.log('proveTx', tx);
+      console.dir(tx, { depth: null });
+      console.log('proveTxConfig', proveTxConfig);
+      console.dir(proveTxConfig, { depth: null });
       // eslint-disable-next-line n/no-callback-literal
       callback('proveTxStarted');
       try {
-        return await httpClientProvider.proveTx(tx, proveTxConfig);
+        const extendedConfig: ProveTxConfig<K> = {
+          ...proveTxConfig,
+          // Increase default timeout to 15 minutes to accommodate long proof generation
+          timeout: proveTxConfig?.timeout ?? 900_000,
+        };
+        return await httpClientProvider.proveTx(tx, extendedConfig);
       } finally {
         // eslint-disable-next-line n/no-callback-literal
         callback('proveTxDone');

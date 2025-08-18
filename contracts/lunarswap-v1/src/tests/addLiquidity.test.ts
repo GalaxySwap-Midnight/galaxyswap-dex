@@ -599,7 +599,7 @@ describe('addLiquidity', () => {
         recipient,
       );
 
-      // Use getPairIdentity to get the correct order for getLpTokenTotalSupply
+      // Use getPairId to get the correct order for getLpTokenTotalSupply
       const lpTotalSupply = lunarswap.getLpTokenTotalSupply(
         nightCoin,
         dustCoin,
@@ -1240,7 +1240,7 @@ describe('addLiquidity', () => {
         recipient,
       );
 
-      // Use getPairIdentity to get the correct order for getIdentity
+      // Use getPairId to get the correct order for getIdentity
       expect(lunarswap.getLpTokenTotalSupply(usdcCoin, nightCoin).value).toBe(
         2000n,
       );

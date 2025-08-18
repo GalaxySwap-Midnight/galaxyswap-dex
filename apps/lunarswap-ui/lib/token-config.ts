@@ -34,25 +34,14 @@ export const popularTokens: Token[] = [
     address:
       '02005b4fe8c79a87daeb4c3dde0e10d7be9e28c564375489c9a95f029018751f861e',
   },
-  {
-    symbol: 'TJPY',
-    name: 'Test Japanese Yen',
-    type: '',
-    address: '',
-  },
-  {
-    symbol: 'TCNY',
-    name: 'Test Chinese Yuan',
-    type: '',
-    address: '',
-  },
-  {
-    symbol: 'TARS',
-    name: 'Test Argentine Peso',
-    type: '',
-    address: '',
-  },
 ];
+
+// Convert Uint8Array to lowercase hex string without using Buffer
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 /**
  * Get a token by its name
@@ -101,4 +90,46 @@ export function getAllTokenAddresses(): string[] {
  */
 export function getAllTokenTypes(): string[] {
   return popularTokens.map((token) => token.type);
+}
+
+/**
+ * Get tokens from available pools
+ * This function extracts unique tokens from the pools data
+ */
+export function getTokensFromPools(pools: Array<{ pair: { token0Type: Uint8Array; token1Type: Uint8Array } }>): Token[] {
+  const uniqueTokenTypes = new Set<string>();
+  const tokensFromPools: Token[] = [];
+
+  for (const pool of pools) {
+    const token0Type = bytesToHex(pool.pair.token0Type).toLowerCase();
+    const token1Type = bytesToHex(pool.pair.token1Type).toLowerCase();
+    uniqueTokenTypes.add(token0Type);
+    uniqueTokenTypes.add(token1Type);
+  }
+
+  // Find tokens in popularTokens that match the pool token types
+  for (const tokenType of uniqueTokenTypes) {
+    const token = popularTokens.find((t) => {
+      const popularTokenType = t.type.replace(/^0x/i, '').toLowerCase();
+      const popularTokenTypeWithoutPrefix = popularTokenType.replace(/^0200/, '');
+      
+      // Match with or without the 0200 prefix
+      return popularTokenType === tokenType || 
+             popularTokenTypeWithoutPrefix === tokenType ||
+             popularTokenType === `0200${tokenType}` ||
+             popularTokenTypeWithoutPrefix === tokenType.replace(/^0200/, '');
+    });
+    if (token) {
+      tokensFromPools.push(token);
+    }
+  }
+
+  return tokensFromPools;
+}
+
+/**
+ * Get available tokens for selection (only tokens that are in pools)
+ */
+export function getAvailableTokensForSelection(pools: Array<{ pair: { token0Type: Uint8Array; token1Type: Uint8Array } }>): Token[] {
+  return getTokensFromPools(pools);
 }

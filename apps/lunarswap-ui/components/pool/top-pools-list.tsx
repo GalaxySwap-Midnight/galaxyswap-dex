@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
 import { Badge } from '@/components/ui/badge';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { getTokenSymbolByColor } from '@/lib/token-utils';
 
 export function TopPoolsList() {
   const navigate = useNavigate();
@@ -15,6 +17,10 @@ export function TopPoolsList() {
 
   const handleExploreMorePools = () => {
     navigate('/explore', { state: { selectedOption: 'pools' } });
+  };
+
+  const handlePoolClick = (poolId: string) => {
+    navigate(`/explore/pool/${poolId}`);
   };
 
   // Show wallet connection message when not connected
@@ -106,63 +112,56 @@ export function TopPoolsList() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {allPairs.slice(0, 5).map((pool, index) => (
-            <Card
-              key={pool.identity}
-              className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden hover:border-blue-500/50 transition-colors"
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      #{index + 1}
-                    </div>
-                    <div className="flex items-center">
-                      <div className="relative h-8 w-8 mr-3">
-                        <div className="absolute top-0 left-0 h-6 w-6 rounded-full overflow-hidden bg-blue-100 dark:bg-blue-900">
-                          <img
-                            src="/placeholder.svg?height=24&width=24"
-                            alt=""
-                            width={24}
-                            height={24}
+          {allPairs.slice(0, 5).map((pool, index) => {
+            const token0Symbol = getTokenSymbolByColor(Buffer.from(pool.pair.token0Type).toString('hex'));
+            const token1Symbol = getTokenSymbolByColor(Buffer.from(pool.pair.token1Type).toString('hex'));
+            
+            return (
+              <Card
+                key={pool.pairId}
+                className="bg-transparent border border-gray-200/50 dark:border-blue-900/30 rounded-xl overflow-hidden hover:border-blue-500/50 transition-colors cursor-pointer"
+                onClick={() => handlePoolClick(pool.pairId)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        #{index + 1}
+                      </div>
+                      <div className="flex items-center">
+                        <div className="mr-3">
+                          <SplitTokenIcon
+                            tokenASymbol={token0Symbol}
+                            tokenBSymbol={token1Symbol}
+                            size={32}
                           />
                         </div>
-                        <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full overflow-hidden bg-green-100 dark:bg-green-900">
-                          <img
-                            src="/placeholder.svg?height=24&width=24"
-                            alt=""
-                            width={24}
-                            height={24}
-                          />
+                        <div>
+                          <div className="font-medium text-sm">
+                            {token0Symbol}/{token1Symbol}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {pool.pairId.slice(0, 8)}...
+                            {pool.pairId.slice(-8)}
+                          </div>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                       <div>
-                        <div className="font-medium text-sm">
-                          {(() => {
-                            return `${Buffer.from(pool.pair.token0.color).toString('hex').slice(0, 4)}/${Buffer.from(pool.pair.token1.color).toString('hex').slice(0, 4)}`;
-                          })()}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {pool.identity.slice(0, 8)}...
-                          {pool.identity.slice(-8)}
-                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          v1
+                        </Badge>
                       </div>
+                      <div>0.3%</div>
+                      <div>Coming soon</div>
+                      <div>Coming soon</div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                    <div>
-                      <Badge variant="secondary" className="text-xs">
-                        v1
-                      </Badge>
-                    </div>
-                    <div>0.3%</div>
-                    <div>Coming soon</div>
-                    <div>Coming soon</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
 
           <div className="flex justify-center pt-2">
             <Button

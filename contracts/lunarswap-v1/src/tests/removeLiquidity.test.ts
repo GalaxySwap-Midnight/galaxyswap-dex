@@ -31,7 +31,7 @@ const getExpectedTokenValues = (
   valueB: bigint,
   lunarswap: LunarswapSimulator,
 ) => {
-  // Use getPairIdentity to get the correct token order
+  // Use getPairId to get the correct token order
   const pairFromContract = lunarswap.getPair(tokenA, tokenB);
 
   // Determine which input token corresponds to token0

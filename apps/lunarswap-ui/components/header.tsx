@@ -27,9 +27,6 @@ export function Header() {
           <div className="flex items-center space-x-8">
             <Link to="/" className="flex items-center gap-2 font-bold text-xl">
               <Logo size={36} />
-              <span className="bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-300 dark:to-blue-400 bg-clip-text text-transparent font-bold tracking-tight">
-                Lunarswap
-              </span>
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
               {navItems.map((item) => (

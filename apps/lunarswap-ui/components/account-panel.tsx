@@ -5,12 +5,10 @@ import { useWalletRx } from '@/hooks/use-wallet-rx';
 import { formatAddress } from '@/utils/wallet-utils';
 import { ChevronsRight, LogOut, Settings, ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AccountDetailsModal } from './account-details-modal';
-import { BalanceDisplay } from './balance-display';
+
 import { Identicon } from './identicon';
 import { NetworkSelector } from './network-selector';
 import { GlobalPreferences } from './global-preferences';
-import { Button } from '@/components/ui/button';
 import type { DAppConnectorWalletState } from '@midnight-ntwrk/dapp-connector-api';
 
 type AccountPanelPage = 'main' | 'settings';
@@ -26,9 +24,9 @@ export function AccountPanel({
   onOpen: () => void;
   onDisconnect: () => void;
 }) {
-  const { address, walletAPI, isConnected } = useWallet();
+  const { address, walletAPI } = useWallet();
   const { refresh } = useWalletRx();
-  const [showAccountDetails, setShowAccountDetails] = useState(false);
+
   const [currentPage, setCurrentPage] = useState<AccountPanelPage>('main');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -82,7 +80,7 @@ export function AccountPanel({
 
   const renderMainPage = () => (
     <>
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-center p-4">
         <div className="flex items-center gap-2">
           <NetworkSelector />
           <button
@@ -109,46 +107,117 @@ export function AccountPanel({
             {address && <Identicon address={address} size={64} />}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAccountDetails(true)}
-          className="font-medium text-base hover:text-primary transition-colors cursor-pointer flex items-center gap-2 group"
-          title="Click to view account details"
-        >
+        <div className="font-medium text-base text-center">
           <span className="font-mono text-muted-foreground">
             {address ? `${address.slice(0, 6)}...${address.slice(-5)}` : '...'}
           </span>
-          <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors opacity-60">
-            details
-          </span>
-        </button>
-
-        {/* Balance Display */}
-        <div className="mt-4">
-          <BalanceDisplay
-            showSyncStatus={true}
-            showRefreshButton={true}
-            className="text-4xl"
-          />
         </div>
 
-        {/* Transaction Count */}
-        <div className="mt-2 text-sm text-muted-foreground">
-          {/* transactionCount and error are no longer available */}
-        </div>
-
-        {/* Error Display */}
-        {/* error and transactionCount are no longer available */}
-        {/*
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg text-sm">
-            <div className="text-red-700 dark:text-red-400 font-medium">
-              Sync Error
+        {/* Account Details */}
+        {walletState && (
+          <div className="mt-6 w-full space-y-4">
+            {/* Address */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground text-center">Address</div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(walletState.address, 'Address')}
+                className={`w-full p-2 rounded-md transition-all duration-200 text-center group relative overflow-hidden ${
+                  copiedField === 'Address'
+                    ? 'bg-green-50 dark:bg-green-950/20'
+                    : 'bg-muted/30 hover:bg-muted/50'
+                }`}
+                title="Click to copy address"
+              >
+                <code
+                  className={`text-xs break-all font-mono leading-relaxed transition-all duration-200 ${
+                    copiedField === 'Address'
+                      ? 'text-green-700 dark:text-green-300 blur-sm'
+                      : 'text-foreground group-hover:text-primary'
+                  }`}
+                >
+                  {walletState.address || 'Not available'}
+                </code>
+                {copiedField === 'Address' && (
+                  <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
+                    <span className="text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded">
+                      ✓ Copied!
+                    </span>
+                  </div>
+                )}
+              </button>
             </div>
-            <div className="text-red-600 dark:text-red-300">{error}</div>
-          </div>
-        */}
 
-        {/* Additional buttons or info can be added here */}
+            {/* Coin Public Key */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground text-center">Coin Public Key</div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(walletState.coinPublicKey, 'Coin Public Key')}
+                className={`w-full p-2 rounded-md transition-all duration-200 text-center group relative overflow-hidden ${
+                  copiedField === 'Coin Public Key'
+                    ? 'bg-green-50 dark:bg-green-950/20'
+                    : 'bg-muted/30 hover:bg-muted/50'
+                }`}
+                title="Click to copy coin public key"
+              >
+                <code
+                  className={`text-xs break-all font-mono leading-relaxed transition-all duration-200 ${
+                    copiedField === 'Coin Public Key'
+                      ? 'text-green-700 dark:text-green-300 blur-sm'
+                      : 'text-foreground group-hover:text-primary'
+                  }`}
+                >
+                  {walletState.coinPublicKey || 'Not available'}
+                </code>
+                {copiedField === 'Coin Public Key' && (
+                  <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
+                    <span className="text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded">
+                      ✓ Copied!
+                    </span>
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* Encryption Public Key */}
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground text-center">Encryption Public Key</div>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(walletState.encryptionPublicKey, 'Encryption Public Key')}
+                className={`w-full p-2 rounded-md transition-all duration-200 text-center group relative overflow-hidden ${
+                  copiedField === 'Encryption Public Key'
+                    ? 'bg-green-50 dark:bg-green-950/20'
+                    : 'bg-muted/30 hover:bg-muted/50'
+                }`}
+                title="Click to copy encryption public key"
+              >
+                <code
+                  className={`text-xs break-all font-mono leading-relaxed transition-all duration-200 ${
+                    copiedField === 'Encryption Public Key'
+                      ? 'text-green-700 dark:text-green-300 blur-sm'
+                      : 'text-foreground group-hover:text-primary'
+                  }`}
+                >
+                  {walletState.encryptionPublicKey || 'Not available'}
+                </code>
+                {copiedField === 'Encryption Public Key' && (
+                  <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
+                    <span className="text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded">
+                      ✓ Copied!
+                    </span>
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* Copy tip */}
+            <div className="text-xs text-muted-foreground text-center">
+              💡 Click any field to copy to clipboard
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -178,11 +247,11 @@ export function AccountPanel({
       {/* Backdrop blur overlay */}
       {/* <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9999]" /> */}
 
-      {/* External ">>" button - positioned on left side of the panel */}
+      {/* External ">>" button - positioned exactly at the panel border */}
       <button
         type="button"
         onClick={isVisible ? onClose : () => onOpen()}
-        className="fixed top-4 right-80 h-12 w-8 bg-background dark:bg-gray-900 border border-border border-r-0 rounded-l-lg z-[10001] flex items-center justify-center hover:bg-muted transition-colors"
+        className="fixed top-4 right-[336px] h-12 w-8 bg-background dark:bg-gray-900 border border-border rounded-l-lg z-[10001] flex items-center justify-center hover:bg-muted transition-colors"
         title={isVisible ? 'Close account panel' : 'Open account panel'}
       >
         <ChevronsRight
@@ -197,11 +266,7 @@ export function AccountPanel({
         {currentPage === 'main' ? renderMainPage() : renderSettingsPage()}
       </div>
 
-      <AccountDetailsModal
-        isOpen={showAccountDetails}
-        onClose={() => setShowAccountDetails(false)}
-        walletState={walletState}
-      />
+
     </>
   );
 }

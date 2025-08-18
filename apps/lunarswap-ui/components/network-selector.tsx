@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useNetwork } from '@/hooks/use-network';
 import { useWallet } from '@/hooks/use-wallet';
-import { Check, ChevronDown, Wifi, WifiOff, Clock } from 'lucide-react';
+import { Check, ChevronDown, Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function NetworkSelector() {
@@ -121,10 +121,6 @@ export function NetworkSelector() {
             </div>
           )}
 
-          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            Mainnet (Coming Soon)
-          </div>
           {availableNetworks
             .filter((n) => n.type === 'mainnet')
             .map((network) => (
@@ -143,9 +139,6 @@ export function NetworkSelector() {
               </DropdownMenuItem>
             ))}
 
-          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-3 mb-1.5">
-            Testnet
-          </div>
           {availableNetworks
             .filter((n) => n.type === 'testnet')
             .map((network) => (

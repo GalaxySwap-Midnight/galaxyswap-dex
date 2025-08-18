@@ -232,7 +232,7 @@ export class LunarswapSimulator
     return result.result;
   }
 
-  public getPairIdentity(
+  public getPairId(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
     sender?: CoinPublicKey,
@@ -243,11 +243,27 @@ export class LunarswapSimulator
           currentZswapLocalState: emptyZswapLocalState(sender),
         }
       : this.circuitContext;
-    const result = this.contract.circuits.getPairIdentity(
+    const result = this.contract.circuits.getPairId(
       context,
       tokenA,
       tokenB,
     );
+    this.circuitContext = result.context;
+    return result.result;
+  }
+
+  public getReserveId(
+    pairId: Uint8Array,
+    tokenAType: Uint8Array,
+    sender?: CoinPublicKey,
+  ): Uint8Array {
+    const context = sender
+      ? {
+          ...this.circuitContext,
+          currentZswapLocalState: emptyZswapLocalState(sender),
+        }
+      : this.circuitContext;
+    const result = this.contract.circuits.getReserveId(context, pairId, tokenAType);
     this.circuitContext = result.context;
     return result.result;
   }

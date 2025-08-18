@@ -48,91 +48,11 @@ import type {
 import { PrivateDataProviderWrapper } from '@/providers/private';
 import {
   connectToWallet,
-  type WalletConnectionResult,
 } from '@/utils/wallet-utils';
 import { ZkConfigProviderWrapper } from '@/providers/zk-config';
 import { PublicDataProviderWrapper } from '@/providers/public';
 import { noopProofClient } from '@/providers/proof';
 import { proofClient } from '@/providers/proof';
-import { firstValueFrom } from 'rxjs';
-import type { Wallet } from '@midnight-ntwrk/wallet-api';
-
-export const createWalletAndMidnightProvider = async (
-  wallet: Wallet,
-): Promise<WalletProvider & MidnightProvider> => {
-  const state = await firstValueFrom(wallet.state());
-  return {
-    coinPublicKey: state.coinPublicKey,
-    encryptionPublicKey: state.encryptionPublicKey,
-    balanceTx(
-      tx: UnbalancedTransaction,
-      newCoins: CoinInfo[],
-    ): Promise<BalancedTransaction> {
-      console.log('[DEBUG] balanceTx', tx.toString(), newCoins);
-      console.dir(tx.imbalances(true), { depth: null });
-      return wallet
-        .balanceTransaction(
-          ZswapTransaction.deserialize(
-            tx.serialize(getZswapNetworkId()),
-            getZswapNetworkId(),
-          ),
-          newCoins,
-        )
-        .then((tx) => wallet.proveTransaction(tx))
-        .then((zswapTx) =>
-          Transaction.deserialize(
-            zswapTx.serialize(getZswapNetworkId()),
-            getZswapNetworkId(),
-          ),
-        )
-        .then(createBalancedTx);
-    },
-    submitTx(tx: BalancedTransaction): Promise<TransactionId> {
-      return wallet.submitTransaction(tx);
-    },
-  };
-};
-
-export const configureProviders = async (
-  wallet: Wallet,
-  config: {
-    INDEXER_URI: string;
-    INDEXER_WS_URI: string;
-  },
-  callback: (action: ProviderCallbackAction) => void,
-): Promise<LunarswapProviders> => {
-  const walletAndMidnightProvider =
-    await createWalletAndMidnightProvider(wallet);
-
-  return {
-    privateStateProvider: levelPrivateStateProvider<
-      typeof LunarswapPrivateStateId
-    >({
-      privateStateStoreName: 'lunarswap-private-state',
-    }),
-    publicDataProvider: indexerPublicDataProvider(
-      config.INDEXER_URI,
-      config.INDEXER_WS_URI,
-    ),
-    zkConfigProvider: new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
-      window.location.origin,
-      callback,
-      fetch.bind(window),
-    ),
-    proofProvider: noopProofClient(),
-    walletProvider: walletAndMidnightProvider,
-    midnightProvider: walletAndMidnightProvider,
-  };
-};
-
-function isChromeBrowser(): boolean {
-  const userAgent = navigator.userAgent.toLowerCase();
-  return (
-    userAgent.includes('chrome') &&
-    !userAgent.includes('edge') &&
-    !userAgent.includes('opr')
-  );
-}
 
 export interface MidnightWalletState {
   isConnected: boolean;
@@ -263,7 +183,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         }),
         logger,
       ),
-    [],
+    [logger],
   );
 
   const providerCallback = useCallback(

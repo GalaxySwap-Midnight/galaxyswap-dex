@@ -3,9 +3,10 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { RotateCcw, Settings, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SelectPairStep } from './steps/select-pair-step';
 import { SetDepositStep } from './steps/set-deposit-step';
+import { popularTokens, getAvailableTokensForSelection } from '@/lib/token-config';
 
 type Step = 'select-pair' | 'set-deposit';
 
@@ -32,9 +33,15 @@ interface CompletePairData {
 
 interface NewPositionWizardProps {
   onClose?: () => void;
+  initialTokens?: {
+    tokenA?: string;
+    tokenB?: string;
+    tokenAType?: string;
+    tokenBType?: string;
+  };
 }
 
-export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
+export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardProps) {
   const [currentStep, setCurrentStep] = useState<Step>('select-pair');
   const [pairData, setPairData] = useState<PairSelectionData>({
     tokenA: null,
@@ -42,6 +49,23 @@ export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
     fee: 0.3, // Default fee tier
     version: 'v1', // Default to V1 since V2/V3 are coming soon
   });
+
+  // Set initial tokens from navigation state
+  useEffect(() => {
+    if (initialTokens?.tokenA && initialTokens?.tokenB) {
+      // Find token data from popular tokens
+      const tokenAData = popularTokens.find(t => t.symbol === initialTokens.tokenA);
+      const tokenBData = popularTokens.find(t => t.symbol === initialTokens.tokenB);
+      
+      if (tokenAData && tokenBData) {
+        setPairData(prev => ({
+          ...prev,
+          tokenA: tokenAData,
+          tokenB: tokenBData
+        }));
+      }
+    }
+  }, [initialTokens]);
 
   const handlePairSubmit = (data: CompletePairData) => {
     setPairData(data);
@@ -141,34 +165,25 @@ export function NewPositionWizard({ onClose }: NewPositionWizardProps) {
 
         {/* Right content area */}
         <div className="flex-1">
-          {/* <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="text-gray-500"
-              >
-                <RotateCcw className="h-4 w-4 mr-1" />
-                Reset
-              </Button>
+          {/* Privacy Notice */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="w-5 h-5 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                  Privacy-First Position Creation
+                </p>
+                <p className="text-blue-800 dark:text-blue-200">
+                  When creating positions, the system assumes you have sufficient balance to generate 
+                  the required zero-knowledge proofs. Your actual balances remain private.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm" className="text-gray-500">
-                <Settings className="h-4 w-4" />
-              </Button>
-              {onClose && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div> */}
+          </div>
 
           {currentStep === 'select-pair' && (
             <SelectPairStep

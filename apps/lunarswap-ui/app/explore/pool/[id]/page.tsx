@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/header';
 import { StarsBackground } from '@/components/stars-background';
@@ -17,8 +17,8 @@ import { Button } from '@/components/ui/button';
 import {
   ExternalLink,
   Droplets,
-  TrendingUp,
   Clock,
+  Repeat,
 } from 'lucide-react';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
 import {
@@ -27,12 +27,14 @@ import {
 } from '@/lib/token-utils';
 import { Identicon } from '@/components/identicon';
 import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { LiquidityChart } from '@/components/pool/liquidity-chart';
 
 export default function PoolDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
-  const { isLoading, allPairs } = useLunarswapContext();
+  const { isLoading, allPairs, lunarswap } = useLunarswapContext();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [reserves, setReserves] = useState<[bigint, bigint] | null>(null);
 
   const poolId = params.id as string;
 
@@ -47,43 +49,95 @@ export default function PoolDetailPage() {
   };
 
   const getToken0Symbol = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    const color = Buffer.from(pool.pair.token0.color).toString('hex');
+    const color = Buffer.from(pool.pair.token0Type).toString('hex');
     return getTokenSymbolByColor(color);
   };
 
   const getToken1Symbol = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    const color = Buffer.from(pool.pair.token1.color).toString('hex');
+    const color = Buffer.from(pool.pair.token1Type).toString('hex');
     return getTokenSymbolByColor(color);
   };
 
   const getToken0Name = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    const color = Buffer.from(pool.pair.token0.color).toString('hex');
+    const color = Buffer.from(pool.pair.token0Type).toString('hex');
     return getTokenNameByColor(color);
   };
 
   const getToken1Name = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    const color = Buffer.from(pool.pair.token1.color).toString('hex');
+    const color = Buffer.from(pool.pair.token1Type).toString('hex');
     return getTokenNameByColor(color);
   };
 
   const getToken0Color = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    return Buffer.from(pool.pair.token0.color).toString('hex');
+    return Buffer.from(pool.pair.token0Type).toString('hex');
   };
 
   const getToken1Color = () => {
-    const pool = allPairs.find((p) => p.identity === poolId);
+    const pool = allPairs.find((p) => p.pairId === poolId);
     if (!pool) return '';
-    return Buffer.from(pool.pair.token1.color).toString('hex');
+    return Buffer.from(pool.pair.token1Type).toString('hex');
+  };
+
+  const getLpTokenType = () => {
+    const pool = allPairs.find((p) => p.pairId === poolId);
+    if (!pool) return '';
+    
+    return Buffer.from(pool.pair.lpTokenType).toString('hex');
+  };
+
+  const getLpTokenSymbol = () => {
+    return 'TLUNAR';
+  };
+
+  const getLpTokenName = () => {
+    return 'Test Lunar';
+  };
+
+  // Function to fetch reserves for the current pool
+  const fetchReserves = useCallback(async () => {
+    const pool = allPairs.find((p) => p.pairId === poolId);
+    if (!pool || !lunarswap) return;
+
+    try {
+      const token0Type = Buffer.from(pool.pair.token0Type).toString('hex');
+      const token1Type = Buffer.from(pool.pair.token1Type).toString('hex');
+      
+      const reserves = await lunarswap.getPairReserves(token0Type, token1Type);
+      if (reserves) {
+        setReserves(reserves);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reserves:', error);
+      setReserves(null);
+    }
+  }, [allPairs, lunarswap, poolId]);
+
+  // Fetch reserves when pool data is available
+  useEffect(() => {
+    if (allPairs.length > 0 && lunarswap) {
+      fetchReserves();
+    }
+  }, [allPairs, lunarswap, fetchReserves]);
+
+  // Helper function to format large numbers
+  const formatReserve = (value: bigint | null): string => {
+    if (!value) return '0';
+    const num = Number(value);
+    if (num === 0) return '0';
+    if (num < 1000) return num.toString();
+    if (num < 1000000) return `${(num / 1000).toFixed(1)}K`;
+    if (num < 1000000000) return `${(num / 1000000).toFixed(1)}M`;
+    return `${(num / 1000000000).toFixed(1)}B`;
   };
 
   // Show loading while contract is connecting
@@ -111,7 +165,7 @@ export default function PoolDetailPage() {
   }
 
   // Show error if pool not found
-  const pool = allPairs.find((p) => p.identity === poolId);
+  const pool = allPairs.find((p) => p.pairId === poolId);
   if (!pool) {
     return (
       <div className="min-h-screen bg-white dark:bg-gradient-to-b dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] text-foreground">
@@ -180,12 +234,12 @@ export default function PoolDetailPage() {
                   type="button"
                   className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                   onClick={() =>
-                    copyToClipboard(pool.identity, 'breadcrumb-pool-id')
+                    copyToClipboard(pool.pairId, 'breadcrumb-pool-id')
                   }
                   title="Click to copy pool ID"
                 >
-                  {pool.identity.slice(0, 8)}...
-                  {pool.identity.slice(-8)}
+                  {pool.pairId.slice(0, 8)}...
+                  {pool.pairId.slice(-8)}
                 </button>
                 {copiedField === 'breadcrumb-pool-id' && (
                   <span className="ml-1 text-green-600 dark:text-green-400">
@@ -223,42 +277,13 @@ export default function PoolDetailPage() {
           <div className="flex gap-6">
             {/* Left Side - 70% - Chart and Transactions */}
             <div className="flex-1">
-              {/* Chart Section */}
-              <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30 mb-6">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Volume Chart</CardTitle>
-                      <CardDescription>Coming soon</CardDescription>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="outline">
-                        1H
-                      </Button>
-                      <Button size="sm" variant="default">
-                        1D
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        1W
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        1M
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        1Y
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-muted-foreground">Chart coming soon</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Liquidity Chart Section */}
+              <LiquidityChart
+                token0Symbol={getToken0Symbol()}
+                token1Symbol={getToken1Symbol()}
+                reserves={reserves}
+                className="mb-6"
+              />
 
               {/* Transactions Section */}
               <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30">
@@ -282,14 +307,42 @@ export default function PoolDetailPage() {
               {/* Action Buttons */}
               <div className="flex gap-2">
                 <Button
-                  onClick={() => navigate('/')}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    const token0Type = Buffer.from(pool.pair.token0Type).toString('hex');
+                    const token1Type = Buffer.from(pool.pair.token1Type).toString('hex');
+                    const token0Symbol = getTokenSymbolByColor(token0Type);
+                    const token1Symbol = getTokenSymbolByColor(token1Type);
+                    
+                    navigate('/', { 
+                      state: { 
+                        fromToken: token0Symbol, 
+                        toToken: token1Symbol,
+                        fromTokenType: token0Type,
+                        toTokenType: token1Type
+                      } 
+                    });
+                  }}
+                  className="flex-1 text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <Repeat className="inline h-4 w-4 mr-2" />
                   Swap
                 </Button>
                 <Button
-                  onClick={() => navigate('/pool/new')}
+                  onClick={() => {
+                    const token0Type = Buffer.from(pool.pair.token0Type).toString('hex');
+                    const token1Type = Buffer.from(pool.pair.token1Type).toString('hex');
+                    const token0Symbol = getTokenSymbolByColor(token0Type);
+                    const token1Symbol = getTokenSymbolByColor(token1Type);
+                    
+                    navigate('/pool/new', { 
+                      state: { 
+                        tokenA: token0Symbol, 
+                        tokenB: token1Symbol,
+                        tokenAType: token0Type,
+                        tokenBType: token1Type
+                      } 
+                    });
+                  }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Droplets className="h-4 w-4 mr-2" />
@@ -325,14 +378,16 @@ export default function PoolDetailPage() {
                       <div className="mb-3">
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           {(() => {
-                            const totalValue =
-                              Number(pool.pair.token0.value) +
-                              Number(pool.pair.token1.value);
+                            if (!reserves) return (
+                              <div className="flex h-2 rounded-full overflow-hidden">
+                                <div className="bg-gray-400 h-full w-full" />
+                              </div>
+                            );
+                            
+                            const totalValue = Number(reserves[0]) + Number(reserves[1]);
                             const token0Percentage =
                               totalValue > 0
-                                ? (Number(pool.pair.token0.value) /
-                                    totalValue) *
-                                  100
+                                ? (Number(reserves[0]) / totalValue) * 100
                                 : 50;
                             const token1Percentage = 100 - token0Percentage;
                             return (
@@ -354,15 +409,10 @@ export default function PoolDetailPage() {
                             <Identicon address={getToken0Color()} size={12} />
                             <span className="text-xs text-muted-foreground">
                               {getToken0Symbol()} ({(() => {
-                                const totalValue =
-                                  Number(pool.pair.token0.value) +
-                                  Number(pool.pair.token1.value);
+                                if (!reserves) return '0.0';
+                                const totalValue = Number(reserves[0]) + Number(reserves[1]);
                                 return totalValue > 0
-                                  ? (
-                                      (Number(pool.pair.token0.value) /
-                                        totalValue) *
-                                      100
-                                    ).toFixed(1)
+                                  ? ((Number(reserves[0]) / totalValue) * 100).toFixed(1)
                                   : '50.0';
                               })()}%)
                             </span>
@@ -371,11 +421,11 @@ export default function PoolDetailPage() {
                             <span className="text-xs text-muted-foreground">
                               {(() => {
                                 const totalValue =
-                                  Number(pool.pair.token0.value) +
-                                  Number(pool.pair.token1.value);
+                                  Number(pool.pair.token0Type) +
+                                  Number(pool.pair.token1Type);
                                 return totalValue > 0
                                   ? (
-                                      (Number(pool.pair.token1.value) /
+                                      (Number(pool.pair.token1Type) /
                                         totalValue) *
                                       100
                                     ).toFixed(1)
@@ -395,9 +445,7 @@ export default function PoolDetailPage() {
                             <span className="text-sm">{getToken0Symbol()}</span>
                           </div>
                           <span className="text-sm font-medium">
-                            {(() => {
-                              return pool.pair.token0.value.toString();
-                            })()}
+                            {reserves ? formatReserve(reserves[0]) : 'Loading...'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -406,9 +454,7 @@ export default function PoolDetailPage() {
                             <span className="text-sm">{getToken1Symbol()}</span>
                           </div>
                           <span className="text-sm font-medium">
-                            {(() => {
-                              return pool.pair.token1.value.toString();
-                            })()}
+                            {reserves ? formatReserve(reserves[1]) : 'Loading...'}
                           </span>
                         </div>
                       </div>
@@ -521,19 +567,52 @@ export default function PoolDetailPage() {
                         type="button"
                         className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded break-all cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-full text-left"
                         onClick={() =>
-                          copyToClipboard(pool.identity, 'pool-id')
+                          copyToClipboard(pool.pairId, 'pool-id')
                         }
                         title="Click to copy pool ID"
                       >
-                        {pool.identity}
+                        {pool.pairId}
                       </button>
-                      {copiedField === 'pool-id' && (
-                        <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm rounded flex items-center justify-center">
-                          <span className="text-xs font-medium text-green-700 dark:text-green-300">
-                            Copied!
-                          </span>
-                        </div>
-                      )}
+                                              {copiedField === 'pool-id' && (
+                          <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm rounded flex items-center justify-center">
+                            <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                              Copied!
+                            </span>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Identicon address={getLpTokenType()} size={16} />
+                        <span className="text-sm font-medium">
+                          {getLpTokenSymbol()}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {getLpTokenName()} (LP tokens for this pair)
+                      </div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          className="text-xs font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded break-all cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors w-full text-left"
+                          onClick={() =>
+                            copyToClipboard(getLpTokenType(), 'lp-token-type')
+                          }
+                          title="Click to copy LP token type"
+                        >
+                          {getLpTokenType()}
+                        </button>
+                        {copiedField === 'lp-token-type' && (
+                          <div className="absolute inset-0 bg-green-500/20 backdrop-blur-sm rounded flex items-center justify-center">
+                            <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                              Copied!
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -551,22 +630,22 @@ export default function PoolDetailPage() {
                   <div className="space-y-3">
                     {allPairs && allPairs.length > 0 ? (
                       allPairs
-                        .filter((pool) => pool.identity !== poolId)
+                        .filter((pool) => pool.pairId !== poolId)
                         .slice(0, 5)
                         .map((pool, index: number) => {
                           const token0Symbol = getTokenSymbolByColor(
-                            Buffer.from(pool.pair.token0.color).toString('hex'),
+                            Buffer.from(pool.pair.token0Type).toString('hex'),
                           );
                           const token1Symbol = getTokenSymbolByColor(
-                            Buffer.from(pool.pair.token1.color).toString('hex'),
+                            Buffer.from(pool.pair.token1Type).toString('hex'),
                           );
                           return (
                             <button
-                              key={pool.identity}
+                              key={pool.pairId}
                               type="button"
                               className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                               onClick={() =>
-                                navigate(`/explore/pool/${pool.identity}`)
+                                navigate(`/explore/pool/${pool.pairId}`)
                               }
                             >
                               <SplitTokenIcon
@@ -579,8 +658,8 @@ export default function PoolDetailPage() {
                                   {token0Symbol}/{token1Symbol}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                  {pool.identity.slice(0, 8)}...
-                                  {pool.identity.slice(-8)}
+                                  {pool.pairId.slice(0, 8)}...
+                                  {pool.pairId.slice(-8)}
                                 </div>
                               </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">

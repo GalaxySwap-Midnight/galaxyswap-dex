@@ -4,14 +4,17 @@ import { BrowserCompatibility } from '@/components/browser-compatibility';
 import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export const metadata = {
   title: 'Buy & Sell Midnight Tokens',
   description:
-    'Buy and sell Midnight tokens on top of Lunarswap - the most celestial DEX in the galaxy. Swap TUSD, TEURO, TJPY, TCNY, and TARS tokens instantly.',
+    'Buy and sell Midnight tokens on top of Lunarswap - the most celestial DEX in the galaxy. Swap tokens from available liquidity pools instantly.',
 };
 
 export default function Home() {
+  const location = useLocation();
+  
   useEffect(() => {
     document.title = 'Buy & Sell Midnight Tokens';
   }, []);
@@ -23,7 +26,7 @@ export default function Home() {
       <Header />
       <main className="container mx-auto px-4 py-8 relative z-0 pt-24">
         <BrowserCompatibility />
-        <TradeTabs />
+        <TradeTabs initialTokens={location.state} />
       </main>
     </div>
   );

@@ -9,7 +9,6 @@ import {
   Lunarswap,
   type LunarswapCircuitKeys,
   type LunarswapProviders,
-  LunarswapPrivateStateId,
 } from '@midnight-dapps/lunarswap-api';
 import type {
   CoinInfo,
@@ -17,11 +16,9 @@ import type {
   ZswapCoinPublicKey,
   ContractAddress,
 } from '@midnight-dapps/compact-std';
-import {
-  deployContract,
+import type {
   FinalizedCallTxData,
-  findDeployedContract,
-  type FoundContract,
+  FoundContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 import {
   type Contract,
@@ -244,23 +241,24 @@ export class LunarswapIntegration {
   /**
    * Get all available pairs in the pool
    */
-  getAllPairs(): Array<{ identity: string; pair: Pair }> {
+  getAllPairs(): Array<{ pairId: string; pair: Pair }> {
     if (!this.poolData) {
       return [];
     }
 
-    const pairs: Array<{ identity: string; pair: Pair }> = [];
+    const pairs: Array<{ pairId: string; pair: Pair }> = [];
 
     // Iterate through the pool map
-    for (const [identity, pair] of this.poolData.pool) {
+    for (const [pairId, pair] of this.poolData.pool) {
       pairs.push({
-        identity: Buffer.from(identity).toString('hex'),
+        pairId: Buffer.from(pairId).toString('hex'),
         pair,
       });
     }
 
     return pairs;
   }
+  
 
   /**
    * Check if a pair exists for given tokens
@@ -284,14 +282,14 @@ export class LunarswapIntegration {
       const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
-      const pairIdentity = this.lunarswapSimulator.getPairIdentity(
+      const pairIdentity = this.lunarswapSimulator.getPairId(
         tokenAInfo,
         tokenBInfo,
       );
 
       console.log('[DEBUG] pairIdentity:', pairIdentity);
 
-      // Check if this identity exists in the pool
+      // Check if this pairId exists in the pool
       return this.poolData.pool.member(pairIdentity);
     } catch (error) {
       console.error('Failed to check pair existence:', error);
@@ -312,7 +310,7 @@ export class LunarswapIntegration {
     }
 
     if (!this.poolData) {
-      //await this.getPublicState();
+      await this.getPublicState();
     }
 
     if (!this.poolData || !this.lunarswap) {
@@ -324,12 +322,21 @@ export class LunarswapIntegration {
       const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
-      const identity = this.lunarswapSimulator.getPairIdentity(
+      const pairId = this.lunarswapSimulator.getPairId(
         tokenAInfo,
         tokenBInfo,
       );
-      const pool = this.poolData.pool.lookup(identity);
-      return [pool.token0.value, pool.token1.value];
+      const reserveAId = this.lunarswapSimulator.getReserveId(
+        pairId,
+        tokenAInfo.color,
+      );
+      const reserveBId = this.lunarswapSimulator.getReserveId(
+        pairId,
+        tokenBInfo.color,
+      );
+      const reserveA = this.poolData.reserves.lookup(reserveAId);
+      const reserveB = this.poolData.reserves.lookup(reserveBId);
+      return [reserveA.value, reserveB.value];
     } catch (error) {
       console.error('Failed to get pair reserves:', error);
       return null;
@@ -468,9 +475,10 @@ export class LunarswapIntegration {
    * Remove liquidity from a pool
    */
   async removeLiquidity(
-    tokenA: string,
-    tokenB: string,
-    liquidity: string,
+    token0Type: string,
+    token1Type: string,
+    liquidityType: string,
+    liquidityAmount: string,
     minAmountA: bigint,
     minAmountB: bigint,
     recipientCoinPublicKey: string,
@@ -484,11 +492,11 @@ export class LunarswapIntegration {
       throw new Error('Contract not initialized');
     }
 
-    const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
-    const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
+    const token0Info = LunarswapIntegration.toCoinInfo(token0Type, BigInt(0));
+    const token1Info = LunarswapIntegration.toCoinInfo(token1Type, BigInt(0));
     const liquidityInfo = LunarswapIntegration.toCoinInfo(
-      'LP',
-      BigInt(liquidity),
+      liquidityType,
+      BigInt(liquidityAmount),
     );
     const recipientAddress = LunarswapIntegration.createRecipient(
       recipientCoinPublicKey,
@@ -496,8 +504,8 @@ export class LunarswapIntegration {
 
     // Use the Lunarswap API method
     return await this.lunarswap.removeLiquidity(
-      tokenAInfo,
-      tokenBInfo,
+      token0Info,
+      token1Info,
       liquidityInfo,
       minAmountA,
       minAmountB,
@@ -587,7 +595,7 @@ export class LunarswapIntegration {
   }
 
   /**
-   * Calculate pool address for token pair using the actual getPairIdentity circuit
+   * Calculate pool address for token pair using the actual getPairId circuit
    */
   private async calculatePoolAddress(
     tokenA: string,
@@ -602,7 +610,7 @@ export class LunarswapIntegration {
       const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
 
       // Use the Lunarswap API method
-      const pairIdentity = await this.lunarswap.getPairIdentity(
+      const pairIdentity = await this.lunarswap.getPairId(
         tokenAInfo,
         tokenBInfo,
       );
@@ -610,7 +618,7 @@ export class LunarswapIntegration {
       return `0x${Buffer.from(pairIdentity).toString('hex')}`;
     } catch (error) {
       console.error(
-        'Failed to calculate pool address using getPairIdentity:',
+        'Failed to calculate pool address using getPairId:',
         error,
       );
       throw error;

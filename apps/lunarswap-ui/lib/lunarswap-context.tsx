@@ -46,7 +46,7 @@ interface LunarswapProviderProps {
 }
 
 export type Pool = {
-  identity: string;
+  pairId: string;
   pair: Pair;
 };
 
@@ -235,8 +235,8 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       };
     }
     
+    // Only clear public state, keep pairs data for better UX
     setPublicState(null);
-    setAllPairs([]);
   }, [status, lunarswap, refreshPublicState]);
 
   const contextValue: LunarswapContextType = {

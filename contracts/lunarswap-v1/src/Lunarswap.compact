@@ -131,10 +131,10 @@ export circuit addLiquidity(
 ): Uint<128> {
     assert (tokenA.color != tokenB.color) "Lunarswap: addLiquidity() - Identical addresses";
     const [token0, token1, amount0Min, amount1Min] = LunarswapLibrary_sortCoinsAndAmounts(tokenA, tokenB, amountAMin, amountBMin);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
     return disclose(
         LunarswapRouter_addLiquidity(
-            identity,
+            pairId,
             token0,
             token1,
             amount0Min,
@@ -178,9 +178,9 @@ export circuit removeLiquidity(
 ): [Uint<128>, Uint<128>] {
     assert (tokenA.color != tokenB.color) "Lunarswap: removeLiquidity() - Identical addresses";
     const [token0, token1, amount0Min, amount1Min] = LunarswapLibrary_sortCoinsAndAmounts(tokenA, tokenB, amountAMin, amountBMin);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    const pair = LunarswapFactory_getPair(identity);
-    const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, pair.reserve0Type, pair.reserve1Type);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    const pair = LunarswapFactory_getPair(pairId);
+    const [reserve0, reserve1] = LunarswapFactory_getReserves(pairId, pair.reserve0Id, pair.reserve1Id);
 
     assert (pair.token0Type == token0.color) "Lunarswap: removeLiquidity() - mismatched token0 color";
     assert (pair.token1Type == token1.color) "Lunarswap: removeLiquidity() - mismatched token1 color";
@@ -188,7 +188,7 @@ export circuit removeLiquidity(
     
     const [amount0, amount1] = disclose(
         LunarswapRouter_removeLiquidity(
-            identity,
+            pairId,
             pair,
             token0,
             token1,
@@ -239,11 +239,11 @@ export circuit swapExactTokensForTokens(
 ): Uint<128> {
     assert (tokenIn.color != tokenOut.color) "Lunarswap: swapExactTokensForTokens() - Identical addresses";
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenIn, tokenOut);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    const pair = LunarswapFactory_getPair(identity);
-    const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, pair.reserve0Type, pair.reserve1Type);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    const pair = LunarswapFactory_getPair(pairId);
+    const [reserve0, reserve1] = LunarswapFactory_getReserves(pairId, pair.reserve0Id, pair.reserve1Id);
     return LunarswapRouter_swapExactTokensForTokens(
-        identity,
+        pairId,
         pair,
         tokenIn,
         tokenOut,
@@ -283,11 +283,11 @@ export circuit swapTokensForExactTokens(
 ): Uint<128> {
     assert (tokenIn.color != tokenOut.color) "Lunarswap: swapTokensForExactTokens() - Identical addresses";
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenIn, tokenOut);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    const pair = LunarswapFactory_getPair(identity);
-    const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, pair.reserve0Type, pair.reserve1Type);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    const pair = LunarswapFactory_getPair(pairId);
+    const [reserve0, reserve1] = LunarswapFactory_getReserves(pairId, pair.reserve0Id, pair.reserve1Id);
     return LunarswapRouter_swapTokensForExactTokens(
-        identity,
+        pairId,
         pair,
         tokenIn,
         tokenOut,
@@ -316,8 +316,8 @@ export circuit swapTokensForExactTokens(
  */
 export circuit isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Boolean {
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenA, tokenB);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    return LunarswapFactory_isIdentityExists(identity);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    return LunarswapFactory_isIdentityExists(pairId);
 }
 
 /**
@@ -354,8 +354,8 @@ export circuit getAllPairLength(): Uint<64> {
  */
 export circuit getPair(tokenA: CoinInfo, tokenB: CoinInfo): Pair {
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenA, tokenB);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    return LunarswapFactory_getPair(identity);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    return LunarswapFactory_getPair(pairId);
 }
 
 /**
@@ -377,9 +377,9 @@ export circuit getPair(tokenA: CoinInfo, tokenB: CoinInfo): Pair {
  */
 export circuit getPairReserves(tokenA: CoinInfo, tokenB: CoinInfo): [QualifiedCoinInfo, QualifiedCoinInfo] {
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenA, tokenB);
-    const identity = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
-    const pair = LunarswapFactory_getPair(identity);
-    const [reserve0, reserve1] = LunarswapFactory_getReserves(identity, pair.reserve0Type, pair.reserve1Type);
+    const pairId = LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+    const pair = LunarswapFactory_getPair(pairId);
+    const [reserve0, reserve1] = LunarswapFactory_getReserves(pairId, pair.reserve0Id, pair.reserve1Id);
     if (tokenA.color == token0.color) {
         return [reserve0, reserve1];
     } else {
@@ -388,8 +388,8 @@ export circuit getPairReserves(tokenA: CoinInfo, tokenB: CoinInfo): [QualifiedCo
 }
 
 /**
- * @title getPairIdentity circuit
- * @description Generates the unique identity hash for a token pair.
+ * @title getPairId circuit
+ * @description Generates the unique pairId hash for a token pair.
  * 
  * @remarks
  * This circuit creates a deterministic hash that uniquely identifies a trading pair
@@ -400,11 +400,31 @@ export circuit getPairReserves(tokenA: CoinInfo, tokenB: CoinInfo): [QualifiedCo
  * @param {CoinInfo} tokenA - The first token in the pair.
  * @param {CoinInfo} tokenB - The second token in the pair.
  *
- * @returns {Bytes<32>} - The unique identity hash for the pair.
+ * @returns {Bytes<32>} - The unique pairId hash for the pair.
  */
-export circuit getPairIdentity(tokenA: CoinInfo, tokenB: CoinInfo): Bytes<32> {
+export circuit getPairId(tokenA: CoinInfo, tokenB: CoinInfo): Bytes<32> {
     const [token0, token1] = LunarswapLibrary_sortCoins(tokenA, tokenB);
     return LunarswapLibrary_getIdentity(token0.color, token1.color, true);
+}
+
+/**
+ * @title getReserveId circuit
+ * @description Computes the reserve pairId for a given pair pairId and token.
+ *
+ * @remarks
+ * This circuit generates a unique identifier for a reserve by combining the pair's pairId
+ * with the token's information. It is used to look up or manage reserves for a specific token
+ * within a trading pair.
+ *
+ * @circuitInfo k=10, rows=20
+ *
+ * @param {Bytes<32>} pairId - The unique pairId hash of the trading pair.
+ * @param {Bytes<32>} tokenAType - The token type for which to compute the reserve pairId.
+ *
+ * @returns {Bytes<32>} - The unique reserve pairId for the given token in the pair.
+ */
+export circuit getReserveId(pairId: Bytes<32>, tokenAType: Bytes<32>): Bytes<32> {
+    return LunarswapLibrary_getIdentity(pairId, tokenAType, false);
 }
 
 /**
@@ -530,6 +550,6 @@ export circuit getLpTokenType(): Bytes<32> {
  * @returns {QualifiedCoinInfo} - The total supply of LP tokens for the pair.
  */
 export circuit getLpTokenTotalSupply(tokenA: CoinInfo, tokenB: CoinInfo): QualifiedCoinInfo {
-    const identity = getPairIdentity(tokenA, tokenB);
-    return LunarswapLiquidity_totalSupply(identity);
+    const pairId = getPairId(tokenA, tokenB);
+    return LunarswapLiquidity_totalSupply(pairId);
 }
