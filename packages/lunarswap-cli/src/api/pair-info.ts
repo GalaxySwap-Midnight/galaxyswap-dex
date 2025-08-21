@@ -99,28 +99,25 @@ export const getPairIdentityInfo = async (
   }
 };
 
-export const getLpTokenInfo = async (
-  lunarswap: Lunarswap,
-  logger: Logger,
-): Promise<void> => {
-  logger.info('Getting LP token information...');
-  try {
-    const name = await lunarswap.getLpTokenName();
-    const symbol = await lunarswap.getLpTokenSymbol();
-    const decimals = await lunarswap.getLpTokenDecimals();
-    const type = await lunarswap.getLpTokenType();
+// export const getLpTokenInfo = async (
+//   lunarswap: Lunarswap,
+//   logger: Logger,
+// ): Promise<void> => {
+//   logger.info('Getting LP token information...');
+//   try {
     
-    logger.info('');
-    logger.info('🪙 LP Token Information:');
-    logger.info(`   Name: ${name}`);
-    logger.info(`   Symbol: ${symbol}`);
-    logger.info(`   Decimals: ${decimals}`);
-    logger.info(`   Type: ${Buffer.from(type).toString('hex')}`);
-    logger.info('');
-  } catch (error) {
-    logger.error('❌ Failed to get LP token info:', error instanceof Error ? error.message : error);
-  }
-};
+    
+//     logger.info('');
+//     logger.info('🪙 LP Token Information:');
+//     logger.info(`   Name: ${name}`);
+//     logger.info(`   Symbol: ${symbol}`);
+//     logger.info(`   Decimals: ${decimals}`);
+//     logger.info(`   Type: ${Buffer.from(type).toString('hex')}`);
+//     logger.info('');
+//   } catch (error) {
+//     logger.error('❌ Failed to get LP token info:', error instanceof Error ? error.message : error);
+//   }
+// };
 
 export const getLpTokenTotalSupplyInfo = async (
   lunarswap: Lunarswap,

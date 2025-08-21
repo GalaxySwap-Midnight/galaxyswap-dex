@@ -24,15 +24,7 @@ module LunarswapLiquidity {
     import "./node_modules/@midnight-dapps/math/dist/Uint128" prefix Uint128_;
     import "./node_modules/@midnight-dapps/math/dist/Bytes32" prefix Bytes32_;
 
-    export ledger _counter: Counter;
-    export ledger _nonce: Bytes<32>;
-    // That is a map of all the liquidity LP tokens, the key is the pair hash.
-    export ledger _totalSupply: Map<Bytes<32>, QualifiedCoinInfo>;
-    export ledger _name: Opaque<"string">;
-    export ledger _symbol: Opaque<"string">;
-    export ledger _decimals: Uint<8>;
-    export ledger _type: Bytes<32>;
-
+    import "./interfaces/ILunarswapLiquidity";
 
     /**
      * @title initialize circuit
@@ -55,10 +47,10 @@ module LunarswapLiquidity {
         symbol_: Opaque<"string">,
         decimals_: Uint<8>
     ): [] {
-        _nonce = nonce_;
-        _name = name_;
-        _symbol = symbol_;
-        _decimals = decimals_;
+        lpTokenNonce = nonce_;
+        lpTokenName = name_;
+        lpTokenSymbol = symbol_;
+        lpTokenDecimals = decimals_;
         return [];
     }
 
@@ -80,61 +72,9 @@ module LunarswapLiquidity {
      * @returns [] - No return values.
      */
     export circuit initializePairLpToken(pairId: Bytes<32>): [] {
-        assert (!_totalSupply.member(pairId)) "LunarswapLiquidity: initializePairLpToken() - Lp token already exists";
-        _totalSupply.insert(pairId, default<QualifiedCoinInfo>);
+        assert (!lpTotalSupply.member(pairId)) "LunarswapLiquidity: initializePairLpToken() - Lp token already exists";
+        lpTotalSupply.insert(pairId, default<QualifiedCoinInfo>);
         return [];
-    }
-
-    /**
-     * @title name circuit
-     * @description Returns the name of the LP token.
-     * 
-     * @remarks
-     * This circuit retrieves the configured name for liquidity provider tokens.
-     *
-     * @returns {Opaque<"string">} - The LP token name.
-     */
-    export circuit name(): Opaque<"string"> {
-        return _name;
-    }
-
-    /**
-     * @title symbol circuit
-     * @description Returns the symbol of the LP token.
-     * 
-     * @remarks
-     * This circuit retrieves the configured symbol for liquidity provider tokens.
-     *
-     * @returns {Opaque<"string">} - The LP token symbol.
-     */
-    export circuit symbol(): Opaque<"string"> {
-        return _symbol;
-    }
-
-    /**
-     * @title decimals circuit
-     * @description Returns the number of decimals for LP tokens.
-     * 
-     * @remarks
-     * This circuit retrieves the configured decimal places for liquidity provider tokens.
-     *
-     * @returns {Uint<8>} - The number of decimal places for LP tokens.
-     */
-    export circuit decimals(): Uint<8> {
-        return _decimals;
-    }
-
-    /**
-     * @title type circuit
-     * @description Returns the type of the LP token.
-     * 
-     * @remarks
-     * This circuit retrieves the configured type for liquidity provider tokens.
-     *
-     * @returns {Bytes<32>} - The type of the LP token.
-     */
-    export circuit type(): Bytes<32> {
-        return _type;
     }
 
     /**
@@ -155,8 +95,8 @@ module LunarswapLiquidity {
      * @returns {Uint<128>} - The total supply of LP tokens for the pair.
      */
     export circuit totalSupply(pairId: Bytes<32>): QualifiedCoinInfo {
-        assert (_totalSupply.member(pairId)) "LunarswapLiquidity: totalSupply() - Lp token not found";
-        return _totalSupply.lookup(pairId);
+        assert (lpTotalSupply.member(pairId)) "LunarswapLiquidity: totalSupply() - Lp token not found";
+        return lpTotalSupply.lookup(pairId);
     }
 
     /**
@@ -183,21 +123,21 @@ module LunarswapLiquidity {
         amount: Uint<128>
     ): CoinInfo {
         _counter.increment(1);
-        const newNonce = evolve_nonce(_counter, _nonce);
+        const newNonce = evolve_nonce(_counter, lpTokenNonce);
         // pairId is dealed as a domainSep in the mint_token circuit
         const ret = mint_token(pairId, amount, newNonce, recipient);
 
-        if (Bytes32_isZero(_type)) {
-            _type = ret.color;
+        if (Bytes32_isZero(lpTokenType)) {
+            lpTokenType = ret.color;
         }
         
         const newTotalSupply = QualifiedCoinInfo {
             nonce: ret.nonce,
             color: ret.color,
-            value: Uint128_addChecked(_totalSupply.lookup(pairId).value, amount),
-            mt_index: _totalSupply.lookup(pairId).mt_index,
+            value: Uint128_addChecked(lpTotalSupply.lookup(pairId).value, amount),
+            mt_index: lpTotalSupply.lookup(pairId).mt_index,
         };
-        _totalSupply.insert(pairId, newTotalSupply);
+        lpTotalSupply.insert(pairId, newTotalSupply);
         
         return ret;
     }
@@ -229,7 +169,7 @@ module LunarswapLiquidity {
         coin: CoinInfo, 
         amount: Uint<128>
     ): SendResult {
-        assert _totalSupply.member(pairId) "LunarswapLiquidity: totalSupply() - Lp token not found";
+        assert lpTotalSupply.member(pairId) "LunarswapLiquidity: totalSupply() - Lp token not found";
         assert coin.value >= amount "LunarswapLiquidity: burn() - Insufficient coin value";
 
         receive(coin);
@@ -237,10 +177,10 @@ module LunarswapLiquidity {
         const newTotalSupply = QualifiedCoinInfo {
             nonce: coin.nonce,
             color: coin.color,
-            value: Uint128_sub(_totalSupply.lookup(pairId).value, amount),
-            mt_index: _totalSupply.lookup(pairId).mt_index, // TODO: needs review
+            value: Uint128_sub(lpTotalSupply.lookup(pairId).value, amount),
+            mt_index: lpTotalSupply.lookup(pairId).mt_index, // TODO: needs review
         };
-        _totalSupply.insert(pairId, newTotalSupply);
+        lpTotalSupply.insert(pairId, newTotalSupply);
         
         const ret = send_immediate(coin, burn_address(), amount);
         if (ret.change.is_some) {

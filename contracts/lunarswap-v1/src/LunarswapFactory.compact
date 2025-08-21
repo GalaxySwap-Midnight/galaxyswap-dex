@@ -298,7 +298,8 @@ module LunarswapFactory {
      */
     export circuit createPair(pairId: Bytes<32>, token0: CoinInfo, token1: CoinInfo): Pair {
         // TODO: I am not sure if the Coin.Color can be set to zero.
-        assert (!Utils_isKeyOrAddressZero(right<ZswapCoinPublicKey, ContractAddress>( ContractAddress { bytes: token0.color }))) "LunarswapFactory: Invalid token color";
+        // TODO: UPDATE that assert is paused because the tDust token is zero address color.
+        // assert (!Utils_isKeyOrAddressZero(right<ZswapCoinPublicKey, ContractAddress>( ContractAddress { bytes: token0.color }))) "LunarswapFactory: Invalid token color";
         const pair = LunarswapPair_initializePair(pairId, token0, token1); 
         pool.insert(pairId, pair);
         return pair;

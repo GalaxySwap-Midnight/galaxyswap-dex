@@ -344,6 +344,22 @@ export class LunarswapIntegration {
     }
   }
 
+  async getPairId(tokenA: TokenType, tokenB: TokenType): Promise<Uint8Array> {
+    if (!this.isReady) {
+      console.warn('Contract not ready for getPairId operation');
+      return new Uint8Array(32);
+    }
+    
+    if (!this.poolData || !this.lunarswap) {
+      return new Uint8Array(32);
+    }
+
+    const tokenAInfo = LunarswapIntegration.toCoinInfo(tokenA, BigInt(0));
+    const tokenBInfo = LunarswapIntegration.toCoinInfo(tokenB, BigInt(0));
+
+    return this.lunarswapSimulator.getPairId(tokenAInfo, tokenBInfo);
+  }
+
   /**
    * Swap exact input tokens for output tokens
    */

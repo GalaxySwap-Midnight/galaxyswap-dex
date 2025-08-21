@@ -411,24 +411,6 @@ describe('Lunarswap', () => {
     });
   });
 
-  describe('getLpTokenName', () => {
-    it('should have correct LP token name', () => {
-      expect(lunarswap.getLpTokenName()).toBe('Lunarswap LP');
-    });
-  });
-
-  describe('getLpTokenSymbol', () => {
-    it('should have correct LP token symbol', () => {
-      expect(lunarswap.getLpTokenSymbol()).toBe('LP');
-    });
-  });
-
-  describe('getLpTokenDecimals', () => {
-    it('should have correct LP token decimals', () => {
-      expect(lunarswap.getLpTokenDecimals()).toBe(18n);
-    });
-  });
-
   describe('getLpTokenTotalSupply', () => {
     it('should track LP token total supply correctly', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 10000n);

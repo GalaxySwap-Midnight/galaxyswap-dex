@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import { LiquidityProgress } from '../liquidity-progress';
 import { ZkWarningDialog } from '../zk-warning-dialog';
+import { Buffer } from 'buffer';
 
 interface PositionData {
   pairId: string;
@@ -44,7 +45,7 @@ interface SetWithdrawalStepProps {
 }
 
 export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
-  const { lunarswap, status } = useLunarswapContext();
+  const { lunarswap, status, lpTotalSupply } = useLunarswapContext();
   const { isConnected, walletAPI } = useWallet();
   const [lpTokenAmount, setLpTokenAmount] = useState('');
   const [token0Amount, setToken0Amount] = useState('');
@@ -96,17 +97,19 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
       );
       setPairReserves(reserves);
 
-      // Get total LP supply for this pair
-      // TODO: get this from the ledger data instead of the contract
-      const lpSupply = await lunarswap.getLpTokenTotalSupply(
-        decodeTokenType(positionData.token0Type).toString(),
-        decodeTokenType(positionData.token1Type).toString()
-      );
-      setTotalLpSupply(lpSupply.value);
+      // Use lpTotalSupply from context (ledger state) for this pair
+      if (!lpTotalSupply) {
+        throw new Error('LP total supply not available in context');
+      }
+
+      const pairId = await lunarswap.getPairId(decodeTokenType(positionData.token0Type), decodeTokenType(positionData.token1Type));
+      const supplyFound = lpTotalSupply.lookup(pairId);
+
+      setTotalLpSupply(supplyFound.value);
 
       console.log('Pair data fetched:', {
         reserves: reserves?.map(r => r.toString()),
-        totalLpSupply: lpSupply.value.toString()
+        totalLpSupply: supplyFound.value.toString()
       });
     } catch (error) {
       console.error('Failed to fetch pair data:', error);
@@ -233,6 +236,8 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
       setToken0Amount('');
       setToken1Amount('');
 
+      // Transaction completed successfully - progress dialog will close via onComplete callback
+
     } catch (error) {
       console.error('Error removing liquidity:', error);
       
@@ -242,13 +247,19 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
           toast.error('Insufficient liquidity balance for removal');
         } else if (error.message.includes('Slippage')) {
           toast.error('Transaction failed due to high slippage. Try reducing the amount.');
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          toast.error('Network connection issue. Please check your internet connection and try again.');
+        } else if (error.message.includes('wallet')) {
+          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
         } else {
           toast.error(`Remove liquidity failed: ${error.message}`);
         }
       } else {
         toast.error('Remove liquidity failed. Please try again.');
       }
-    } finally {
+
+      // Close progress dialog on error
+      setShowProgress(false);
       setIsRemovingLiquidity(false);
       setIsProofGenerating(false);
     }
@@ -260,11 +271,15 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
 
   const handleProgressClose = () => {
     setShowProgress(false);
+    setIsRemovingLiquidity(false);
+    setIsProofGenerating(false);
   };
 
   const handleProgressComplete = () => {
     setShowProgress(false);
-    // Reset form or show success message
+    setIsRemovingLiquidity(false);
+    setIsProofGenerating(false);
+    // Reset form after successful completion
     setLpTokenAmount('');
     setToken0Amount('');
     setToken1Amount('');

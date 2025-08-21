@@ -168,10 +168,10 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
     setIsSubmitting(true);
     setShowProgress(true);
 
-    // Pause the context refresh during transaction
-    pauseRefresh();
-
     try {
+      // Pause the context refresh during transaction
+      pauseRefresh();
+
       // Validate amounts
       if (!amountA || !amountB || Number.parseFloat(amountA) <= 0 || Number.parseFloat(amountB) <= 0) {
         throw new Error('Please enter valid amounts greater than 0');
@@ -187,15 +187,13 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         throw new Error('Wallet coin public key not available. Please ensure your wallet is properly connected.');
       }
 
-      // Create LunarswapIntegration instance
+      // Create contract integration
       const lunarswapIntegration = createContractIntegration(
         providers,
         walletAPI,
         callback,
         runtimeConfig.LUNARSWAP_ADDRESS,
       );
-
-      // Validate lunarswap integration
       if (!lunarswapIntegration) {
         throw new Error('Failed to create contract integration. Please try again.');
       }
@@ -218,26 +216,21 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage tolerance
         );
 
-      // Use the LunarswapIntegration to add liquidity with timeout
+      // Use the LunarswapIntegration to add liquidity
       // Pass token types directly as strings (TokenType from @midnight-ntwrk/ledger)
       console.log('[DEBUG] Token types being passed to addLiquidity:');
       console.log('tokenA type:', pairData.tokenA.type);
       console.log('tokenB type:', pairData.tokenB.type);
       
-      const txData = await Promise.race([
-        lunarswapIntegration.addLiquidity(
-          pairData.tokenA.type,
-          pairData.tokenB.type,
-          BigInt(amountA),
-          BigInt(amountB),
-          BigInt(amountAMin),
-          BigInt(amountBMin),
-          walletAPI.coinPublicKey,
-        ),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Transaction timeout. Please try again.')), 60000)
-        )
-      ]);
+      const txData = await lunarswapIntegration.addLiquidity(
+        pairData.tokenA.type,
+        pairData.tokenB.type,
+        BigInt(amountA),
+        BigInt(amountB),
+        BigInt(amountAMin),
+        BigInt(amountBMin),
+        walletAPI.coinPublicKey,
+      );
 
       toast.success('Liquidity added successfully!');
 
@@ -245,6 +238,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       setAmountA('');
       setAmountB('');
       setCalculatedAmounts(null);
+
+      // Transaction completed successfully - progress dialog will close via onComplete callback
 
     } catch (error) {
       console.error('[AddLiquidity] Error:', error);
@@ -255,15 +250,21 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
           toast.error('Insufficient token balance for liquidity addition');
         } else if (error.message.includes('Slippage')) {
           toast.error('Transaction failed due to high slippage. Try adjusting amounts.');
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          toast.error('Network connection issue. Please check your internet connection and try again.');
+        } else if (error.message.includes('wallet')) {
+          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
         } else {
           toast.error(`Add liquidity failed: ${error.message}`);
         }
       } else {
         toast.error('Add liquidity failed. Please try again.');
       }
-    } finally {
-      setIsSubmitting(false);
+
+      // Close progress dialog on error
       setShowProgress(false);
+      setIsSubmitting(false);
+    } finally {
       // Resume the context refresh after transaction
       resumeRefresh();
       // Clear the safety timeout
@@ -276,7 +277,11 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
   const handleProgressComplete = () => {
     setShowProgress(false);
-    // The transaction is already completed in handleProceedWithAddLiquidity
+    setIsSubmitting(false);
+    // Reset form after successful completion
+    setAmountA('');
+    setAmountB('');
+    setCalculatedAmounts(null);
   };
 
   const handleProgressClose = () => {

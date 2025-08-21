@@ -32,7 +32,7 @@ import {
 } from './types';
 import {
   deployContract,
-  FinalizedCallTxData,
+  type FinalizedCallTxData,
   findDeployedContract,
 } from '@midnight-ntwrk/midnight-js-contracts';
 
@@ -78,10 +78,6 @@ export interface ILunarswap {
     tokenB: CoinInfo,
   ): Promise<[QualifiedCoinInfo, QualifiedCoinInfo]>;
   getPairId(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Uint8Array>;
-  getLpTokenName(): Promise<string>;
-  getLpTokenSymbol(): Promise<string>;
-  getLpTokenDecimals(): Promise<bigint>;
-  getLpTokenType(): Promise<Uint8Array>;
   getLpTokenTotalSupply(
     tokenA: CoinInfo,
     tokenB: CoinInfo,
@@ -398,26 +394,6 @@ export class Lunarswap implements ILunarswap {
       tokenA,
       tokenB,
     );
-    return txData.private.result;
-  }
-
-  async getLpTokenName(): Promise<string> {
-    const txData = await this.deployedContract.callTx.getLpTokenName();
-    return txData.private.result;
-  }
-
-  async getLpTokenSymbol(): Promise<string> {
-    const txData = await this.deployedContract.callTx.getLpTokenSymbol();
-    return txData.private.result;
-  }
-
-  async getLpTokenDecimals(): Promise<bigint> {
-    const txData = await this.deployedContract.callTx.getLpTokenDecimals();
-    return txData.private.result;
-  }
-
-  async getLpTokenType(): Promise<Uint8Array> {
-    const txData = await this.deployedContract.callTx.getLpTokenType();
     return txData.private.result;
   }
 

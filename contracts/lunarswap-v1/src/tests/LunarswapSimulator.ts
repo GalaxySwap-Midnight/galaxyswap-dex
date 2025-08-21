@@ -314,42 +314,6 @@ export class LunarswapSimulator
     return result.result;
   }
 
-  public getLpTokenName(sender?: CoinPublicKey): string {
-    const context = sender
-      ? {
-          ...this.circuitContext,
-          currentZswapLocalState: emptyZswapLocalState(sender),
-        }
-      : this.circuitContext;
-    const result = this.contract.circuits.getLpTokenName(context);
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
-  public getLpTokenSymbol(sender?: CoinPublicKey): string {
-    const context = sender
-      ? {
-          ...this.circuitContext,
-          currentZswapLocalState: emptyZswapLocalState(sender),
-        }
-      : this.circuitContext;
-    const result = this.contract.circuits.getLpTokenSymbol(context);
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
-  public getLpTokenDecimals(sender?: CoinPublicKey): bigint {
-    const context = sender
-      ? {
-          ...this.circuitContext,
-          currentZswapLocalState: emptyZswapLocalState(sender),
-        }
-      : this.circuitContext;
-    const result = this.contract.circuits.getLpTokenDecimals(context);
-    this.circuitContext = result.context;
-    return result.result;
-  }
-
   public getLpTokenTotalSupply(
     tokenA: CoinInfo,
     tokenB: CoinInfo,

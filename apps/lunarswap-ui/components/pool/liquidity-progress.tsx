@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useWallet } from '@/hooks/use-wallet';
 
 interface LiquidityProgressProps {
   isOpen: boolean;
@@ -28,55 +29,11 @@ interface LiquidityProgressProps {
   operationType?: 'add-liquidity' | 'remove-liquidity' | 'swap';
 }
 
-interface Step {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'active' | 'completed' | 'error';
-}
-
 export function LiquidityProgress({ isOpen, onClose, onComplete, operationType = 'add-liquidity' }: LiquidityProgressProps) {
-  const [currentStep, setCurrentStep] = useState<string>('checking-balance');
-  const [steps, setSteps] = useState<Step[]>([
-    {
-      id: 'checking-balance',
-      title: 'Checking Balance',
-      description: 'Verifying token balances and preparing transaction',
-      status: 'pending'
-    },
-    {
-      id: 'fetching-params',
-      title: 'Fetching Parameters',
-      description: 'Downloading proof parameters and circuit keys',
-      status: 'pending'
-    },
-    {
-      id: 'generating-proof',
-      title: 'Generating ZK Proof',
-      description: 'Creating zero-knowledge proof for privacy',
-      status: 'pending'
-    },
-    {
-      id: 'signing-transaction',
-      title: 'Signing Transaction',
-      description: 'Signing with Midnight Lace wallet',
-      status: 'pending'
-    },
-    {
-      id: 'submitting-transaction',
-      title: 'Submitting Transaction',
-      description: 'Broadcasting transaction to network',
-      status: 'pending'
-    },
-    {
-      id: 'confirming',
-      title: 'Confirming Transaction',
-      description: 'Waiting for blockchain confirmation',
-      status: 'pending'
-    }
-  ]);
+  const { snackBarText, callback } = useWallet();
   const [showCloseWarning, setShowCloseWarning] = useState(false);
   const [isTransactionActive, setIsTransactionActive] = useState(false);
+  const [isTransactionComplete, setIsTransactionComplete] = useState(false);
 
   // Get operation-specific content
   const getOperationContent = () => {
@@ -130,72 +87,46 @@ export function LiquidityProgress({ isOpen, onClose, onComplete, operationType =
     };
   }, [isTransactionActive]);
 
-  // Reset steps when dialog opens
+  // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setSteps(prev => prev.map(step => ({ ...step, status: 'pending' as const })));
-      setCurrentStep('checking-balance');
       setIsTransactionActive(true);
+      setIsTransactionComplete(false);
+      console.log('[LiquidityProgress] Dialog opened, transaction starting...');
     } else {
       setIsTransactionActive(false);
+      setIsTransactionComplete(false);
     }
   }, [isOpen]);
 
-  // Simulate progress through steps based on typical transaction flow
+  // Check for completion when snackBarText indicates transaction is finalized
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !snackBarText) return;
 
-    const stepOrder = [
-      'checking-balance',
-      'fetching-params', 
-      'generating-proof',
-      'signing-transaction',
-      'submitting-transaction',
-      'confirming'
-    ];
+    console.log('[LiquidityProgress] snackBarText updated:', snackBarText);
 
-    let currentIndex = 0;
+    // Check if the transaction is finalized
+    if (snackBarText.includes('Transaction finalized')) {
+      console.log('[LiquidityProgress] Transaction finalized, completing...');
+      setIsTransactionComplete(true);
+      setIsTransactionActive(false);
+      
+      // Call onComplete after a short delay to show the success state
+      setTimeout(() => {
+        onComplete();
+      }, 2000); // Give user time to see the success message
+    }
+  }, [snackBarText, isOpen, onComplete]);
 
-    const progressInterval = setInterval(() => {
-      if (currentIndex < stepOrder.length) {
-        const stepId = stepOrder[currentIndex];
-        
-        // Update previous step to completed
-        if (currentIndex > 0) {
-          setSteps(prev => prev.map(step => 
-            step.id === stepOrder[currentIndex - 1] 
-              ? { ...step, status: 'completed' as const }
-              : step
-          ));
-        }
-
-        // Set current step to active
-        setSteps(prev => prev.map(step => 
-          step.id === stepId 
-            ? { ...step, status: 'active' as const }
-            : step
-        ));
-
-        setCurrentStep(stepId);
-        currentIndex++;
-      } else {
-        // All steps completed
-        setSteps(prev => prev.map(step => ({ ...step, status: 'completed' as const })));
-        clearInterval(progressInterval);
-        setIsTransactionActive(false);
-        
-        // Call onComplete after a short delay
-        setTimeout(() => {
-          onComplete();
-        }, 1000);
-      }
-    }, 3000); // Change step every 3 seconds to match typical transaction times
-
-    return () => clearInterval(progressInterval);
-  }, [isOpen, onComplete]);
+  // Debug effect to log snackBarText changes
+  useEffect(() => {
+    if (isOpen) {
+      console.log('[LiquidityProgress] snackBarText:', snackBarText);
+    }
+  }, [snackBarText, isOpen]);
 
   const handleDialogClose = () => {
-    if (isTransactionActive) {
+    if (isTransactionActive && !isTransactionComplete) {
       setShowCloseWarning(true);
     } else {
       onClose();
@@ -204,6 +135,7 @@ export function LiquidityProgress({ isOpen, onClose, onComplete, operationType =
 
   const handleForceClose = () => {
     setIsTransactionActive(false);
+    setIsTransactionComplete(false);
     setShowCloseWarning(false);
     onClose();
   };
@@ -213,134 +145,119 @@ export function LiquidityProgress({ isOpen, onClose, onComplete, operationType =
       <Dialog open={isOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-lg" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle className="text-center text-lg font-semibold">
-              {operationContent.title}
+            <DialogTitle className="flex items-center gap-2 text-lg text-blue-600">
+              {isTransactionComplete ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+              {isTransactionComplete ? 'Transaction Complete' : operationContent.title}
             </DialogTitle>
-            <DialogDescription className="text-center text-sm">
-              {operationContent.description}
+            <DialogDescription className="text-sm">
+              {isTransactionComplete 
+                ? 'Your transaction has been successfully processed and finalized on the blockchain.'
+                : operationContent.description
+              }
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Warning Banner */}
-            {isTransactionActive && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <span className="text-sm font-medium text-red-800 dark:text-red-200">
-                    Transaction in Progress
-                  </span>
+            {isTransactionActive && !isTransactionComplete && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="h-3 w-3 text-red-600" />
+                  <span className="font-medium text-xs">Transaction in Progress</span>
                 </div>
-                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                <div className="text-xs text-red-700 dark:text-red-300">
                   Do not close this dialog or refresh the page. Your transaction may fail if interrupted.
-                </p>
+                </div>
               </div>
             )}
 
-            {/* Progress Steps */}
-            <div className="space-y-3">
-              {steps.map((step, index) => (
-                <div key={step.id} className="flex items-start space-x-3">
-                  {/* Step Dot and Line */}
-                  <div className="flex flex-col items-center">
-                    {/* Previous Line */}
-                    {index > 0 && (
-                      <div 
-                        className={`w-0.5 h-6 mb-1 ${
-                          steps[index - 1].status === 'completed' 
-                            ? 'bg-blue-500' 
-                            : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      />
-                    )}
-                    
-                    {/* Step Dot */}
-                    <div className="relative">
-                      <div 
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                          step.status === 'completed'
-                            ? 'bg-blue-500 border-blue-500'
-                            : step.status === 'active'
-                            ? 'bg-blue-500 border-blue-500 animate-pulse'
-                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                        }`}
-                      >
-                        {step.status === 'completed' ? (
-                          <Check className="w-3 h-3 text-white" />
-                        ) : step.status === 'active' ? (
-                          <Loader2 className="w-3 h-3 text-white animate-spin" />
-                        ) : (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Next Line */}
-                    {index < steps.length - 1 && (
-                      <div 
-                        className={`w-0.5 h-6 mt-1 ${
-                          step.status === 'completed' 
-                            ? 'bg-blue-500' 
-                            : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      />
-                    )}
-                  </div>
-
-                  {/* Step Content */}
-                  <div className="flex-1 pt-0.5">
-                    <h3 
-                      className={`font-medium text-sm ${
-                        step.status === 'active' 
-                          ? 'text-blue-600 dark:text-blue-400' 
-                          : step.status === 'completed'
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-900 dark:text-gray-100'
-                      }`}
-                    >
-                      {step.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                      {step.description}
-                    </p>
-                  </div>
+            {/* Success Banner */}
+            {isTransactionComplete && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="font-medium text-xs">Transaction Successful</span>
                 </div>
-              ))}
+                <div className="text-xs text-green-700 dark:text-green-300">
+                  Your transaction has been finalized on the blockchain. You can now close this dialog.
+                </div>
+              </div>
+            )}
+
+            {/* Progress Indicator */}
+            <div className={`p-3 rounded ${isTransactionComplete ? 'bg-green-50 dark:bg-green-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+              <div className="flex items-center gap-3">
+                {isTransactionComplete ? (
+                  <Check className="w-6 h-6 text-green-500" />
+                ) : (
+                  <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                )}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {snackBarText || (isTransactionComplete ? 'Transaction completed successfully!' : 'Processing transaction...')}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                    {isTransactionComplete 
+                      ? 'Your transaction is now live on the blockchain'
+                      : snackBarText 
+                        ? 'Please wait while we process your transaction'
+                        : 'Initializing transaction...'
+                    }
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-              <div 
-                className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
-                style={{ 
-                  width: `${((steps.filter(s => s.status === 'completed').length + 
-                    (steps.find(s => s.status === 'active') ? 0.5 : 0)) / steps.length) * 100}%` 
-                }}
-              />
+            <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded">
+              <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Progress
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div 
+                  className={`h-1.5 rounded-full transition-all duration-500 ease-out ${
+                    isTransactionComplete 
+                      ? 'bg-green-500' 
+                      : 'bg-blue-500 animate-pulse'
+                  }`}
+                  style={{ width: '100%' }}
+                />
+              </div>
             </div>
 
-            {/* Status Text */}
-            <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {steps.find(s => s.status === 'active')?.description || 
-                 'All steps completed successfully!'}
-              </p>
+            {/* Status Information */}
+            <div className={`p-2 rounded ${isTransactionComplete ? 'bg-green-50 dark:bg-green-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+              <div className="text-xs space-y-0.5">
+                <div className={`font-medium ${isTransactionComplete ? 'text-green-800 dark:text-green-200' : 'text-blue-800 dark:text-blue-200'}`}>
+                  {isTransactionComplete ? 'Final Status:' : 'Current Status:'}
+                </div>
+                <div className={isTransactionComplete ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'}>
+                  {snackBarText || (isTransactionComplete ? 'Transaction finalized successfully!' : 'Initializing transaction...')}
+                </div>
+                {!snackBarText && !isTransactionComplete && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Waiting for transaction to start...
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-center space-x-3 pt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDialogClose}
-                disabled={isTransactionActive}
-                className="text-sm px-3 py-1.5"
-              >
-                {isTransactionActive ? 'Close (Disabled)' : 'Close'}
-              </Button>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex justify-center pt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDialogClose}
+              disabled={isTransactionActive && !isTransactionComplete}
+              className="text-sm px-3 py-1.5"
+            >
+              {isTransactionComplete ? 'Close' : (isTransactionActive ? 'Close (Disabled)' : 'Close')}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

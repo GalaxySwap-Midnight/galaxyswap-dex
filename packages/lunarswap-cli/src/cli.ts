@@ -26,7 +26,6 @@ import {
   getPairInfo,
   getPairReservesInfo,
   getPairIdentityInfo,
-  getLpTokenInfo,
   getLpTokenTotalSupplyInfo,
 } from './api/pair-info';
 
@@ -303,11 +302,11 @@ const handleGetPairIdentity = async (
   await getPairIdentityInfo(lunarswap, tokenA, tokenB, logger);
 };
 
-const handleGetLpTokenInfo = async (
-  lunarswap: Lunarswap,
-): Promise<void> => {
-  await getLpTokenInfo(lunarswap, logger);
-};
+// const handleGetLpTokenInfo = async (
+//   lunarswap: Lunarswap,
+// ): Promise<void> => {
+//   await getLpTokenInfo(lunarswap, logger);
+// };
 
 const handleGetLpTokenTotalSupply = async (
   lunarswap: Lunarswap,
@@ -358,12 +357,9 @@ const mainLoop = async (
         await handleGetPairIdentity(lunarswap, rli);
         break;
       case '10':
-        await handleGetLpTokenInfo(lunarswap);
-        break;
-      case '11':
         await handleGetLpTokenTotalSupply(lunarswap, rli);
         break;
-      case '12':
+      case '11':
         logger.info('Exiting...');
         return;
       default:

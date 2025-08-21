@@ -248,7 +248,6 @@ module LunarswapRouter {
 
         assert (totalSupply.value > 0) "LunarswapRouter: removeLiquidity() - totalSupply is zero";
         assert (totalSupply.color == liquidity.color) "LunarswapRouter: removeLiquidity() - mismatched LP token color";
-        assert (totalSupply.nonce == liquidity.nonce) "LunarswapRouter: removeLiquidity() - mismatched LP token nonce";
 
         // Send the liquidity to the pair
         receive(liquidity);

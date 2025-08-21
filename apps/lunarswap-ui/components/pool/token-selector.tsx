@@ -13,13 +13,13 @@ import { useState } from 'react';
 import { TokenIcon } from '@/components/token-icon';
 import {
   popularTokens,
-  getAvailableTokensForSelection,
 } from '@/lib/token-config';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
+import type { Token as UiToken } from '@/lib/token-config';
 
 interface TokenSelectorProps {
-  selectedToken: any;
-  onSelectToken: (token: any) => void;
+  selectedToken: UiToken | null;
+  onSelectToken: (token: UiToken) => void;
   placeholder?: string;
   showTokenIcon?: boolean;
 }
@@ -34,14 +34,9 @@ export function TokenSelector({
   const [searchQuery, setSearchQuery] = useState('');
   const { allPairs, status } = useLunarswapContext();
 
-  // Get available tokens from pools, fallback to all popular tokens if empty
-  let availableTokens =
-    allPairs.length > 0
-      ? getAvailableTokensForSelection(allPairs)
-      : popularTokens;
-  if (!availableTokens || availableTokens.length === 0) {
-    availableTokens = popularTokens;
-  }
+  // Always show all popular tokens for add liquidity, not just tokens in existing pools
+  // This allows users to create new pools for any token pair
+  const availableTokens = popularTokens;
 
   const filteredTokens = availableTokens.filter(
     (token) =>
@@ -49,7 +44,7 @@ export function TokenSelector({
       token.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const handleSelectToken = (token: any) => {
+  const handleSelectToken = (token: UiToken) => {
     onSelectToken(token);
     setOpen(false);
   };
@@ -110,6 +105,7 @@ export function TokenSelector({
             {filteredTokens.map((token) => (
               <button
                 key={token.symbol}
+                type="button"
                 className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                 onClick={() => handleSelectToken(token)}
               >

@@ -131,17 +131,27 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
   // Set initial tokens from navigation state
   useEffect(() => {
+    console.log('SwapCard - initialTokens effect triggered:', {
+      initialTokens,
+      popularTokensCount: popularTokens.length,
+    });
+    
     if (
       initialTokens?.fromToken &&
-      initialTokens?.toToken &&
-      availableTokens.length > 0
+      initialTokens?.toToken
     ) {
-      const fromTokenData = availableTokens.find(
+      // Use popularTokens directly since we know they contain all available tokens
+      const fromTokenData = popularTokens.find(
         (t) => t.symbol === initialTokens.fromToken,
       );
-      const toTokenData = availableTokens.find(
+      const toTokenData = popularTokens.find(
         (t) => t.symbol === initialTokens.toToken,
       );
+
+      console.log('SwapCard - Found token data:', {
+        fromTokenData: fromTokenData?.symbol,
+        toTokenData: toTokenData?.symbol,
+      });
 
       if (fromTokenData) {
         setFromToken(fromTokenData);
@@ -150,7 +160,7 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
         setToToken(toTokenData);
       }
     }
-  }, [initialTokens, availableTokens]);
+  }, [initialTokens]);
 
   // Function to get available tokens for a specific selected token
   const getAvailableTokensForToken = useCallback(
@@ -246,10 +256,22 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
     console.log('Swap card - Getting available tokens:', {
       status,
       allPairsLength: allPairs.length,
+      hasInitialTokens: !!initialTokens,
     });
 
     // Set loading state when starting to fetch tokens
     setIsLoadingTokens(true);
+
+    // If we have initial tokens from navigation, show all popular tokens
+    // This allows users to select any token pair from the landing page
+    if (initialTokens?.fromToken && initialTokens?.toToken) {
+      console.log('Swap card - Using all popular tokens due to initial tokens');
+      setAvailableTokens(popularTokens);
+      setAvailableTokensForFrom(popularTokens);
+      setAvailableTokensForTo(popularTokens);
+      setIsLoadingTokens(false);
+      return;
+    }
 
     // If we have pairs but status is not connected yet, still try to get tokens
     if (allPairs.length === 0) {
@@ -306,7 +328,7 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
     // Clear loading state after token processing is complete
     setIsLoadingTokens(false);
-  }, [status, allPairs]);
+  }, [status, allPairs, initialTokens]);
 
   // Update contextual token lists when tokens change or when availableTokens are loaded
   useEffect(() => {
@@ -736,6 +758,9 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       // Reset form after successful swap
       setFromAmount('');
       setToAmount('');
+
+      // Transaction completed successfully - progress dialog will close via onComplete callback
+
     } catch (error) {
       console.error('Swap error:', error);
       
@@ -745,13 +770,19 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           toast.error('Insufficient token balance for swap');
         } else if (error.message.includes('Slippage')) {
           toast.error('Transaction failed due to high slippage. Try adjusting amounts.');
+        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          toast.error('Network connection issue. Please check your internet connection and try again.');
+        } else if (error.message.includes('wallet')) {
+          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
         } else {
           toast.error(`Swap failed: ${error.message}`);
         }
       } else {
         toast.error('Swap failed. Please try again.');
       }
-    } finally {
+
+      // Close progress dialog on error
+      setShowProgress(false);
       setIsSwapping(false);
       setIsProofGenerating(false);
     }
@@ -806,15 +837,19 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
     window.open('https://midnight.network/test-faucet', '_blank');
   };
 
-  const handleProgressClose = () => {
-    setShowProgress(false);
-  };
-
   const handleProgressComplete = () => {
     setShowProgress(false);
-    // Reset form or show success message
+    setIsSwapping(false);
+    setIsProofGenerating(false);
+    // Reset form after successful completion
     setFromAmount('');
     setToAmount('');
+  };
+
+  const handleProgressClose = () => {
+    setShowProgress(false);
+    setIsSwapping(false);
+    setIsProofGenerating(false);
   };
 
   // Render different content based on mode

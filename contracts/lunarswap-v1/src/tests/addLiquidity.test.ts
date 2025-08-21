@@ -3,13 +3,14 @@ import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
 } from '@midnight-dapps/lunarswap-sdk';
-import { decodeCoinPublicKey, encodeCoinPublicKey, EncodedRecipient, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
+import { decodeCoinPublicKey, encodeCoinInfo, encodeCoinPublicKey, EncodedRecipient, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
 import { getZswapNetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
 import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { createCoinInfo, nativeToken } from '@midnight-ntwrk/zswap';
 
 const NONCE = new Uint8Array(32).fill(0x44);
 const DOMAIN = new Uint8Array(32).fill(0x44);
@@ -1148,7 +1149,7 @@ describe('addLiquidity', () => {
      */
     it('should handle concurrent pair creation', () => {
       const recipient = createEitherFromHex(LP_USER);
-
+      
       // Create multiple pairs simultaneously
       const usdcCoin1 = usdc.mint(createEitherFromHex(LP_USER), 2000n);
       const nightCoin1 = night.mint(createEitherFromHex(LP_USER), 2000n);

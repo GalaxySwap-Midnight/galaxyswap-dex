@@ -15,7 +15,7 @@ import {
 } from './lunarswap-integration';
 import { useRuntimeConfiguration } from './runtime-configuration';
 import { useMidnightWallet } from './wallet-context';
-import type { Pair } from '@midnight-dapps/lunarswap-v1';
+import type { Pair, Ledger } from '@midnight-dapps/lunarswap-v1';
 
 interface LunarswapContextType {
   lunarswap: LunarswapIntegration | null;
@@ -24,8 +24,9 @@ interface LunarswapContextType {
   isLoading: boolean;
   error: string | null;
   refreshContract: () => Promise<void>;
-  publicState: unknown | null;
+  publicState: Ledger | null;
   allPairs: Array<Pool>;
+  lpTotalSupply: Ledger['lpTotalSupply'] | null;
   refreshPublicState: () => Promise<void>;
   pauseRefresh: () => void;
   resumeRefresh: () => void;
@@ -52,13 +53,6 @@ export type Pool = {
   pair: Pair;
 };
 
-export type Token = {
-  symbol: string;
-  name: string;
-  address: string;
-  type: string;
-};
-
 export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   const runtimeConfig = useRuntimeConfiguration();
   const midnightWallet = useMidnightWallet();
@@ -69,9 +63,9 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [publicState, setPublicState] = useState<unknown | null>(null);
+  const [publicState, setPublicState] = useState<Ledger | null>(null);
   const [allPairs, setAllPairs] = useState<Array<Pool>>([]);
-  const [allTokens, setAllTokens] = useState<Array<Token>>([]);
+  const [lpTotalSupply, setLpTotalSupply] = useState<Ledger['lpTotalSupply'] | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRefreshPaused, setIsRefreshPaused] = useState(false);
@@ -166,6 +160,7 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       });
       setPublicState(null);
       setAllPairs([]);
+      setLpTotalSupply(null);
       return;
     }
 
@@ -197,6 +192,8 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
         console.log('[LunarswapContext] Fetching all pairs...');
         const pairs = lunarswap.getAllPairs();
         setAllPairs(pairs);
+        const lpSupply = state.lpTotalSupply;
+        setLpTotalSupply(lpSupply);
         console.log('[LunarswapContext] Fetched pairs:', pairs.length);
       } else {
         setAllPairs([]);
@@ -312,6 +309,7 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     refreshContract,
     publicState,
     allPairs,
+    lpTotalSupply,
     refreshPublicState,
     pauseRefresh,
     resumeRefresh,

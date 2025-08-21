@@ -74,6 +74,7 @@ export interface MidnightWalletState {
   reconnect: () => void;
   connect: (manual: boolean) => Promise<void>;
   walletError?: MidnightWalletErrorType;
+  snackBarText?: string;
 }
 
 export interface WalletAPI {
@@ -158,9 +159,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   const config = useRuntimeConfiguration();
   const [openWallet, setOpenWallet] = React.useState(false);
   const [isRotate, setRotate] = React.useState(false);
-  const [snackBarText, setSnackBarText] = useState<string | undefined>(
-    undefined,
-  );
+  const [snackBarText, setSnackBarText] = useState<string | undefined>(undefined);
   const [walletAPI, setWalletAPI] = useState<WalletAPI | undefined>(undefined);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [lastReconnectTime, setLastReconnectTime] = useState(0);
@@ -282,25 +281,25 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       if (action === 'proveTxStarted') {
         setSnackBarText('Proving transaction...');
       } else if (action === 'proveTxDone') {
-        setSnackBarText(undefined);
+        setSnackBarText('Transaction proved');
       } else if (action === 'balanceTxStarted') {
         setSnackBarText('Signing the transaction with Midnight Lace wallet...');
       } else if (action === 'downloadProverDone') {
-        setSnackBarText(undefined);
+        setSnackBarText('Prover key downloaded');
       } else if (action === 'downloadProverStarted') {
         setSnackBarText('Downloading prover key...');
       } else if (action === 'balanceTxDone') {
-        setSnackBarText(undefined);
+        setSnackBarText('Transaction signed');
       } else if (action === 'submitTxStarted') {
         setSnackBarText('Submitting transaction...');
       } else if (action === 'submitTxDone') {
-        setSnackBarText(undefined);
+        setSnackBarText('Transaction submitted');
       } else if (action === 'watchForTxDataStarted') {
         setSnackBarText(
           'Waiting for transaction finalization on blockchain...',
         );
       } else if (action === 'watchForTxDataDone') {
-        setSnackBarText(undefined);
+        setSnackBarText('Transaction finalized');
       }
     },
     [],
@@ -442,6 +441,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     reconnect: manualReconnect,
     connect,
     walletError,
+    snackBarText,
   });
 
   async function checkProofServerStatus(
@@ -498,6 +498,14 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       shake,
     }));
   }, [address, isConnecting, proofServerIsOnline, shake]);
+
+  // Update wallet state when snackBarText changes
+  useEffect(() => {
+    setWalletState((state) => ({
+      ...state,
+      snackBarText,
+    }));
+  }, [snackBarText]);
 
   //const connectMemo = useCallback(connect, []);
 
