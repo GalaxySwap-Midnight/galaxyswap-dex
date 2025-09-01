@@ -36,7 +36,7 @@ export default function HomePage() {
         {/* Hero content */}
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight text-gray-900 dark:text-white">
-            Swap anytime, anywhere on{' '}
+            Swap anytime, any token type on{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Midnight Network
             </span>
