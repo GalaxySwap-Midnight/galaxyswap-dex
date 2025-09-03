@@ -1,277 +1,593 @@
-'use client';
-
-import type {
-  DAppConnectorWalletAPI,
-  DAppConnectorWalletState,
-} from '@midnight-ntwrk/dapp-connector-api';
-import {
-  type PropsWithChildren,
+import React, {
   createContext,
-  useCallback,
+  useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
+  useCallback,
 } from 'react';
-import { connectToWallet, disconnectWallet } from './wallet-utils';
+import type { Logger } from 'pino';
+import type { Address, CoinPublicKey } from '@midnight-ntwrk/wallet-api';
+import type {
+  LunarswapCircuitKeys,
+  LunarswapPrivateStateId,
+  LunarswapProviders,
+} from '@midnight-dapps/lunarswap-api';
+import type { LunarswapPrivateState } from '@midnight-dapps/lunarswap-v1';
+import {
+  type BalancedTransaction,
+  createBalancedTx,
+  type PrivateStateProvider,
+  type PublicDataProvider,
+  type UnbalancedTransaction,
+} from '@midnight-ntwrk/midnight-js-types';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import {
+  type CoinInfo,
+  Transaction,
+  type TransactionId,
+  type EncPublicKey,
+} from '@midnight-ntwrk/ledger';
+import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import {
+  getLedgerNetworkId,
+  getZswapNetworkId,
+} from '@midnight-ntwrk/midnight-js-network-id';
+import { useRuntimeConfiguration } from './runtime-configuration';
+import type {
+  DAppConnectorWalletAPI,
+  ServiceUriConfig,
+} from '@midnight-ntwrk/dapp-connector-api';
+import type {
+  ZKConfigProvider,
+  WalletProvider,
+  MidnightProvider,
+  ProofProvider,
+} from '@midnight-ntwrk/midnight-js-types';
+import { PrivateDataProviderWrapper } from '@/providers/private';
+import { connectToWallet } from '@/utils/wallet-utils';
+import { ZkConfigProviderWrapper } from '@/providers/zk-config';
+import { PublicDataProviderWrapper } from '@/providers/public';
+import { noopProofClient } from '@/providers/proof';
+import { proofClient } from '@/providers/proof';
 
-type WalletConnectionStatusType =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'error';
-
-// Constants for localStorage keys
-const WALLET_STORAGE_KEYS = {
-  CONNECTION_STATUS: 'wallet_connection_status',
-  WALLET_STATE: 'wallet_state',
-  WALLET_ADDRESS: 'wallet_address',
-} as const;
-
-/**
- * Enhanced wallet context that stores both the manager AND the wallet instance
- */
-export interface WalletContextType {
-  // Direct access to wallet instance for transactions
-  wallet: DAppConnectorWalletAPI | null;
-
-  // Setters to save wallet when connected
-  setWallet: (wallet: DAppConnectorWalletAPI | null) => void;
-
-  // Convenience methods
-  isWalletConnected: boolean;
-  walletAddress: string | null;
-
-  // Contains the wallet state, including the sync progress (coins, balances, etc.)
-  walletState: DAppConnectorWalletState | null;
-  setWalletState: (state: DAppConnectorWalletState | null) => void;
-
-  // wallet connection status
-  walletConnectionStatus: WalletConnectionStatusType;
-  setWalletConnectionStatus: (status: WalletConnectionStatusType) => void;
+export interface MidnightWalletState {
+  isConnected: boolean;
+  isConnecting: boolean;
+  proofServerIsOnline: boolean;
+  address?: Address;
+  walletAPI?: WalletAPI;
+  privateStateProvider: PrivateStateProvider<
+    typeof LunarswapPrivateStateId,
+    LunarswapPrivateState
+  >;
+  zkConfigProvider: ZKConfigProvider<LunarswapCircuitKeys>;
+  proofProvider: ProofProvider<LunarswapCircuitKeys>;
+  publicDataProvider: PublicDataProvider;
+  walletProvider: WalletProvider;
+  midnightProvider: MidnightProvider;
+  providers: LunarswapProviders;
+  shake: () => void;
+  callback: (action: ProviderCallbackAction) => void;
+  disconnect: () => void;
+  reconnect: () => void;
+  connect: (manual: boolean) => Promise<void>;
+  walletError?: MidnightWalletErrorType;
+  snackBarText?: string;
 }
 
-export const WalletContext = createContext<WalletContextType | undefined>(
-  undefined,
-);
+export interface WalletAPI {
+  address: Address;
+  wallet: DAppConnectorWalletAPI;
+  coinPublicKey: CoinPublicKey;
+  encryptionPublicKey: EncPublicKey;
+  uris: ServiceUriConfig;
+}
 
-export interface WalletProviderProps extends PropsWithChildren {}
+export const getErrorType = (error: Error): MidnightWalletErrorType => {
+  if (error.message.includes('Could not find Midnight Lace wallet')) {
+    return MidnightWalletErrorType.WALLET_NOT_FOUND;
+  }
+  if (error.message.includes('Incompatible version of Midnight Lace wallet')) {
+    return MidnightWalletErrorType.INCOMPATIBLE_API_VERSION;
+  }
+  if (error.message.includes('Wallet connector API has failed to respond')) {
+    return MidnightWalletErrorType.TIMEOUT_API_RESPONSE;
+  }
+  if (error.message.includes('Could not find wallet connector API')) {
+    return MidnightWalletErrorType.TIMEOUT_FINDING_API;
+  }
+  if (error.message.includes('Unable to enable connector API')) {
+    return MidnightWalletErrorType.ENABLE_API_FAILED;
+  }
+  if (error.message.includes('Application is not authorized')) {
+    return MidnightWalletErrorType.UNAUTHORIZED;
+  }
+  return MidnightWalletErrorType.UNKNOWN_ERROR;
+};
+const MidnightWalletContext = createContext<MidnightWalletState | null>(null);
 
-export const WalletProvider: React.FC<Readonly<WalletProviderProps>> = ({
+export const useMidnightWallet = (): MidnightWalletState => {
+  const walletState = useContext(MidnightWalletContext);
+  if (!walletState) {
+    throw new Error('MidnightWallet not loaded');
+  }
+  return walletState;
+};
+
+export { MidnightWalletContext as WalletContext };
+
+interface MidnightWalletProviderProps {
+  children: React.ReactNode;
+  logger: Logger;
+}
+
+export enum MidnightWalletErrorType {
+  WALLET_NOT_FOUND = 'WALLET_NOT_FOUND',
+  INCOMPATIBLE_API_VERSION = 'INCOMPATIBLE_API_VERSION',
+  TIMEOUT_FINDING_API = 'TIMEOUT_FINDING_API',
+  TIMEOUT_API_RESPONSE = 'TIMEOUT_API_RESPONSE',
+  ENABLE_API_FAILED = 'ENABLE_API_FAILED',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+}
+
+export type ProviderCallbackAction =
+  | 'downloadProverStarted'
+  | 'downloadProverDone'
+  | 'proveTxStarted'
+  | 'proveTxDone'
+  | 'balanceTxStarted'
+  | 'balanceTxDone'
+  | 'submitTxStarted'
+  | 'submitTxDone'
+  | 'watchForTxDataStarted'
+  | 'watchForTxDataDone';
+
+export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
+  logger,
   children,
 }) => {
-  // Add hydration state to prevent SSR issues
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isConnecting, setIsConnecting] = React.useState<boolean>(false);
+  const [walletError, setWalletError] = React.useState<
+    MidnightWalletErrorType | undefined
+  >(undefined);
+  const [address, setAddress] = React.useState<Address | undefined>(undefined);
+  const [proofServerIsOnline, setProofServerIsOnline] =
+    React.useState<boolean>(false);
+  const config = useRuntimeConfiguration();
+  const [openWallet, setOpenWallet] = React.useState(false);
+  const [isRotate, setRotate] = React.useState(false);
+  const [snackBarText, setSnackBarText] = useState<string | undefined>(undefined);
+  const [walletAPI, setWalletAPI] = useState<WalletAPI | undefined>(undefined);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [lastReconnectTime, setLastReconnectTime] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
-  // Add reconnection flag to prevent infinite loops
-  const isReconnecting = useRef(false);
-
-  // Initialize state from localStorage
-  const [wallet, setWallet] = useState<DAppConnectorWalletAPI | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem(WALLET_STORAGE_KEYS.WALLET_ADDRESS);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-  const [walletState, setWalletState] =
-    useState<DAppConnectorWalletState | null>(() => {
-      if (typeof window !== 'undefined') {
-        try {
-          const savedState = localStorage.getItem(
-            WALLET_STORAGE_KEYS.WALLET_STATE,
-          );
-          return savedState ? JSON.parse(savedState) : null;
-        } catch {
-          return null;
-        }
-      }
-      return null;
-    });
-  const [walletConnectionStatus, setWalletConnectionStatus] =
-    useState<WalletConnectionStatusType>(() => {
-      if (typeof window !== 'undefined') {
-        try {
-          const savedStatus = localStorage.getItem(
-            WALLET_STORAGE_KEYS.CONNECTION_STATUS,
-          );
-          return (savedStatus as WalletConnectionStatusType) || 'disconnected';
-        } catch {
-          return 'disconnected';
-        }
-      }
-      return 'disconnected';
-    });
-
-  // Mark as hydrated after initial render
-  useEffect(() => {
-    setIsHydrated(true);
+  // Disconnect function to reset wallet state
+  const disconnect = useCallback(() => {
+    setAddress(undefined);
+    setWalletAPI(undefined);
+    setIsConnecting(false);
+    setWalletError(undefined);
+    setOpenWallet(false);
+    setProofServerIsOnline(false);
+    setReconnectAttempts(0);
+    setIsReconnecting(false);
   }, []);
 
-  // Save wallet connection status to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(
-          WALLET_STORAGE_KEYS.CONNECTION_STATUS,
-          walletConnectionStatus,
-        );
-      } catch (error) {
-        console.warn(
-          'Failed to save wallet connection status to localStorage:',
-          error,
-        );
-      }
+  // Enhanced connect function with better error handling
+  const connect = useCallback(async (manual: boolean): Promise<void> => {
+    setIsConnecting(true);
+    setWalletError(undefined);
+    
+    let walletResult:
+      | { wallet: DAppConnectorWalletAPI; uris: ServiceUriConfig }
+      | undefined;
+    
+    try {
+      walletResult = await connectToWallet(logger);
+    } catch (e) {
+      const walletError = getErrorType(e as Error);
+      setWalletError(walletError);
+      setIsConnecting(false);
+      return;
     }
-  }, [walletConnectionStatus]);
+    
+    if (!walletResult) {
+      setIsConnecting(false);
+      if (manual) setOpenWallet(true);
+      return;
+    }
+    
+    await checkProofServerStatus(walletResult.uris.proverServerUri);
+    
+    try {
+      const reqState = await walletResult.wallet.state();
+      setAddress(reqState.address);
+      setWalletAPI({
+        address: reqState.address,
+        wallet: walletResult.wallet,
+        coinPublicKey: reqState.coinPublicKey,
+        encryptionPublicKey: reqState.encryptionPublicKey,
+        uris: walletResult.uris,
+      });
+      // Reset reconnect attempts on successful connection
+      setReconnectAttempts(0);
+    } catch (e) {
+      setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
+    }
+    
+    setIsConnecting(false);
+  }, [logger]);
 
-  // Save wallet state to localStorage
+  // Reconnection function with exponential backoff
+  const attemptReconnect = useCallback(async () => {
+    if (isReconnecting || reconnectAttempts >= 5) {
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastReconnectTime;
+    const backoffDelay = Math.min(1000 * (2 ** reconnectAttempts), 30000); // Max 30 seconds
+
+    if (timeSinceLastAttempt < backoffDelay) {
+      return;
+    }
+
+    setIsReconnecting(true);
+    setLastReconnectTime(now);
+    setReconnectAttempts(prev => prev + 1);
+
+    try {
+      await connect(false);
+      // If successful, reset reconnect attempts
+      setReconnectAttempts(0);
+      setWalletError(undefined);
+    } catch (error) {
+      console.warn(`Reconnection attempt ${reconnectAttempts + 1} failed:`, error);
+      if (reconnectAttempts >= 4) {
+        setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
+      }
+    } finally {
+      setIsReconnecting(false);
+    }
+  }, [isReconnecting, reconnectAttempts, lastReconnectTime, connect]);
+
+  // Manual reconnect function for user-initiated reconnection
+  const manualReconnect = useCallback(async () => {
+    setWalletError(undefined);
+    setReconnectAttempts(0);
+    await connect(true);
+  }, [connect]);
+
+  const privateStateProvider: PrivateStateProvider<
+    typeof LunarswapPrivateStateId,
+    LunarswapPrivateState
+  > = useMemo(
+    () =>
+      new PrivateDataProviderWrapper(
+        levelPrivateStateProvider({
+          privateStateStoreName: 'lunarswap-private-state',
+        }),
+        logger,
+      ),
+    [logger],
+  );
+
+  const providerCallback = useCallback(
+    (action: ProviderCallbackAction): void => {
+      if (action === 'proveTxStarted') {
+        setSnackBarText('Proving transaction...');
+      } else if (action === 'proveTxDone') {
+        setSnackBarText('Transaction proved');
+      } else if (action === 'balanceTxStarted') {
+        setSnackBarText('Signing the transaction with Midnight Lace wallet...');
+      } else if (action === 'downloadProverDone') {
+        setSnackBarText('Prover key downloaded');
+      } else if (action === 'downloadProverStarted') {
+        setSnackBarText('Downloading prover key...');
+      } else if (action === 'balanceTxDone') {
+        setSnackBarText('Transaction signed');
+      } else if (action === 'submitTxStarted') {
+        setSnackBarText('Submitting transaction...');
+      } else if (action === 'submitTxDone') {
+        setSnackBarText('Transaction submitted');
+      } else if (action === 'watchForTxDataStarted') {
+        setSnackBarText(
+          'Waiting for transaction finalization on blockchain...',
+        );
+      } else if (action === 'watchForTxDataDone') {
+        setSnackBarText('Transaction finalized');
+      }
+    },
+    [],
+  );
+
+  const zkConfigProvider = useMemo(
+    () =>
+      new ZkConfigProviderWrapper<LunarswapCircuitKeys>(
+        window.location.origin,
+        providerCallback,
+        fetch.bind(window),
+      ),
+    [],
+  );
+
+  const publicDataProvider = useMemo(
+    () =>
+      new PublicDataProviderWrapper(
+        indexerPublicDataProvider(config.INDEXER_URI, config.INDEXER_WS_URI),
+        providerCallback,
+        logger,
+      ),
+    [],
+  );
+
+  const shake = useCallback((): void => {
+    setRotate(true);
+    setSnackBarText('Please connect to your Midnight Lace wallet');
+    setTimeout(() => {
+      setRotate(false);
+      setSnackBarText(undefined);
+    }, 3000);
+  }, []);
+
+  const proofProvider = useMemo(() => {
+    if (walletAPI) {
+      return proofClient(walletAPI.uris.proverServerUri, providerCallback);
+    }
+    return noopProofClient();
+  }, [walletAPI, providerCallback]);
+
+  const walletProvider: WalletProvider = useMemo(() => {
+    if (walletAPI) {
+      return {
+        address: walletAPI.address,
+        coinPublicKey: walletAPI.coinPublicKey,
+        encryptionPublicKey: walletAPI.encryptionPublicKey,
+        balanceTx(
+          tx: UnbalancedTransaction,
+          newCoins: CoinInfo[],
+        ): Promise<BalancedTransaction> {
+          console.log('[DEBUG] tx', tx.toString());
+          console.log('[DEBUG] newCoins', newCoins);
+          console.dir(
+            {
+              tx,
+              imbalances: tx.imbalances(true),
+              deltas: tx.guaranteedCoins?.deltas,
+            },
+            { depth: null },
+          );
+          providerCallback('balanceTxStarted');
+          return walletAPI.wallet
+            .balanceAndProveTransaction(
+              ZswapTransaction.deserialize(
+                tx.serialize(getLedgerNetworkId()),
+                getZswapNetworkId(),
+              ),
+              newCoins,
+            )
+            .then((zswapTx) =>
+              Transaction.deserialize(
+                zswapTx.serialize(getZswapNetworkId()),
+                getLedgerNetworkId(),
+              ),
+            )
+            .then(createBalancedTx)
+            .finally(() => {
+              providerCallback('balanceTxDone');
+            });
+        },
+      };
+    }
+    return {
+      address: '',
+      coinPublicKey: '',
+      encryptionPublicKey: '',
+      balanceTx(
+        _tx: UnbalancedTransaction,
+        _newCoins: CoinInfo[],
+      ): Promise<BalancedTransaction> {
+        return Promise.reject(new Error('readonly'));
+      },
+    };
+  }, [walletAPI]);
+
+  const midnightProvider: MidnightProvider = useMemo(() => {
+    if (walletAPI) {
+      return {
+        submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+          providerCallback('submitTxStarted');
+          return walletAPI.wallet.submitTransaction(tx).finally(() => {
+            providerCallback('submitTxDone');
+          });
+        },
+      };
+    }
+    return {
+      submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+        return Promise.reject(new Error('readonly'));
+      },
+    };
+  }, [walletAPI]);
+
+  // Add manual reconnect to wallet state
+  const [walletState, setWalletState] = useState<MidnightWalletState>({
+    isConnected: false,
+    isConnecting: false,
+    proofServerIsOnline: false,
+    address: undefined,
+    walletAPI,
+    privateStateProvider,
+    zkConfigProvider,
+    proofProvider,
+    publicDataProvider,
+    walletProvider,
+    midnightProvider,
+    shake,
+    providers: {
+      privateStateProvider,
+      publicDataProvider,
+      zkConfigProvider,
+      proofProvider,
+      walletProvider,
+      midnightProvider,
+    },
+    callback: providerCallback,
+    disconnect,
+    reconnect: manualReconnect,
+    connect,
+    walletError,
+    snackBarText,
+  });
+
+  async function checkProofServerStatus(
+    proverServerUri: string,
+  ): Promise<void> {
+    try {
+      const response = await fetch(proverServerUri);
+      if (!response.ok) {
+        setProofServerIsOnline(false);
+      }
+      const text = await response.text();
+      setProofServerIsOnline(text.includes("We're alive 🎉!"));
+    } catch (error) {
+      setProofServerIsOnline(false);
+    }
+  }
+
+  useEffect(() => {
+    setWalletState((state) => ({
+      ...state,
+      walletAPI,
+      privateStateProvider,
+      zkConfigProvider,
+      proofProvider,
+      publicDataProvider,
+      walletProvider,
+      midnightProvider,
+      providers: {
+        privateStateProvider,
+        publicDataProvider,
+        zkConfigProvider,
+        proofProvider,
+        walletProvider,
+        midnightProvider,
+      },
+    }));
+  }, [
+    walletAPI,
+    privateStateProvider,
+    zkConfigProvider,
+    proofProvider,
+    publicDataProvider,
+    walletProvider,
+    midnightProvider,
+  ]);
+
+  useEffect(() => {
+    setWalletState((state) => ({
+      ...state,
+      isConnected: !!address,
+      isConnecting,
+      proofServerIsOnline,
+      address,
+      shake,
+    }));
+  }, [address, isConnecting, proofServerIsOnline, shake]);
+
+  // Update wallet state when snackBarText changes
+  useEffect(() => {
+    setWalletState((state) => ({
+      ...state,
+      snackBarText,
+    }));
+  }, [snackBarText]);
+
+  //const connectMemo = useCallback(connect, []);
+
+  // Check if wallet is available before auto-connecting
+  const isWalletAvailable = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return !!(
+      window.midnight?.mnLace || typeof window.midnight !== 'undefined'
+    );
+  }, []);
+
+  useEffect(() => {
+    // Only auto-connect if wallet is available and we're not already connected/connecting
+    if (
+      isWalletAvailable &&
+      !walletState.isConnected &&
+      !isConnecting &&
+      !walletError
+    ) {
+      void connect(false); // auto connect
+    }
+  }, [walletState.isConnected, isConnecting, isWalletAvailable, connect]);
+
+  // Auto-reconnection for stale connections
+  useEffect(() => {
+    if (walletError === MidnightWalletErrorType.TIMEOUT_API_RESPONSE || 
+        walletError === MidnightWalletErrorType.TIMEOUT_FINDING_API) {
+      // Schedule automatic reconnection for timeout errors
+      const timeoutId = setTimeout(() => {
+        if (!isConnecting && !isReconnecting) {
+          void attemptReconnect();
+        }
+      }, 3000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [walletError, isConnecting, isReconnecting, attemptReconnect]);
+
+  // Periodic connection health check
+  useEffect(() => {
+    if (!walletState.isConnected || !walletAPI) {
+      return;
+    }
+
+    const healthCheckInterval = setInterval(async () => {
+      try {
+        // Test if wallet is still responsive
+        await walletAPI.wallet.state();
+      } catch (error) {
+        console.warn('Wallet connection health check failed:', error);
+        // If wallet is not responsive, trigger reconnection
+        setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(healthCheckInterval);
+  }, [walletState.isConnected, walletAPI]);
+
+  // Expose wallet state for debugging
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      try {
-        if (walletState) {
-          localStorage.setItem(
-            WALLET_STORAGE_KEYS.WALLET_STATE,
-            JSON.stringify(walletState),
-          );
-        } else {
-          localStorage.removeItem(WALLET_STORAGE_KEYS.WALLET_STATE);
-        }
-      } catch (error) {
-        console.warn('Failed to save wallet state to localStorage:', error);
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).debugWalletState = () => {
+        console.log('[WalletContext] Current wallet state:', {
+          isConnected: walletState.isConnected,
+          address: walletState.address,
+          hasWalletAPI: !!walletState.walletAPI,
+          hasProviders: !!walletState.providers,
+          providerKeys: walletState.providers
+            ? Object.keys(walletState.providers)
+            : [],
+          walletProviderAddress: walletState.walletAPI?.address,
+          midnightProviderType: typeof walletState.midnightProvider?.submitTx,
+        });
+        return walletState;
+      };
     }
   }, [walletState]);
 
-  // Save wallet address to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        if (walletAddress) {
-          localStorage.setItem(
-            WALLET_STORAGE_KEYS.WALLET_ADDRESS,
-            walletAddress,
-          );
-        } else {
-          localStorage.removeItem(WALLET_STORAGE_KEYS.WALLET_ADDRESS);
-        }
-      } catch (error) {
-        console.warn('Failed to save wallet address to localStorage:', error);
-      }
-    }
-  }, [walletAddress]);
-
-  // Attempt to reconnect wallet on app load (only after hydration)
-  useEffect(() => {
-    if (!isHydrated) return; // Don't attempt reconnection during SSR or initial hydration
-    if (isReconnecting.current) return; // Prevent multiple simultaneous reconnection attempts
-
-    const attemptReconnection = async () => {
-      // Only attempt reconnection if we have a saved connected state and we're not already connected
-      if (walletConnectionStatus === 'connected' && walletState && !wallet) {
-        isReconnecting.current = true;
-        setWalletConnectionStatus('connecting');
-
-        try {
-          // Use the shared connectToWallet utility
-          const { wallet: reconnectedWallet, state: currentState } =
-            await connectToWallet({
-              checkExisting: true,
-              enableTimeout: 15000,
-              stateTimeout: 10000,
-              isEnabledTimeout: 10000,
-            });
-
-          // Verify the wallet address matches what we saved
-          if (currentState.address === walletState.address) {
-            setWallet(reconnectedWallet);
-            setWalletState(currentState);
-            setWalletAddress(currentState.address || null);
-            setWalletConnectionStatus('connected');
-          } else {
-            console.warn('Wallet address mismatch during reconnection');
-            setWalletConnectionStatus('disconnected');
-            setWalletState(null);
-            setWalletAddress(null);
-          }
-        } catch (error) {
-          console.error('Failed to reconnect wallet:', error);
-          setWalletConnectionStatus('disconnected');
-          setWalletState(null);
-          setWalletAddress(null);
-        } finally {
-          isReconnecting.current = false;
-        }
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(attemptReconnection, 100);
-    return () => clearTimeout(timeoutId);
-  }, [isHydrated, walletConnectionStatus, walletState, wallet]);
-
-  // Enhanced setters that clear localStorage when disconnecting
-  const handleSetWalletState = useCallback(
-    (state: DAppConnectorWalletState | null) => {
-      setWalletState(state);
-      if (!state) {
-        setWalletAddress(null);
-      } else {
-        setWalletAddress(state.address || null);
-      }
-    },
-    [],
-  );
-
-  const handleSetWalletConnectionStatus = useCallback(
-    (status: WalletConnectionStatusType) => {
-      setWalletConnectionStatus(status);
-
-      // Clear all wallet data when disconnecting
-      if (status === 'disconnected') {
-        setWallet(null);
-        setWalletState(null);
-        setWalletAddress(null);
-
-        // Use the shared disconnect utility
-        disconnectWallet();
-      }
-    },
-    [],
-  );
-
-  // Computed values
-  const isWalletConnected = walletConnectionStatus === 'connected';
-
-  const contextValue: WalletContextType = useMemo(
-    () => ({
-      wallet,
-      setWallet: setWallet,
-      isWalletConnected,
-      walletAddress,
-      walletState,
-      setWalletState: handleSetWalletState,
-      walletConnectionStatus,
-      setWalletConnectionStatus: handleSetWalletConnectionStatus,
-    }),
-    [
-      wallet,
-      isWalletConnected,
-      walletAddress,
-      walletState,
-      handleSetWalletState,
-      walletConnectionStatus,
-      handleSetWalletConnectionStatus,
-    ],
-  );
-
   return (
-    <WalletContext.Provider value={contextValue}>
+    <MidnightWalletContext.Provider value={walletState}>
       {children}
-    </WalletContext.Provider>
+    </MidnightWalletContext.Provider>
   );
 };

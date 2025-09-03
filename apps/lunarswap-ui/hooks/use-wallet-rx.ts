@@ -12,7 +12,7 @@ interface WalletRxActions {
 }
 
 export function useWalletRx(): WalletRxState & WalletRxActions {
-  const { wallet, isWalletConnected } = useWallet();
+  const { walletAPI, isConnected } = useWallet();
   const [state, setState] = useState<DAppConnectorWalletState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -20,7 +20,7 @@ export function useWalletRx(): WalletRxState & WalletRxActions {
 
   // Start polling when wallet connects
   useEffect(() => {
-    if (!wallet || !isWalletConnected) {
+    if (!walletAPI || !isConnected) {
       setState(null);
       setError(null);
       return;
@@ -37,7 +37,7 @@ export function useWalletRx(): WalletRxState & WalletRxActions {
     // Initial state fetch
     const fetchState = async () => {
       try {
-        const walletState = await wallet.state();
+        const walletState = await walletAPI.wallet.state();
         setState(walletState);
         setError(null);
       } catch (err) {
@@ -61,16 +61,16 @@ export function useWalletRx(): WalletRxState & WalletRxActions {
         abortControllerRef.current.abort();
       }
     };
-  }, [wallet, isWalletConnected]);
+  }, [walletAPI, isConnected]);
 
   // Manual refresh
   const refresh = useCallback(async (): Promise<void> => {
-    if (!wallet) {
+    if (!walletAPI) {
       throw new Error('Wallet not connected');
     }
 
     try {
-      const walletState = await wallet.state();
+      const walletState = await walletAPI.wallet.state();
       setState(walletState);
       setError(null);
     } catch (err) {
@@ -79,7 +79,7 @@ export function useWalletRx(): WalletRxState & WalletRxActions {
       );
       throw err;
     }
-  }, [wallet]);
+  }, [walletAPI]);
 
   return {
     // State

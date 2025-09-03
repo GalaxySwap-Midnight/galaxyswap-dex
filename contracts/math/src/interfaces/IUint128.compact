@@ -63,5 +63,4 @@ module IUint128 {
      * @returns Uint<64> The square root of radicand.
      */
     export witness sqrtU128Locally(radicand: U128): Uint<64>;
-
 }

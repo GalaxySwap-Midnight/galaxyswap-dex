@@ -153,3 +153,8 @@ dist
 
 # Compact
 artifacts/
+
+# Midnight
+midnight-level-db/
+
+.vite
