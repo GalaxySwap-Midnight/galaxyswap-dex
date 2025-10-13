@@ -1,5 +1,5 @@
 {
-  "name": "@midnight-dapps/shielded-token",
+  "name": "@openzeppelin-midnight-apps/shielded-token",
   "version": "1.0.0-alpha.1",
   "private": true,
   "description": "Shielded Fungible Token contract for Midnight DApps",
@@ -36,10 +36,10 @@
     "vitest": "^3.1.4"
   },
   "dependencies": {
-    "@midnight-dapps/biome-config": "workspace:^",
-    "@midnight-dapps/compact": "workspace:^",
-    "@midnight-dapps/compact-std": "workspace:^",
-    "@midnight-dapps/math": "workspace:^",
+    "@openzeppelin-midnight-apps/biome-config": "workspace:^",
+    "@openzeppelin-midnight-apps/compact": "workspace:^",
+    "@openzeppelin-midnight-apps/compact-std": "workspace:^",
+    "@openzeppelin-midnight-apps/math": "workspace:^",
     "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/midnight-js-network-id": "^2.0.1",
     "@midnight-ntwrk/zswap": "^4.0.0",

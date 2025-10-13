@@ -1,10 +1,10 @@
 'use client';
 
-import { Button } from '../../ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { TokenSelector } from '../token-selector';
+import { useEffect, useState } from 'react';
 import { getTokenByName } from '../../../lib/token-config';
-import { useState, useEffect } from 'react';
+import { Button } from '../../ui/button';
+import { TokenSelector } from '../token-selector';
 
 import type { Token as UiToken } from '@/lib/token-config';
 
@@ -22,10 +22,10 @@ interface SelectPairStepProps {
 
 export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
   const [tokenA, setTokenA] = useState<UiToken | null>(
-    initialData?.tokenA || getTokenByName('tDUST') || null
+    initialData?.tokenA || getTokenByName('tDUST') || null,
   );
   const [tokenB, setTokenB] = useState<UiToken | null>(
-    initialData?.tokenB || null
+    initialData?.tokenB || null,
   );
   const [fee] = useState<number>(0.3); // Fixed fee at 0.3%
   const [validationState, setValidationState] = useState<{
@@ -91,8 +91,6 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
     onSubmit(pairData);
   };
 
-
-
   return (
     <>
       <CardContent className="p-4">
@@ -139,13 +137,15 @@ export function SelectPairStep({ onSubmit, initialData }: SelectPairStepProps) {
           </div>
 
           {/* Validation Messages */}
-          {validationState.tokenA && validationState.tokenB && !validationState.symbolsDifferent && (
-            <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-              <p className="text-xs text-red-800 dark:text-red-200">
-                ⚠️ Please select different tokens for the pair.
-              </p>
-            </div>
-          )}
+          {validationState.tokenA &&
+            validationState.tokenB &&
+            !validationState.symbolsDifferent && (
+              <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
+                <p className="text-xs text-red-800 dark:text-red-200">
+                  ⚠️ Please select different tokens for the pair.
+                </p>
+              </div>
+            )}
         </div>
       </CardContent>
 

@@ -1,43 +1,29 @@
 'use client';
 
-import { Button } from './ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './ui/tooltip';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
 import {
-  SLIPPAGE_TOLERANCE,
-  calculateAmountOut,
-  calculateAmountIn,
-  computeAmountInMax,
-  computeAmountOutMin,
-} from '@midnight-dapps/lunarswap-sdk';
-import { ArrowDown, Fuel, Info, Settings, Loader2, AlertTriangle, Clock, Shield, Wallet, ExternalLink, Coins } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import { TokenInput } from './token-input';
-import { TokenSelectModal } from './token-select-modal';
+  getAvailableTokensForSelection,
+  popularTokens,
+} from '@/lib/token-config';
 import { cn } from '@/utils/cn';
 import {
-  popularTokens,
-  getAvailableTokensForSelection,
-} from '@/lib/token-config';
-import { decodeCoinInfo } from '@midnight-ntwrk/ledger';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  SLIPPAGE_TOLERANCE,
+  calculateAmountIn,
+  calculateAmountOut,
+  computeAmountInMax,
+  computeAmountOutMin,
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
+import { ArrowDown, ExternalLink, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { LiquidityProgress } from './pool/liquidity-progress';
 import { ZkWarningDialog } from './pool/zk-warning-dialog';
+import { TokenInput } from './token-input';
+import { TokenSelectModal } from './token-select-modal';
+import { Button } from './ui/button';
+import { Card, CardContent, CardFooter } from './ui/card';
+import { TooltipProvider } from './ui/tooltip';
 
 interface Token {
   symbol: string;
@@ -61,7 +47,11 @@ interface SwapCardProps {
   mode?: CardMode;
 }
 
-export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCardProps) {
+export function SwapCard({
+  initialTokens,
+  previewMode,
+  mode = 'swap',
+}: SwapCardProps) {
   const midnightWallet = useWallet();
   const { status, allPairs, lunarswap } = useLunarswapContext();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -115,7 +105,8 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isProofGenerating) {
         e.preventDefault();
-        e.returnValue = 'ZK proof is being generated. Please wait and do not refresh the page.';
+        e.returnValue =
+          'ZK proof is being generated. Please wait and do not refresh the page.';
         return e.returnValue;
       }
     };
@@ -131,15 +122,7 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
   // Set initial tokens from navigation state
   useEffect(() => {
-    console.log('SwapCard - initialTokens effect triggered:', {
-      initialTokens,
-      popularTokensCount: popularTokens.length,
-    });
-    
-    if (
-      initialTokens?.fromToken &&
-      initialTokens?.toToken
-    ) {
+    if (initialTokens?.fromToken && initialTokens?.toToken) {
       // Use popularTokens directly since we know they contain all available tokens
       const fromTokenData = popularTokens.find(
         (t) => t.symbol === initialTokens.fromToken,
@@ -147,11 +130,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       const toTokenData = popularTokens.find(
         (t) => t.symbol === initialTokens.toToken,
       );
-
-      console.log('SwapCard - Found token data:', {
-        fromTokenData: fromTokenData?.symbol,
-        toTokenData: toTokenData?.symbol,
-      });
 
       if (fromTokenData) {
         setFromToken(fromTokenData);
@@ -165,14 +143,10 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
   // Function to get available tokens for a specific selected token
   const getAvailableTokensForToken = useCallback(
     (selectedToken: Token | null, allTokens: Token[]) => {
-      console.log('getAvailableTokensForToken called with:', {
-        selectedToken: selectedToken?.symbol,
-        allTokensCount: allTokens.length,
-        allPairsCount: allPairs.length,
-      });
+      // Debug logging removed
 
       if (!selectedToken || allPairs.length === 0) {
-        console.log('Returning all tokens (no selected token or no pairs)');
+        // Debug logging removed
         return allTokens;
       }
 
@@ -236,16 +210,9 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           availableTokenTypes.has(`0200${tokenTypeWithoutPrefix}`) ||
           availableTokenTypes.has(tokenType.replace(/^0200/, ''));
 
-        console.log(
-          `Token ${token.symbol}: ${tokenType} has match: ${hasMatch}`,
-        );
         return hasMatch;
       });
 
-      console.log(
-        'getAvailableTokensForToken returning:',
-        filteredTokens.map((t) => t.symbol),
-      );
       return filteredTokens;
     },
     [allPairs],
@@ -253,19 +220,12 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
   // Get available tokens from global context - run immediately when component mounts
   useEffect(() => {
-    console.log('Swap card - Getting available tokens:', {
-      status,
-      allPairsLength: allPairs.length,
-      hasInitialTokens: !!initialTokens,
-    });
-
     // Set loading state when starting to fetch tokens
     setIsLoadingTokens(true);
 
     // If we have initial tokens from navigation, show all popular tokens
     // This allows users to select any token pair from the landing page
     if (initialTokens?.fromToken && initialTokens?.toToken) {
-      console.log('Swap card - Using all popular tokens due to initial tokens');
       setAvailableTokens(popularTokens);
       setAvailableTokensForFrom(popularTokens);
       setAvailableTokensForTo(popularTokens);
@@ -275,7 +235,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
     // If we have pairs but status is not connected yet, still try to get tokens
     if (allPairs.length === 0) {
-      console.log('Swap card - No pairs available, setting empty tokens');
       setAvailableTokens([]);
       setAvailableTokensForFrom([]);
       setAvailableTokensForTo([]);
@@ -286,62 +245,23 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
     // Use the new function to get tokens from available pools
     const available = getAvailableTokensForSelection(allPairs);
 
-    console.log(
-      'Swap card - Available tokens after filtering:',
-      available.map((t) => t.symbol),
-    );
-    console.log(
-      'Swap card - All pairs:',
-      allPairs.map((pair) => ({
-        token0Type: Array.from(pair.pair.token0Type)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(''),
-        token1Type: Array.from(pair.pair.token1Type)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join(''),
-      })),
-    );
-    console.log(
-      'Swap card - Popular tokens:',
-      popularTokens.map((t) => ({
-        symbol: t.symbol,
-        type: t.type.replace(/^0x/i, '').toLowerCase(),
-      })),
-    );
-
     // Only set available tokens if we have matches from pools
     if (available.length > 0) {
-      console.log(
-        'Swap card - Setting available tokens:',
-        available.map((t) => t.symbol),
-      );
       setAvailableTokens(available);
     } else {
-      console.log(
-        'Swap card - No matching tokens found in pools, setting empty list',
-      );
       setAvailableTokens([]);
     }
 
     // No default token selection - let user choose
-    console.log('Swap card - No default tokens set, user must select');
-
     // Clear loading state after token processing is complete
     setIsLoadingTokens(false);
-  }, [status, allPairs, initialTokens]);
+  }, [allPairs, initialTokens]);
 
   // Update contextual token lists when tokens change or when availableTokens are loaded
   useEffect(() => {
     if (availableTokens.length > 0) {
       const fromTokens = getAvailableTokensForToken(toToken, availableTokens);
       const toTokens = getAvailableTokensForToken(fromToken, availableTokens);
-
-      console.log('SwapCard - Setting contextual tokens:', {
-        fromToken: fromToken?.symbol,
-        toToken: toToken?.symbol,
-        fromTokens: fromTokens.map((t) => t.symbol),
-        toTokens: toTokens.map((t) => t.symbol),
-      });
 
       setAvailableTokensForFrom(fromTokens);
       setAvailableTokensForTo(toTokens);
@@ -355,12 +275,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
   // Get pool reserves via integration API (reliable across schema changes)
   useEffect(() => {
     const fetchReserves = async () => {
-      console.log('Getting reserves via integration for:', {
-        fromToken: fromToken?.symbol,
-        toToken: toToken?.symbol,
-        status,
-      });
-
       if (!fromToken || !toToken || fromToken.symbol === toToken.symbol) {
         setPoolReserves(null);
         return;
@@ -380,26 +294,18 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
         );
         if (reserves) {
           const [fromTokenReserve, toTokenReserve] = reserves;
-          console.log('Found pair reserves:', {
-            fromToken: fromToken.symbol,
-            toToken: toToken.symbol,
-            fromTokenReserve: fromTokenReserve.toString(),
-            toTokenReserve: toTokenReserve.toString(),
-          });
           // Store reserves in consistent order: [fromTokenReserve, toTokenReserve]
           setPoolReserves([fromTokenReserve, toTokenReserve]);
         } else {
-          console.log('No reserves found for selected tokens');
           setPoolReserves(null);
         }
-      } catch (err) {
-        console.log('Failed to fetch reserves for selected tokens', err);
+      } catch (_err) {
         setPoolReserves(null);
       }
     };
 
     fetchReserves();
-  }, [fromToken, toToken, status, lunarswap]);
+  }, [fromToken, toToken, lunarswap, status]);
 
   // Calculate output amount for exact input using SDK
   const calculateOutputAmount = useCallback(
@@ -474,15 +380,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       setActiveField('from');
       setSwapType('EXACT_INPUT');
 
-      console.log('From amount changed:', {
-        value,
-        poolReserves: poolReserves
-          ? [poolReserves[0].toString(), poolReserves[1].toString()]
-          : null,
-        fromToken: fromToken?.symbol,
-        toToken: toToken?.symbol,
-      });
-
       if (!value || !poolReserves) {
         setToAmount('');
         return;
@@ -491,13 +388,12 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       setIsCalculating(true);
       try {
         const calculatedToAmount = calculateOutputAmount(value);
-        console.log('Calculated to amount:', calculatedToAmount);
         setToAmount(calculatedToAmount);
       } finally {
         setIsCalculating(false);
       }
     },
-    [calculateOutputAmount, poolReserves, fromToken, toToken],
+    [calculateOutputAmount, poolReserves],
   );
 
   // Handle to amount change (exact output)
@@ -507,15 +403,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       setActiveField('to');
       setSwapType('EXACT_OUTPUT');
 
-      console.log('To amount changed:', {
-        value,
-        poolReserves: poolReserves
-          ? [poolReserves[0].toString(), poolReserves[1].toString()]
-          : null,
-        fromToken: fromToken?.symbol,
-        toToken: toToken?.symbol,
-      });
-
       if (!value || !poolReserves) {
         setFromAmount('');
         return;
@@ -524,13 +411,12 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       setIsCalculating(true);
       try {
         const calculatedFromAmount = calculateInputAmount(value);
-        console.log('Calculated from amount:', calculatedFromAmount);
         setFromAmount(calculatedFromAmount);
       } finally {
         setIsCalculating(false);
       }
     },
-    [calculateInputAmount, poolReserves, fromToken, toToken],
+    [calculateInputAmount, poolReserves],
   );
 
   const handleTokenSelect = (token: Token | null) => {
@@ -585,21 +471,8 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
 
     // If no tokens available, return empty array
     if (tokens.length === 0) {
-      console.log(
-        'getTokensForSelection - No tokens available, returning empty array',
-      );
       return [];
     }
-
-    console.log('getTokensForSelection returning:', {
-      selectingToken,
-      fromToken: fromToken?.symbol,
-      toToken: toToken?.symbol,
-      tokens: tokens.map((t) => t.symbol),
-      availableTokensForFrom: availableTokensForFrom.map((t) => t.symbol),
-      availableTokensForTo: availableTokensForTo.map((t) => t.symbol),
-      availableTokens: availableTokens.map((t) => t.symbol),
-    });
 
     return tokens;
   };
@@ -685,23 +558,16 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           return;
         }
 
-        console.log('EXACT_INPUT swap:', {
-          fromToken: fromToken?.symbol,
-          toToken: toToken?.symbol,
-          fromTokenType: fromToken?.type,
-          toTokenType: toToken?.type,
-          amountIn: fromAmount,
-          calculatedAmountOut: calculatedAmountOut.toString(),
-          amountOutMin: amountOutMin.toString(),
-          slippageTolerance,
-          poolReserves: poolReserves?.map((r) => r.toString()),
-        });
-
-        if (!fromToken || !toToken || !poolReserves || !midnightWallet.walletAPI?.coinPublicKey) {
+        if (
+          !fromToken ||
+          !toToken ||
+          !poolReserves ||
+          !midnightWallet.walletAPI?.coinPublicKey
+        ) {
           throw new Error('Required token, pool data, or wallet not available');
         }
 
-        const result = await lunarswap.swapExactTokensForTokens(
+        await lunarswap.swapExactTokensForTokens(
           fromToken.type, // tokenIn
           toToken.type, // tokenOut
           fromAmountBigInt, // amountIn
@@ -711,7 +577,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
         toast.success(
           `Swapped ${fromAmount} ${fromToken.symbol} for ${toToken.symbol}`,
         );
-        console.log('Swap result:', result);
       } else {
         // EXACT_OUTPUT
         const calculatedAmountIn = fromAmountBigInt;
@@ -726,23 +591,16 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           return;
         }
 
-        console.log('EXACT_OUTPUT swap:', {
-          fromToken: fromToken?.symbol,
-          toToken: toToken?.symbol,
-          fromTokenType: fromToken?.type,
-          toTokenType: toToken?.type,
-          amountOut: toAmount,
-          calculatedAmountIn: calculatedAmountIn.toString(),
-          amountInMax: amountInMax.toString(),
-          slippageTolerance,
-          poolReserves: poolReserves?.map((r) => r.toString()),
-        });
-
-        if (!fromToken || !toToken || !poolReserves || !midnightWallet.walletAPI?.coinPublicKey) {
+        if (
+          !fromToken ||
+          !toToken ||
+          !poolReserves ||
+          !midnightWallet.walletAPI?.coinPublicKey
+        ) {
           throw new Error('Required token, pool data, or wallet not available');
         }
 
-        const result = await lunarswap.swapTokensForExactTokens(
+        await lunarswap.swapTokensForExactTokens(
           fromToken.type, // tokenIn
           toToken.type, // tokenOut
           toAmountBigInt, // amountOut
@@ -752,7 +610,6 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
         toast.success(
           `Swapped ${fromToken.symbol} for ${toAmount} ${toToken.symbol}`,
         );
-        console.log('Swap result:', result);
       }
 
       // Reset form after successful swap
@@ -760,20 +617,28 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
       setToAmount('');
 
       // Transaction completed successfully - progress dialog will close via onComplete callback
-
     } catch (error) {
       console.error('Swap error:', error);
-      
+
       // Provide more specific error messages
       if (error instanceof Error) {
         if (error.message.includes('Insufficient')) {
           toast.error('Insufficient token balance for swap');
         } else if (error.message.includes('Slippage')) {
-          toast.error('Transaction failed due to high slippage. Try adjusting amounts.');
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
-          toast.error('Network connection issue. Please check your internet connection and try again.');
+          toast.error(
+            'Transaction failed due to high slippage. Try adjusting amounts.',
+          );
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ) {
+          toast.error(
+            'Network connection issue. Please check your internet connection and try again.',
+          );
         } else if (error.message.includes('wallet')) {
-          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
+          toast.error(
+            'Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.',
+          );
         } else {
           toast.error(`Swap failed: ${error.message}`);
         }
@@ -819,16 +684,15 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
     if (mode === 'buy') return false; // Buy mode is always enabled
     return (
       !isHydrated ||
-      (!previewMode && (
-        !midnightWallet.isConnected ||
-        !fromToken ||
-        !toToken ||
-        !fromAmount ||
-        !toAmount ||
-        status !== 'connected' ||
-        isCalculating ||
-        isSwapping
-      ))
+      (!previewMode &&
+        (!midnightWallet.isConnected ||
+          !fromToken ||
+          !toToken ||
+          !fromAmount ||
+          !toAmount ||
+          status !== 'connected' ||
+          isCalculating ||
+          isSwapping))
     );
   };
 
@@ -860,9 +724,9 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <img 
-                src="/tDust-icon.svg" 
-                alt="tDUST Token Icon" 
+              <img
+                src="/tDust-icon.svg"
+                alt="tDUST Token Icon"
                 className="h-8 w-8"
               />
             </div>
@@ -870,28 +734,39 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
               Get DUST Test Tokens
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Need tDUST to start trading? Get free test tokens from the Midnight testnet faucet.
+              Need tDUST to start trading? Get free test tokens from the
+              Midnight testnet faucet.
             </p>
           </div>
 
           {/* Steps */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white">How to get tDUST:</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              How to get tDUST:
+            </h3>
             <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  1
+                </span>
                 <span>Visit the Midnight testnet faucet</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  2
+                </span>
                 <span>Enter your wallet address</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  3
+                </span>
                 <span>Request tDUST tokens</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                <span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  4
+                </span>
                 <span>Wait for confirmation and start trading!</span>
               </div>
             </div>
@@ -1004,7 +879,9 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
                 <div className="flex justify-between">
                   <span>Trade Type</span>
                   <span className="text-xs">
-                    {swapType === 'EXACT_INPUT' ? 'Exact Input' : 'Exact Output'}
+                    {swapType === 'EXACT_INPUT'
+                      ? 'Exact Input'
+                      : 'Exact Output'}
                   </span>
                 </div>
               </div>
@@ -1013,10 +890,10 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
           <CardFooter className="flex flex-col gap-3">
             <Button
               className={cn(
-                "w-full font-medium py-6 rounded-xl disabled:opacity-50",
+                'w-full font-medium py-6 rounded-xl disabled:opacity-50',
                 previewMode || !midnightWallet.isConnected
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg shadow-lg shadow-blue-900/20"
-                  : "bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 text-white"
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg shadow-lg shadow-blue-900/20'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 text-white',
               )}
               disabled={isButtonDisabled()}
               onClick={() => {
@@ -1028,7 +905,7 @@ export function SwapCard({ initialTokens, previewMode, mode = 'swap' }: SwapCard
                     fromTokenType: fromToken?.type,
                     toTokenType: toToken?.type,
                   };
-                  
+
                   // Navigate to trade page with selected tokens
                   window.location.href = `/trade?fromToken=${encodeURIComponent(selectedTokens.fromToken || '')}&toToken=${encodeURIComponent(selectedTokens.toToken || '')}&fromTokenType=${encodeURIComponent(selectedTokens.fromTokenType || '')}&toTokenType=${encodeURIComponent(selectedTokens.toTokenType || '')}`;
                   return;

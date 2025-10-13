@@ -1,10 +1,10 @@
-import type { CoinInfo } from '@midnight-dapps/compact-std';
+import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
+import type { CoinInfo } from '@openzeppelin-midnight-apps/compact-std';
 import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
   computeAmountOutMin,
-} from '@midnight-dapps/lunarswap-sdk';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
@@ -564,7 +564,8 @@ describe('swap', () => {
             recipient,
           );
           const postReserves = lunarswap.getPairReserves(usdcCoin, nightCoin);
-          const actualNightDelta = preNightReserve.value - postReserves[1].value;
+          const actualNightDelta =
+            preNightReserve.value - postReserves[1].value;
           expect(actualNightDelta).toBeGreaterThanOrEqual(amountOut - 1n);
           expect(actualNightDelta).toBeLessThanOrEqual(amountOut + 1n);
           // Also check input constraint

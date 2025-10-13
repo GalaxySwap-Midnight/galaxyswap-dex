@@ -1,5 +1,5 @@
 {
-  "name": "@midnight-dapps/lunarswap-v1",
+  "name": "@openzeppelin-midnight-apps/lunarswap-v1",
   "version": "1.0.0-alpha.1",
   "description": "Compacts contracts for LunarSwapV1 UTXO",
   "type": "module",
@@ -35,7 +35,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "devDependencies": {
-    "@midnight-dapps/biome-config": "workspace:*",
+    "@openzeppelin-midnight-apps/biome-config": "workspace:*",
     "@types/node": "^22.13.10",
     "@vitest/coverage-v8": "^3.1.4",
     "@vitest/ui": "^3.2.4",
@@ -43,10 +43,10 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@midnight-dapps/compact": "workspace:^",
-    "@midnight-dapps/compact-std": "workspace:^",
-    "@midnight-dapps/lunarswap-sdk": "workspace:^",
-    "@midnight-dapps/math": "workspace:^",
+    "@openzeppelin-midnight-apps/compact": "workspace:^",
+    "@openzeppelin-midnight-apps/compact-std": "workspace:^",
+    "@openzeppelin-midnight-apps/lunarswap-sdk": "workspace:^",
+    "@openzeppelin-midnight-apps/math": "workspace:^",
     "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/midnight-js-network-id": "^0.2.5",
     "@midnight-ntwrk/wallet-sdk-address-format": "^2.0.0",

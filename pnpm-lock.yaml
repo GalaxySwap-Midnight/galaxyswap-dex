@@ -71,16 +71,16 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.1.1
         version: 5.1.1(react-hook-form@7.58.1(react@18.3.1))
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../../packages/compact-std
-      '@midnight-dapps/lunarswap-api':
+      '@openzeppelin-midnight-apps/lunarswap-api':
         specifier: workspace:*
         version: link:../../packages/lunarswap-api
-      '@midnight-dapps/lunarswap-sdk':
+      '@openzeppelin-midnight-apps/lunarswap-sdk':
         specifier: workspace:*
         version: link:../../packages/lunarswap-sdk
-      '@midnight-dapps/lunarswap-v1':
+      '@openzeppelin-midnight-apps/lunarswap-v1':
         specifier: workspace:*
         version: link:../../contracts/lunarswap-v1
       '@midnight-ntwrk/dapp-connector-api':
@@ -300,7 +300,7 @@ importers:
         specifier: ^3.25.67
         version: 3.25.67
     devDependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../../packages/biome-config
       '@originjs/vite-plugin-commonjs':
@@ -354,16 +354,16 @@ importers:
 
   contracts/access:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../../packages/biome-config
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:^
         version: link:../../packages/compact-std
-      '@midnight-dapps/structs':
+      '@openzeppelin-midnight-apps/structs':
         specifier: workspace:^
         version: link:../structs
       '@midnight-ntwrk/compact-runtime':
@@ -388,16 +388,16 @@ importers:
 
   contracts/lunarswap-v1:
     dependencies:
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:^
         version: link:../../packages/compact-std
-      '@midnight-dapps/lunarswap-sdk':
+      '@openzeppelin-midnight-apps/lunarswap-sdk':
         specifier: workspace:^
         version: link:../../packages/lunarswap-sdk
-      '@midnight-dapps/math':
+      '@openzeppelin-midnight-apps/math':
         specifier: workspace:^
         version: link:../math
       '@midnight-ntwrk/compact-runtime':
@@ -413,7 +413,7 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
     devDependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:*
         version: link:../../packages/biome-config
       '@types/node':
@@ -434,10 +434,10 @@ importers:
 
   contracts/math:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../../packages/biome-config
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
       '@midnight-ntwrk/compact-runtime':
@@ -462,16 +462,16 @@ importers:
 
   contracts/shielded-token:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../../packages/biome-config
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:^
         version: link:../../packages/compact-std
-      '@midnight-dapps/math':
+      '@openzeppelin-midnight-apps/math':
         specifier: workspace:^
         version: link:../math
       '@midnight-ntwrk/compact-runtime':
@@ -499,10 +499,10 @@ importers:
 
   contracts/structs:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../../packages/biome-config
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../../packages/compact
       '@midnight-ntwrk/compact-runtime':
@@ -539,7 +539,7 @@ importers:
         specifier: ^8.2.0
         version: 8.2.0
     devDependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../biome-config
       '@types/node':
@@ -554,10 +554,10 @@ importers:
 
   packages/compact-std:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:^
         version: link:../biome-config
-      '@midnight-dapps/compact':
+      '@openzeppelin-midnight-apps/compact':
         specifier: workspace:^
         version: link:../compact
       '@midnight-ntwrk/compact-runtime':
@@ -582,10 +582,10 @@ importers:
 
   packages/lunarswap-api:
     dependencies:
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
-      '@midnight-dapps/lunarswap-v1':
+      '@openzeppelin-midnight-apps/lunarswap-v1':
         specifier: workspace:*
         version: link:../../contracts/lunarswap-v1
       '@midnight-ntwrk/compact-runtime':
@@ -607,7 +607,7 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:*
         version: link:../biome-config
       '@types/node':
@@ -622,16 +622,16 @@ importers:
 
   packages/lunarswap-cli:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:*
         version: link:../biome-config
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
-      '@midnight-dapps/lunarswap-api':
+      '@openzeppelin-midnight-apps/lunarswap-api':
         specifier: workspace:*
         version: link:../lunarswap-api
-      '@midnight-dapps/lunarswap-v1':
+      '@openzeppelin-midnight-apps/lunarswap-v1':
         specifier: workspace:*
         version: link:../../contracts/lunarswap-v1
       '@midnight-ntwrk/compact-runtime':
@@ -716,7 +716,7 @@ importers:
 
   packages/lunarswap-sdk:
     dependencies:
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
     devDependencies:
@@ -738,10 +738,10 @@ importers:
 
   packages/shielded-token-api:
     dependencies:
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
-      '@midnight-dapps/shielded-token':
+      '@openzeppelin-midnight-apps/shielded-token':
         specifier: workspace:*
         version: link:../../contracts/shielded-token
       '@midnight-ntwrk/compact-runtime':
@@ -763,7 +763,7 @@ importers:
         specifier: ^7.8.2
         version: 7.8.2
     devDependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:*
         version: link:../biome-config
       '@types/node':
@@ -778,16 +778,16 @@ importers:
 
   packages/shielded-token-cli:
     dependencies:
-      '@midnight-dapps/biome-config':
+      '@openzeppelin-midnight-apps/biome-config':
         specifier: workspace:*
         version: link:../biome-config
-      '@midnight-dapps/compact-std':
+      '@openzeppelin-midnight-apps/compact-std':
         specifier: workspace:*
         version: link:../compact-std
-      '@midnight-dapps/shielded-token':
+      '@openzeppelin-midnight-apps/shielded-token':
         specifier: workspace:*
         version: link:../../contracts/shielded-token
-      '@midnight-dapps/shielded-token-api':
+      '@openzeppelin-midnight-apps/shielded-token-api':
         specifier: workspace:*
         version: link:../shielded-token-api
       '@midnight-ntwrk/compact-runtime':

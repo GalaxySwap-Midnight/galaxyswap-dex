@@ -1,4 +1,4 @@
-import { WalletContext, type MidnightWalletState } from '@/lib/wallet-context';
+import { type MidnightWalletState, WalletContext } from '@/lib/wallet-context';
 import { useContext } from 'react';
 
 /**

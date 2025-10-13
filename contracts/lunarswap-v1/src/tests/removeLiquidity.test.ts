@@ -1,10 +1,9 @@
-import type { CoinInfo } from '@midnight-dapps/compact-std';
+import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
 import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
   calculateRemoveLiquidityMinimums,
-} from '@midnight-dapps/lunarswap-sdk';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
@@ -22,28 +21,6 @@ const createEitherFromHex = (hexString: string) => ({
   left: { bytes: encodeCoinPublicKey(hexString) },
   right: { bytes: new Uint8Array(32) },
 });
-
-// Helper function to get expected token values based on which token is token0
-const getExpectedTokenValues = (
-  tokenA: CoinInfo,
-  tokenB: CoinInfo,
-  valueA: bigint,
-  valueB: bigint,
-  lunarswap: LunarswapSimulator,
-) => {
-  // Use getPairId to get the correct token order
-  const pairFromContract = lunarswap.getPair(tokenA, tokenB);
-
-  // Determine which input token corresponds to token0
-  const isAToken0 =
-    Buffer.compare(tokenA.color, pairFromContract.token0Type) === 0;
-
-  return {
-    token0Value: isAToken0 ? valueA : valueB,
-    token1Value: isAToken0 ? valueB : valueA,
-    isAToken0,
-  };
-};
 
 // TODO: allow and test fees
 describe('removeLiquidity', () => {
@@ -137,7 +114,6 @@ describe('removeLiquidity', () => {
       );
 
       // Get updated pair state
-      const updatedPair = lunarswap.getPair(usdcCoin, nightCoin);
       const updatedLpTotalSupply = lunarswap.getLpTokenTotalSupply(
         usdcCoin,
         nightCoin,
@@ -150,7 +126,10 @@ describe('removeLiquidity', () => {
       );
 
       // Verify reserves decreased proportionally
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(1415n);
       expect(reserveNIGHT.value).toBe(708n);
     });
@@ -228,7 +207,6 @@ describe('removeLiquidity', () => {
       );
 
       // Get updated pair state
-      const updatedPair = lunarswap.getPair(usdcCoin, nightCoin);
       const updatedLpTotalSupply = lunarswap.getLpTokenTotalSupply(
         usdcCoin,
         nightCoin,
@@ -238,7 +216,10 @@ describe('removeLiquidity', () => {
       expect(updatedLpTotalSupply.value).toBe(1000n);
 
       // Verify reserves are reduced but not zero
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(1415n);
       expect(reserveNIGHT.value).toBe(708n);
     });
@@ -314,7 +295,6 @@ describe('removeLiquidity', () => {
       );
 
       // Get updated pair state
-      const updatedPair = lunarswap.getPair(usdcCoin, nightCoin);
       const updatedLpTotalSupply = lunarswap.getLpTokenTotalSupply(
         usdcCoin,
         nightCoin,
@@ -325,7 +305,10 @@ describe('removeLiquidity', () => {
         initialLpTotalSupply.value - lpTokensToRemove,
       );
 
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(1801n);
       expect(reserveNIGHT.value).toBe(901n);
     });
@@ -403,7 +386,6 @@ describe('removeLiquidity', () => {
       );
 
       // Get updated pair state
-      const updatedPair = lunarswap.getPair(nightCoin, dustCoin);
       const updatedLpTotalSupply = lunarswap.getLpTokenTotalSupply(
         nightCoin,
         dustCoin,
@@ -414,7 +396,10 @@ describe('removeLiquidity', () => {
         initialLpTotalSupply.value - lpTokensToRemove,
       );
 
-      const [reserveNIGHT, reserveDUST] = lunarswap.getPairReserves(nightCoin, dustCoin);
+      const [reserveNIGHT, reserveDUST] = lunarswap.getPairReserves(
+        nightCoin,
+        dustCoin,
+      );
       expect(reserveNIGHT.value).toBe(5601n);
       expect(reserveDUST.value).toBe(8401n);
     });
@@ -861,11 +846,14 @@ describe('removeLiquidity', () => {
           usdcCoin,
           nightCoin,
         );
-        const finalPair = lunarswap.getPair(usdcCoin, nightCoin);
+        const _finalPair = lunarswap.getPair(usdcCoin, nightCoin);
 
         // Should have some LP tokens remaining
         expect(finalLpTotalSupply.value).toBeGreaterThan(0n);
-        const [reserve0, reserve1] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+        const [reserve0, reserve1] = lunarswap.getPairReserves(
+          usdcCoin,
+          nightCoin,
+        );
         expect(reserve0.value).toBeGreaterThan(0n);
         expect(reserve1.value).toBeGreaterThan(0n);
       } catch (e: unknown) {

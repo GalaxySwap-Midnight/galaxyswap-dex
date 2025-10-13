@@ -1,4 +1,4 @@
-import { popularTokens, type Token } from './token-config';
+import { type Token, popularTokens } from './token-config';
 
 // Generate a consistent color based on token symbol
 export function getTokenColor(symbol: string): string {
@@ -8,17 +8,17 @@ export function getTokenColor(symbol: string): string {
   }, 0);
 
   // Generate hue from hash (0-360)
-  const hue = Math.abs(hash) % 360;
+  const _hue = Math.abs(hash) % 360;
 
   // Use different saturation and lightness for different token types
-  let saturation = 70;
-  let lightness = 50;
+  let _saturation = 70;
+  let _lightness = 50;
 
   // Adjust based on token type
   if (symbol.startsWith('T')) {
     // Test tokens - more vibrant
-    saturation = 80;
-    lightness = 45;
+    _saturation = 80;
+    _lightness = 45;
   } else if (symbol === 'LUNAR') {
     // LUNAR token - golden
     return 'bg-yellow-500';

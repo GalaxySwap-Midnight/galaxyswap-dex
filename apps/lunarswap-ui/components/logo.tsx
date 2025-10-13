@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { ExternalLink, Github, MessageCircle, BookOpen } from 'lucide-react';
+import { ExternalLink, Github } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function Logo({ size = 36, className = '' }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

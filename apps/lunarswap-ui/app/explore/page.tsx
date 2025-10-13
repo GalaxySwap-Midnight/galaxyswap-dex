@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
 import { Header } from '@/components/header';
+import { useEffect, useState } from 'react';
 
-import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { StarsBackground } from '@/components/stars-background';
+import { TokenIcon } from '@/components/token-icon';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,39 +14,31 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  Coins,
-  Droplets,
-  ArrowRightLeft,
-  Clock,
-  ArrowRight,
-  Plus,
-  Minus,
-  Copy,
-  Check,
-  X,
-} from 'lucide-react';
-import {
-  popularTokens,
-  getAvailableTokensForSelection,
-} from '@/lib/token-config';
-import { getTokenSymbolByColor } from '@/lib/token-utils';
-import { SplitTokenIcon } from '@/components/pool/split-token-icon';
-import { Input } from '@/components/ui/input';
-import { Copy as CopyIcon, Search, Grid3X3, List } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { TokenIcon } from '@/components/token-icon';
-import { useViewPreference } from '@/hooks/use-view-preference';
-import { useWallet } from '@/hooks/use-wallet';
-import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useViewPreference } from '@/hooks/use-view-preference';
+import { useLunarswapContext } from '@/lib/lunarswap-context';
+import {
+  getAvailableTokensForSelection,
+  popularTokens,
+} from '@/lib/token-config';
+import { getTokenSymbolByColor } from '@/lib/token-utils';
+import {
+  ArrowRightLeft,
+  Check,
+  Coins,
+  Copy,
+  Droplets,
+  Plus,
+  X,
+} from 'lucide-react';
+import { Search } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type ExploreOption = 'tokens' | 'pools' | 'transactions';
 
@@ -66,8 +62,8 @@ export default function ExplorePage() {
   }, []);
 
   const viewPreference = useViewPreference();
-  const { isConnected } = useWallet();
-  const { status, isLoading, isLoadingPublicState, hasLoadedDataOnce, allPairs } = useLunarswapContext();
+  const { isLoadingPublicState, hasLoadedDataOnce, allPairs } =
+    useLunarswapContext();
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedOption, setSelectedOption] = useState<ExploreOption>('tokens');
@@ -78,17 +74,19 @@ export default function ExplorePage() {
       setSelectedOption('pools');
     }
   }, [location.state]);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [_copiedField, setCopiedField] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [poolSearchQuery, setPoolSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(
+  const [_viewMode, setViewMode] = useState<'grid' | 'list'>(
     viewPreference === 'horizontal' ? 'grid' : 'list',
   );
-  
+
   // Token dialog state
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
-  const [copiedDialogField, setCopiedDialogField] = useState<string | null>(null);
+  const [copiedDialogField, setCopiedDialogField] = useState<string | null>(
+    null,
+  );
   // Update view mode when view preference changes
   useEffect(() => {
     setViewMode(viewPreference === 'horizontal' ? 'grid' : 'list');
@@ -128,7 +126,7 @@ export default function ExplorePage() {
       token.address.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const copyToClipboard = async (text: string, field: string) => {
+  const _copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
@@ -157,7 +155,7 @@ export default function ExplorePage() {
     navigate('/pool');
   };
 
-  const handleRemoveLiquidity = () => {
+  const _handleRemoveLiquidity = () => {
     navigate('/pool');
   };
 
@@ -191,7 +189,9 @@ export default function ExplorePage() {
                           className="flex items-center space-x-2 w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded p-1 -m-1 cursor-pointer"
                         >
                           <TokenIcon symbol={token.symbol} size={24} />
-                          <div className="font-medium text-sm">{token.symbol}</div>
+                          <div className="font-medium text-sm">
+                            {token.symbol}
+                          </div>
                         </button>
                       </td>
                       <td className="py-3 px-4">
@@ -218,7 +218,8 @@ export default function ExplorePage() {
                           onClick={() => handleTokenClick(token)}
                           className="w-full text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded p-1 -m-1 cursor-pointer font-mono text-xs text-gray-500 dark:text-gray-400"
                         >
-                          {token.address.slice(0, 8)}...{token.address.slice(-8)}
+                          {token.address.slice(0, 8)}...
+                          {token.address.slice(-8)}
                         </button>
                       </td>
                     </tr>
@@ -434,7 +435,7 @@ export default function ExplorePage() {
     </div>
   );
 
-  const renderContent = () => {
+  const _renderContent = () => {
     switch (selectedOption) {
       case 'tokens':
         return renderTokensContent();
@@ -546,7 +547,9 @@ export default function ExplorePage() {
         <DialogContent className="sm:max-w-md bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-gray-200/50 dark:border-blue-900/30">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-semibold">Token Information</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">
+                Token Information
+              </DialogTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -557,7 +560,7 @@ export default function ExplorePage() {
               </Button>
             </div>
           </DialogHeader>
-          
+
           {selectedToken && (
             <div className="space-y-4">
               {/* Token Header */}
@@ -577,15 +580,20 @@ export default function ExplorePage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Type</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Token Type
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                      {selectedToken.type.slice(0, 12)}...{selectedToken.type.slice(-12)}
+                      {selectedToken.type.slice(0, 12)}...
+                      {selectedToken.type.slice(-12)}
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyDialogToClipboard(selectedToken.type, 'type')}
+                    onClick={() =>
+                      copyDialogToClipboard(selectedToken.type, 'type')
+                    }
                     className="h-8 w-8 p-0"
                   >
                     {copiedDialogField === 'type' ? (
@@ -598,15 +606,20 @@ export default function ExplorePage() {
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Contract Address</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Contract Address
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                      {selectedToken.address.slice(0, 12)}...{selectedToken.address.slice(-12)}
+                      {selectedToken.address.slice(0, 12)}...
+                      {selectedToken.address.slice(-12)}
                     </p>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyDialogToClipboard(selectedToken.address, 'address')}
+                    onClick={() =>
+                      copyDialogToClipboard(selectedToken.address, 'address')
+                    }
                     className="h-8 w-8 p-0"
                   >
                     {copiedDialogField === 'address' ? (
@@ -619,7 +632,9 @@ export default function ExplorePage() {
 
                 <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Token Type</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Token Type
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedToken.shielded ? 'Shielded' : 'Public'}
                     </p>

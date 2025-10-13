@@ -2,7 +2,7 @@ import type { Logger } from 'pino';
 import {
   ShieldedToken,
   type ShieldedTokenProviders,
-} from '@midnight-dapps/shielded-token-api';
+} from '@openzeppelin-midnight-apps/shielded-token-api';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { randomBytes } from './utils';
 
@@ -12,7 +12,9 @@ export const deployContract = async (
   symbol: string,
   logger: Logger,
 ): Promise<ShieldedToken> => {
-  logger.info(`Deploying Shielded Token contract with name: "${name}" and symbol: "${symbol}"...`);
+  logger.info(
+    `Deploying Shielded Token contract with name: "${name}" and symbol: "${symbol}"...`,
+  );
 
   // Generate random nonce and domain for deployment
   const nonce = randomBytes(32);

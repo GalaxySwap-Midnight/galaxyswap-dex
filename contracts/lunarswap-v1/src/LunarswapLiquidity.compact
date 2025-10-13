@@ -21,8 +21,8 @@ module LunarswapLiquidity {
     import CompactStandardLibrary;
 
     import "./openzeppelin/ShieldedERC20" prefix ShieldedERC20_;
-    import "./node_modules/@midnight-dapps/math/dist/Uint128" prefix Uint128_;
-    import "./node_modules/@midnight-dapps/math/dist/Bytes32" prefix Bytes32_;
+    import "./node_modules/@openzeppelin-midnight-apps/math/dist/Uint128" prefix Uint128_;
+    import "./node_modules/@openzeppelin-midnight-apps/math/dist/Bytes32" prefix Bytes32_;
 
     import "./interfaces/ILunarswapLiquidity";
 

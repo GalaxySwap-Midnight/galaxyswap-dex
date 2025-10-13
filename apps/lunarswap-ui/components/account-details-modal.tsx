@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
-import { Button } from './ui/button';
 import type { DAppConnectorWalletState } from '@midnight-ntwrk/dapp-connector-api';
-import { X, Server, Database } from 'lucide-react';
+import { Database, Server, X } from 'lucide-react';
+import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Identicon } from './identicon';
+import { Button } from './ui/button';
 
 interface AccountDetailsModalProps {
   isOpen: boolean;
@@ -283,7 +283,9 @@ export function AccountDetailsModal({
                               </div>
                             ) : (
                               <Identicon
-                                address={field.value || walletState.address || ''}
+                                address={
+                                  field.value || walletState.address || ''
+                                }
                                 size={24}
                               />
                             )}
@@ -294,7 +296,8 @@ export function AccountDetailsModal({
                                 {field.label}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                • {field.type === 'service' ? 'Service' : 'Main'}
+                                •{' '}
+                                {field.type === 'service' ? 'Service' : 'Main'}
                               </span>
                             </div>
                             {field.description && (

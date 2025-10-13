@@ -1,28 +1,27 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ExplorePage from '@/app/explore/page';
+import PoolDetailPage from '@/app/explore/pool/[id]/page';
+import Home from '@/app/page';
+import NewPositionPage from '@/app/pool/new/page';
+import PoolPage from '@/app/pool/page';
+import TokensPage from '@/app/tokens/page';
+import TradePage from '@/app/trade/page';
 import { Toaster } from '@/components/ui/sonner';
-import { NetworkProvider } from '@/lib/network-context';
-import { VersionProvider } from '@/lib/version-context';
-import { MidnightWalletProvider } from '@/lib/wallet-context';
 import { LunarswapProvider } from '@/lib/lunarswap-context';
-import { ThemeProvider } from 'next-themes';
+import { NetworkProvider } from '@/lib/network-context';
 import {
   RuntimeConfigurationProvider,
   useRuntimeConfiguration,
 } from '@/lib/runtime-configuration';
-import { Header } from '@/components/header';
-import Home from '@/app/page';
-import TradePage from '@/app/trade/page';
-import PoolPage from '@/app/pool/page';
-import NewPositionPage from '@/app/pool/new/page';
-import TokensPage from '@/app/tokens/page';
-import ExplorePage from '@/app/explore/page';
-import PoolDetailPage from '@/app/explore/pool/[id]/page';
+import { VersionProvider } from '@/lib/version-context';
+import { MidnightWalletProvider } from '@/lib/wallet-context';
+import { ThemeProvider } from 'next-themes';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import '../app/globals.css';
 import './animations.css';
-import pino from 'pino';
-import type { ReactNode } from 'react';
 import type { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import pino from 'pino';
+import type { ReactNode } from 'react';
 
 // Component that creates logger with runtime configuration
 function AppWithLogger({ children }: { children: ReactNode }) {

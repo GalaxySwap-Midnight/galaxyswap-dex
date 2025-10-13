@@ -1,9 +1,3 @@
-import type {
-  CoinInfo,
-  ContractAddress,
-  Either,
-  ZswapCoinPublicKey,
-} from '@midnight-dapps/compact-std';
 import {
   type CircuitContext,
   type CoinPublicKey,
@@ -11,12 +5,17 @@ import {
   QueryContext,
   constructorContext,
   emptyZswapLocalState,
-  ownPublicKey,
 } from '@midnight-ntwrk/compact-runtime';
 import {
   sampleCoinPublicKey,
   sampleContractAddress,
 } from '@midnight-ntwrk/zswap';
+import type {
+  CoinInfo,
+  ContractAddress,
+  Either,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
 import {
   Contract,
   type Ledger,
@@ -243,11 +242,7 @@ export class LunarswapSimulator
           currentZswapLocalState: emptyZswapLocalState(sender),
         }
       : this.circuitContext;
-    const result = this.contract.circuits.getPairId(
-      context,
-      tokenA,
-      tokenB,
-    );
+    const result = this.contract.circuits.getPairId(context, tokenA, tokenB);
     this.circuitContext = result.context;
     return result.result;
   }
@@ -263,7 +258,11 @@ export class LunarswapSimulator
           currentZswapLocalState: emptyZswapLocalState(sender),
         }
       : this.circuitContext;
-    const result = this.contract.circuits.getReserveId(context, pairId, tokenAType);
+    const result = this.contract.circuits.getReserveId(
+      context,
+      pairId,
+      tokenAType,
+    );
     this.circuitContext = result.context;
     return result.result;
   }
@@ -291,7 +290,11 @@ export class LunarswapSimulator
           currentZswapLocalState: emptyZswapLocalState(sender),
         }
       : this.circuitContext;
-    const result = this.contract.circuits.getSortedCoins(context, tokenA, tokenB);
+    const result = this.contract.circuits.getSortedCoins(
+      context,
+      tokenA,
+      tokenB,
+    );
     this.circuitContext = result.context;
     return result.result;
   }
@@ -302,14 +305,20 @@ export class LunarswapSimulator
     amountAMin: bigint,
     amountBMin: bigint,
     sender?: CoinPublicKey,
-  ): [CoinInfo, CoinInfo, bigint, bigint] { 
+  ): [CoinInfo, CoinInfo, bigint, bigint] {
     const context = sender
       ? {
           ...this.circuitContext,
           currentZswapLocalState: emptyZswapLocalState(sender),
         }
       : this.circuitContext;
-    const result = this.contract.circuits.getSortedCoinsAndAmounts(context, tokenA, tokenB, amountAMin, amountBMin);
+    const result = this.contract.circuits.getSortedCoinsAndAmounts(
+      context,
+      tokenA,
+      tokenB,
+      amountAMin,
+      amountBMin,
+    );
     this.circuitContext = result.context;
     return result.result;
   }

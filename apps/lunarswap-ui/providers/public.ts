@@ -1,7 +1,9 @@
+import { retry } from '@/utils/retry';
 import type {
   ContractAddress,
   ContractState,
 } from '@midnight-ntwrk/compact-runtime';
+import type { TransactionId, ZswapChainState } from '@midnight-ntwrk/ledger';
 import type {
   BlockHashConfig,
   BlockHeightConfig,
@@ -10,8 +12,6 @@ import type {
   PublicDataProvider,
 } from '@midnight-ntwrk/midnight-js-types';
 import type { Logger } from 'pino';
-import { retry } from '@/utils/retry';
-import type { TransactionId, ZswapChainState } from '@midnight-ntwrk/ledger';
 import type { Observable } from 'rxjs';
 
 export class PublicDataProviderWrapper implements PublicDataProvider {
@@ -68,33 +68,17 @@ export class PublicDataProviderWrapper implements PublicDataProvider {
   watchForDeployTxData(
     contractAddress: ContractAddress,
   ): Promise<FinalizedTxData> {
-    console.log(
-      '[watchForDeployTxData] Step 1: Starting watchForDeployTxData',
-      { contractAddress },
-    );
     return retry(
       () => {
-        console.log(
-          '[watchForDeployTxData] Step 2: Calling wrapped.watchForDeployTxData',
-          { contractAddress },
-        );
         return this.wrapped.watchForDeployTxData(contractAddress);
       },
       'watchForDeployTxData',
       this.logger,
     )
       .then((result) => {
-        console.log(
-          '[watchForDeployTxData] Step 3: Successfully received FinalizedTxData',
-          { contractAddress, result },
-        );
         return result;
       })
       .catch((error) => {
-        console.log(
-          '[watchForDeployTxData] Step 4: Error in watchForDeployTxData',
-          { contractAddress, error },
-        );
         throw error;
       });
   }

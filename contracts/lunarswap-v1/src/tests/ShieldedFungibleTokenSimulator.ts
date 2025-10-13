@@ -1,9 +1,3 @@
-import type {
-  CoinInfo,
-  ContractAddress,
-  Either,
-  ZswapCoinPublicKey,
-} from '@midnight-dapps/compact-std';
 import {
   type CircuitContext,
   type ContractState,
@@ -14,6 +8,12 @@ import {
   sampleCoinPublicKey,
   sampleContractAddress,
 } from '@midnight-ntwrk/zswap';
+import type {
+  CoinInfo,
+  ContractAddress,
+  Either,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
 import {
   Contract,
   type Ledger,

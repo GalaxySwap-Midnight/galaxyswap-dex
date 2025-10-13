@@ -1,12 +1,12 @@
-import type {
-  ContractAddress,
-  ZswapCoinPublicKey,
-} from '@midnight-dapps/compact-std';
 import {
   convert_bigint_to_Uint8Array,
   encodeCoinPublicKey,
   encodeContractAddress,
 } from '@midnight-ntwrk/compact-runtime';
+import type {
+  ContractAddress,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
 
 const PREFIX_ADDRESS = '0200';
 

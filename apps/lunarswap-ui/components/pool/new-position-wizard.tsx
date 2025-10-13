@@ -2,14 +2,11 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { RotateCcw, Settings, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { popularTokens } from '@/lib/token-config';
+import type { Token as UiToken } from '@/lib/token-config';
+import { useEffect, useState } from 'react';
 import { SelectPairStep } from './steps/select-pair-step';
 import { SetDepositStep } from './steps/set-deposit-step';
-import {
-  popularTokens,
-} from '@/lib/token-config';
-import type { Token as UiToken } from '@/lib/token-config';
 
 // Define the interface locally since it's not exported from SelectPairStep
 interface PairSelectionData {
@@ -38,7 +35,10 @@ interface NewPositionWizardProps {
 
 type Step = 'select-pair' | 'set-deposit';
 
-export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardProps) {
+export function NewPositionWizard({
+  onClose,
+  initialTokens,
+}: NewPositionWizardProps) {
   const [currentStep, setCurrentStep] = useState<Step>('select-pair');
   const [pairData, setPairData] = useState<PairSelectionData>({
     tokenA: null,
@@ -89,7 +89,7 @@ export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardP
     setForceRenderKey((prev: number) => prev + 1);
   };
 
-  const handleReset = () => {
+  const _handleReset = () => {
     setPairData({
       tokenA: null,
       tokenB: null,
@@ -97,7 +97,12 @@ export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardP
       version: 'v1', // Reset to V1 since V2/V3 are coming soon
     });
     setCurrentStep('select-pair');
-    setForceRenderKey(prev => prev + 1);
+    setForceRenderKey((prev) => prev + 1);
+  };
+
+  const handleClose = () => {
+    _handleReset();
+    onClose?.();
   };
 
   // Type guard to check if pair data is complete
@@ -184,7 +189,7 @@ export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardP
         {/* Right content area */}
         <div className="flex-1" key={forceRenderKey}>
           {/* Privacy Notice */}
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
             <div className="flex items-start space-x-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="w-4 h-4 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <svg
@@ -212,6 +217,11 @@ export function NewPositionWizard({ onClose, initialTokens }: NewPositionWizardP
                   proofs. Your actual balances remain private.
                 </p>
               </div>
+            </div>
+            <div className="ml-2">
+              <Button onClick={handleClose} variant="outline" size="sm">
+                Close
+              </Button>
             </div>
           </div>
 

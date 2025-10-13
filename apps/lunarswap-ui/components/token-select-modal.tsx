@@ -1,4 +1,6 @@
 'use client';
+import { TokenIcon } from '@/components/token-icon';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -6,15 +8,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Search, Droplets, Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { TokenIcon } from '@/components/token-icon';
+import { useLogger } from '@/hooks/use-logger';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { useWallet } from '@/hooks/use-wallet';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import { popularTokens } from '@/lib/token-config';
-import { decodeCoinInfo } from '@midnight-ntwrk/ledger';
+import { Droplets, Plus, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Token {
   symbol: string;
@@ -42,18 +41,15 @@ export function TokenSelectModal({
 }: TokenSelectModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [availableTokens, setAvailableTokens] = useState<Token[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { status, allPairs } = useLunarswapContext();
-  const { isConnected } = useWallet();
+  const [isLoading, _setIsLoading] = useState(false);
+  const { allPairs } = useLunarswapContext();
   const navigate = useNavigate();
+  const _logger = useLogger();
 
   // Filter available tokens from global context (only if no custom tokens provided)
   useEffect(() => {
     // If custom tokens are provided, skip the default logic
     if (customTokens && customTokens.length > 0) {
-      console.log(
-        'TokenSelectModal - Using custom tokens, skipping default logic',
-      );
       return;
     }
 
@@ -64,17 +60,12 @@ export function TokenSelectModal({
         .join('')
         .toLowerCase();
 
-    console.log('TokenSelectModal - allPairs length:', allPairs.length);
-    console.log('TokenSelectModal - show:', show);
-
     if (!show) {
-      console.log('TokenSelectModal - Modal not shown');
       setAvailableTokens([]);
       return;
     }
 
     if (allPairs.length === 0) {
-      console.log('TokenSelectModal - No pairs available yet, waiting...');
       // Don't set empty tokens, let it show loading state
       return;
     }
@@ -88,20 +79,6 @@ export function TokenSelectModal({
       tokenSet.add(token0Color);
       tokenSet.add(token1Color);
     }
-
-    console.log('TokenSelectModal - Pool token types:', Array.from(tokenSet));
-    console.log(
-      'TokenSelectModal - Popular token types:',
-      popularTokens.map((t) => t.type.replace(/^0x/i, '').toLowerCase()),
-    );
-
-    // Log detailed pool information
-    console.log('TokenSelectModal - Detailed pool info:');
-    allPairs.forEach((pair, index) => {
-      const token0Type = bytesToHex(pair.pair.token0Type);
-      const token1Type = bytesToHex(pair.pair.token1Type);
-      console.log(`Pool ${index + 1}: ${token0Type} / ${token1Type}`);
-    });
 
     // Filter popular tokens to only include those with pools
     const available = popularTokens.filter((token) => {
@@ -125,35 +102,13 @@ export function TokenSelectModal({
         );
       }
 
-      console.log(
-        `TokenSelectModal - Token ${token.symbol}: ${tokenType} has match: ${hasMatch}`,
-      );
       return hasMatch;
     });
 
-    console.log(
-      'TokenSelectModal - Available tokens:',
-      available.map((t) => t.symbol),
-    );
     setAvailableTokens(available);
   }, [show, allPairs, customTokens]);
 
   // Use custom tokens if provided, otherwise use the default logic
-  console.log('TokenSelectModal - Loading states:', {
-    externalIsLoading,
-    isLoading,
-    allPairsLength: allPairs.length,
-    customTokensLength: customTokens?.length || 0,
-    availableTokensLength: availableTokens.length,
-  });
-  console.log(
-    'TokenSelectModal - customTokens:',
-    customTokens?.map((t) => t.symbol),
-  );
-  console.log(
-    'TokenSelectModal - availableTokens:',
-    availableTokens.map((t) => t.symbol),
-  );
   const tokensToUse =
     customTokens && customTokens.length > 0 ? customTokens : availableTokens;
 

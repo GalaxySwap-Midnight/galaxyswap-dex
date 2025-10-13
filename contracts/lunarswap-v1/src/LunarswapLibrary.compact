@@ -20,8 +20,8 @@ pragma language_version >= 0.14.0;
 module LunarswapLibrary {
     import CompactStandardLibrary;
 
-    import "../node_modules/@midnight-dapps/math/dist/Uint128" prefix Uint128_;
-    import "../node_modules/@midnight-dapps/math/dist/Bytes32" prefix Bytes32_;
+    import "../node_modules/@openzeppelin-midnight-apps/math/dist/Uint128" prefix Uint128_;
+    import "../node_modules/@openzeppelin-midnight-apps/math/dist/Bytes32" prefix Bytes32_;
 
     // Struct for split coin result
     export struct SplitCoinResult {

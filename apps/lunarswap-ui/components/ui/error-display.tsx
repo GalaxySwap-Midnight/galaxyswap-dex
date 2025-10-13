@@ -1,7 +1,6 @@
-import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Info, XCircle, HelpCircle } from 'lucide-react';
+import { AlertTriangle, Info, XCircle } from 'lucide-react';
 
 interface ErrorDisplayProps {
   error: Error | string;
@@ -19,7 +18,7 @@ export function ErrorDisplay({
   className = '',
 }: ErrorDisplayProps) {
   const errorMessage = typeof error === 'string' ? error : error.message;
-  const errorName = typeof error === 'string' ? 'Error' : error.name;
+  const _errorName = typeof error === 'string' ? 'Error' : error.name;
 
   // Determine error type and icon
   const getErrorConfig = () => {

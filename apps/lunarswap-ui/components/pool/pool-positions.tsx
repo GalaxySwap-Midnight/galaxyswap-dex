@@ -2,10 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Shield, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
+import { Info, Plus, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export function PoolPositions() {
   const [positions, _] = useState<unknown[]>([]);

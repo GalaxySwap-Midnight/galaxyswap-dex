@@ -1,33 +1,24 @@
 'use client';
-
-import React from 'react';
+import { Buffer } from 'buffer';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { SplitTokenIcon } from '@/components/pool/split-token-icon';
-import { useState, useEffect } from 'react';
-import { useLunarswapContext } from '@/lib/lunarswap-context';
+import { useLogger } from '@/hooks/use-logger';
 import { useWallet } from '@/hooks/use-wallet';
-import { toast } from 'sonner';
-import { Loader2, Info, AlertTriangle, Clock, Shield, Wallet } from 'lucide-react';
-import {
-  calculateRemoveLiquidityMinimums,
-  SLIPPAGE_TOLERANCE,
-} from '@midnight-dapps/lunarswap-sdk';
+import { useLunarswapContext } from '@/lib/lunarswap-context';
 import { decodeTokenType } from '@midnight-ntwrk/ledger';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  SLIPPAGE_TOLERANCE,
+  calculateRemoveLiquidityMinimums,
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { LiquidityProgress } from '../liquidity-progress';
 import { ZkWarningDialog } from '../zk-warning-dialog';
-import { Buffer } from 'buffer';
 
 interface PositionData {
   pairId: string;
@@ -45,6 +36,7 @@ interface SetWithdrawalStepProps {
 }
 
 export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
+  const _logger = useLogger();
   const { lunarswap, status, lpTotalSupply } = useLunarswapContext();
   const { isConnected, walletAPI } = useWallet();
   const [lpTokenAmount, setLpTokenAmount] = useState('');
@@ -52,9 +44,13 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
   const [token1Amount, setToken1Amount] = useState('');
   const [isRemovingLiquidity, setIsRemovingLiquidity] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [pairReserves, setPairReserves] = useState<[bigint, bigint] | null>(null);
+  const [pairReserves, setPairReserves] = useState<[bigint, bigint] | null>(
+    null,
+  );
   const [totalLpSupply, setTotalLpSupply] = useState<bigint | null>(null);
-  const [slippageTolerance, setSlippageTolerance] = useState<number>(SLIPPAGE_TOLERANCE.LOW);
+  const [slippageTolerance, setSlippageTolerance] = useState<number>(
+    SLIPPAGE_TOLERANCE.LOW,
+  );
   const [showZkWarning, setShowZkWarning] = useState(false);
   const [isProofGenerating, setIsProofGenerating] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
@@ -64,7 +60,8 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isProofGenerating) {
         e.preventDefault();
-        e.returnValue = 'ZK proof is being generated. Please wait and do not refresh the page.';
+        e.returnValue =
+          'ZK proof is being generated. Please wait and do not refresh the page.';
         return e.returnValue;
       }
     };
@@ -87,13 +84,13 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
 
   const fetchPairData = async () => {
     if (!lunarswap) return;
-    
+
     setIsCalculating(true);
     try {
       // Get current reserves
       const reserves = await lunarswap.getPairReserves(
         decodeTokenType(positionData.token0Type).toString(),
-        decodeTokenType(positionData.token1Type).toString()
+        decodeTokenType(positionData.token1Type).toString(),
       );
       setPairReserves(reserves);
 
@@ -102,17 +99,18 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
         throw new Error('LP total supply not available in context');
       }
 
-      const pairId = await lunarswap.getPairId(decodeTokenType(positionData.token0Type), decodeTokenType(positionData.token1Type));
+      const pairId = await lunarswap.getPairId(
+        decodeTokenType(positionData.token0Type),
+        decodeTokenType(positionData.token1Type),
+      );
       const supplyFound = lpTotalSupply.lookup(pairId);
 
       setTotalLpSupply(supplyFound.value);
-
-      console.log('Pair data fetched:', {
-        reserves: reserves?.map(r => r.toString()),
-        totalLpSupply: supplyFound.value.toString()
-      });
     } catch (error) {
-      console.error('Failed to fetch pair data:', error);
+      _logger?.error(
+        `[SetWithdrawalStep] Failed to fetch pair data: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       toast.error('Failed to fetch pool data. Please try again.');
     } finally {
       setIsCalculating(false);
@@ -143,7 +141,10 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
       setToken0Amount((Number(expectedAmountA) / 1e6).toFixed(6));
       setToken1Amount((Number(expectedAmountB) / 1e6).toFixed(6));
     } catch (error) {
-      console.error('Error calculating token amounts:', error);
+      _logger?.error(
+        `[SetWithdrawalStep] Error calculating token amounts: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       setToken0Amount('');
       setToken1Amount('');
     }
@@ -205,19 +206,8 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
         slippageTolerance,
       );
 
-      console.log('Removing liquidity:', {
-        position: positionData,
-        lpTokenType: lpTokenType,
-        lpAmount: lpTokenAmount,
-        token0Amount,
-        token1Amount,
-        minAmountA: amountAMin.toString(),
-        minAmountB: amountBMin.toString(),
-        slippageTolerance,
-      });
-
       // Call the actual removeLiquidity method
-      const result = await lunarswap.removeLiquidity(
+      await lunarswap.removeLiquidity(
         token0Type,
         token1Type,
         lpTokenType,
@@ -227,30 +217,38 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
         walletAPI.coinPublicKey,
       );
 
-      console.log('Remove liquidity result:', result);
-      
-      toast.success(`Successfully initiated liquidity removal for ${lpTokenAmount} LP tokens`);
-      
+      toast.success(
+        `Successfully initiated liquidity removal for ${lpTokenAmount} LP tokens`,
+      );
+
       // Reset form
       setLpTokenAmount('');
       setToken0Amount('');
       setToken1Amount('');
 
       // Transaction completed successfully - progress dialog will close via onComplete callback
-
     } catch (error) {
       console.error('Error removing liquidity:', error);
-      
+
       // Provide more specific error messages
       if (error instanceof Error) {
         if (error.message.includes('Insufficient')) {
           toast.error('Insufficient liquidity balance for removal');
         } else if (error.message.includes('Slippage')) {
-          toast.error('Transaction failed due to high slippage. Try reducing the amount.');
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
-          toast.error('Network connection issue. Please check your internet connection and try again.');
+          toast.error(
+            'Transaction failed due to high slippage. Try reducing the amount.',
+          );
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ) {
+          toast.error(
+            'Network connection issue. Please check your internet connection and try again.',
+          );
         } else if (error.message.includes('wallet')) {
-          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
+          toast.error(
+            'Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.',
+          );
         } else {
           toast.error(`Remove liquidity failed: ${error.message}`);
         }
@@ -307,7 +305,8 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Remove Liquidity</h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Specify the amount of LP tokens to remove from your {positionData.token0Symbol}/{positionData.token1Symbol} position
+          Specify the amount of LP tokens to remove from your{' '}
+          {positionData.token0Symbol}/{positionData.token1Symbol} position
         </p>
       </div>
 
@@ -329,12 +328,20 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
                   Fee: {positionData.fee}% • {positionData.version}
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  LP Token: {Buffer.from(positionData.lpTokenType).toString('hex').slice(0, 8)}...{Buffer.from(positionData.lpTokenType).toString('hex').slice(-8)}
+                  LP Token:{' '}
+                  {Buffer.from(positionData.lpTokenType)
+                    .toString('hex')
+                    .slice(0, 8)}
+                  ...
+                  {Buffer.from(positionData.lpTokenType)
+                    .toString('hex')
+                    .slice(-8)}
                 </div>
               </div>
             </div>
             <Badge variant="outline">
-              {positionData.pairId.slice(0, 8)}...{positionData.pairId.slice(-8)}
+              {positionData.pairId.slice(0, 8)}...
+              {positionData.pairId.slice(-8)}
             </Badge>
           </div>
         </CardContent>
@@ -346,11 +353,15 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
           <CardContent className="p-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <Label className="text-xs text-gray-500 dark:text-gray-400">Total LP Supply</Label>
+                <Label className="text-xs text-gray-500 dark:text-gray-400">
+                  Total LP Supply
+                </Label>
                 <div className="font-medium">{totalLpSupply.toString()}</div>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 dark:text-gray-400">Current Reserves</Label>
+                <Label className="text-xs text-gray-500 dark:text-gray-400">
+                  Current Reserves
+                </Label>
                 <div className="font-medium">
                   {positionData.token0Symbol}: {pairReserves[0].toString()}
                 </div>
@@ -424,7 +435,7 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
           {Object.entries(SLIPPAGE_TOLERANCE).map(([key, value]) => (
             <Button
               key={key}
-              variant={slippageTolerance === value ? "default" : "outline"}
+              variant={slippageTolerance === value ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSlippageTolerance(value)}
             >
@@ -436,20 +447,17 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
 
       {/* Action Buttons */}
       <div className="flex justify-end space-x-3">
-        <Button 
-          variant="outline"
-          disabled={isRemovingLiquidity}
-        >
+        <Button variant="outline" disabled={isRemovingLiquidity}>
           Cancel
         </Button>
         <Button
           onClick={handleRemoveLiquidity}
           disabled={
-            isRemovingLiquidity || 
-            !isConnected || 
-            status !== 'connected' || 
-            !lpTokenAmount || 
-            !pairReserves || 
+            isRemovingLiquidity ||
+            !isConnected ||
+            status !== 'connected' ||
+            !lpTokenAmount ||
+            !pairReserves ||
             !totalLpSupply
           }
           className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
@@ -470,4 +478,4 @@ export function SetWithdrawalStep({ positionData }: SetWithdrawalStepProps) {
       )}
     </div>
   );
-} 
+}

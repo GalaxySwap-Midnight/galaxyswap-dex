@@ -1,11 +1,11 @@
-import type {
-  LunarswapPrivateState,
-  Contract,
-  Witnesses,
-  Ledger,
-} from '@midnight-dapps/lunarswap-v1';
-import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import type { FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
+import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
+import type {
+  Contract,
+  Ledger,
+  LunarswapPrivateState,
+  Witnesses,
+} from '@openzeppelin-midnight-apps/lunarswap-v1';
 
 // Define EmptyState locally
 export type EmptyState = Record<string, never>;

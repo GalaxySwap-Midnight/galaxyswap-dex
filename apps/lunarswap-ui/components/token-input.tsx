@@ -1,8 +1,8 @@
 'use client';
 
+import { TokenIcon } from '@/components/token-icon';
 import { Input } from '@/components/ui/input';
 import { ChevronDown, Loader2 } from 'lucide-react';
-import { TokenIcon } from '@/components/token-icon';
 
 interface TokenInputProps {
   token: {
@@ -44,9 +44,11 @@ export function TokenInput({
       }`}
     >
       {labelPosition === 'top' && label && (
-        <div className={`text-sm text-gray-500 dark:text-gray-400 mb-2 ${
-          labelAlignment === 'left' ? 'text-left' : 'text-center'
-        }`}>
+        <div
+          className={`text-sm text-gray-500 dark:text-gray-400 mb-2 ${
+            labelAlignment === 'left' ? 'text-left' : 'text-center'
+          }`}
+        >
           {label}
         </div>
       )}

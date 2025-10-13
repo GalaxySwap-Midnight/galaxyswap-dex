@@ -1,12 +1,12 @@
 'use client';
 
+import { GlobalPreferences } from '@/components/global-preferences';
 import { Logo } from '@/components/logo';
 import { WalletConnect } from '@/components/wallet-connect';
-import { GlobalPreferences } from '@/components/global-preferences';
 import { useWallet } from '@/hooks/use-wallet';
 import { cn } from '@/utils/cn';
-import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
   { href: '/trade', label: 'Trade' },
@@ -23,12 +23,14 @@ export function Header() {
   const isLandingPage = location.pathname === '/';
 
   return (
-    <header className={cn(
-      "fixed top-0 left-0 right-0 z-50",
-      isLandingPage 
-        ? "bg-transparent border-transparent" 
-        : "backdrop-blur-xl border-b bg-white/30 dark:bg-gray-900/20 border-white/20 dark:border-gray-800/30"
-    )}>
+    <header
+      className={cn(
+        'fixed top-0 left-0 right-0 z-50',
+        isLandingPage
+          ? 'bg-transparent border-transparent'
+          : 'backdrop-blur-xl border-b bg-white/30 dark:bg-gray-900/20 border-white/20 dark:border-gray-800/30',
+      )}
+    >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Left side - Logo and Navigation */}

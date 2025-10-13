@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Minus, ArrowRight, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/use-wallet';
+import { ArrowRight, Minus, Plus, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface LiquidityActionsProps {
   onAddLiquidity?: () => void;

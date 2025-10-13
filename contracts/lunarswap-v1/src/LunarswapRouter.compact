@@ -18,7 +18,7 @@ module LunarswapRouter {
     import CompactStandardLibrary;
     
     import "./openzeppelin/Utils";
-    import "./node_modules/@midnight-dapps/math/dist/Uint128";
+    import "./node_modules/@openzeppelin-midnight-apps/math/dist/Uint128";
     
     import "./interfaces/ILunarswapPair";
     

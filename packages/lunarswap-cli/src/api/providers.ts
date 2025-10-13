@@ -1,28 +1,28 @@
-import type { Config } from '../config';
-import type { Wallet } from '@midnight-ntwrk/wallet-api';
-import type { Resource } from '@midnight-ntwrk/wallet';
-import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import { firstValueFrom } from 'rxjs';
-import type { LunarswapProviders } from '@midnight-dapps/lunarswap-api';
 import { Transaction } from '@midnight-ntwrk/ledger';
 import type {
-  TransactionId,
   CoinInfo as LedgerCoinInfo,
+  TransactionId,
 } from '@midnight-ntwrk/ledger';
-import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
+import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
 import {
   type BalancedTransaction,
-  createBalancedTx,
   type MidnightProvider,
   type UnbalancedTransaction,
   type WalletProvider,
+  createBalancedTx,
 } from '@midnight-ntwrk/midnight-js-types';
-import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
-import { NodeZkConfigProvider } from '@midnight-ntwrk/midnight-js-node-zk-config-provider';
-import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
+import type { Resource } from '@midnight-ntwrk/wallet';
+import type { Wallet } from '@midnight-ntwrk/wallet-api';
+import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import type { LunarswapProviders } from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { LunarswapPrivateStateId } from '@openzeppelin-midnight-apps/lunarswap-api';
+import { firstValueFrom } from 'rxjs';
+import type { Config } from '../config';
 import { contractConfig } from '../config';
-import type { LunarswapPrivateStateId } from '@midnight-dapps/lunarswap-api';
 
 const createWalletAndMidnightProvider = async (
   wallet: Wallet,

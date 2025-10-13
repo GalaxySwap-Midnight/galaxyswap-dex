@@ -16,6 +16,10 @@ interface DownloadParamsResult {
  */
 export async function downloadLunarswapProofParams(
   proofServerUrl = 'http://localhost:6300',
+  logger?: {
+    info?: (...args: unknown[]) => void;
+    error?: (...args: unknown[]) => void;
+  },
 ): Promise<DownloadParamsResult> {
   const result: DownloadParamsResult = {
     success: true,
@@ -23,15 +27,8 @@ export async function downloadLunarswapProofParams(
     failed: [],
     errors: [],
   };
-
-  console.log('[downloadLunarswapProofParams] Starting parameter download...');
-
   for (const k of LUNARSWAP_K_VALUES) {
     try {
-      console.log(
-        `[downloadLunarswapProofParams] Downloading parameters for k=${k}...`,
-      );
-
       const response = await fetch(`${proofServerUrl}/fetch-params/${k}`, {
         method: 'POST',
         headers: {
@@ -40,39 +37,31 @@ export async function downloadLunarswapProofParams(
       });
 
       if (response.ok) {
-        console.log(
-          `[downloadLunarswapProofParams] ✅ Successfully downloaded parameters for k=${k}`,
-        );
         result.downloaded.push(k);
       } else {
         const errorText = await response.text();
-        console.error(
-          `[downloadLunarswapProofParams] ❌ Failed to download parameters for k=${k}:`,
-          errorText,
-        );
         result.failed.push(k);
         result.errors.push(
           `k=${k}: ${response.status} ${response.statusText} - ${errorText}`,
         );
         result.success = false;
+        logger?.error?.(
+          `[downloadLunarswapProofParams] Failed to download parameters for k=${k}:`,
+          errorText,
+        );
       }
     } catch (error) {
-      console.error(
-        `[downloadLunarswapProofParams] ❌ Error downloading parameters for k=${k}:`,
-        error,
-      );
       result.failed.push(k);
       result.errors.push(
         `k=${k}: ${error instanceof Error ? error.message : String(error)}`,
       );
       result.success = false;
+      logger?.error?.(
+        `[downloadLunarswapProofParams] Error downloading parameters for k=${k}:`,
+        error,
+      );
     }
   }
-
-  console.log(
-    '[downloadLunarswapProofParams] Parameter download complete:',
-    result,
-  );
   return result;
 }
 
@@ -81,6 +70,10 @@ export async function downloadLunarswapProofParams(
  */
 export async function checkProofParamsStatus(
   proofServerUrl = 'http://localhost:6300',
+  logger?: {
+    info?: (...args: unknown[]) => void;
+    error?: (...args: unknown[]) => void;
+  },
 ): Promise<{ [k: number]: boolean }> {
   const status: { [k: number]: boolean } = {};
 
@@ -104,11 +97,19 @@ export async function checkProofParamsStatus(
       if (response.status === 400) {
         const errorText = await response.text();
         status[k] = !errorText.includes(`k=${k} not found in cache`);
+        logger?.error?.(
+          `[checkProofParamsStatus] Parameters for k=${k} not found in cache:`,
+          errorText,
+        );
       } else {
         status[k] = true; // Assume available if no specific error
       }
     } catch (error) {
       status[k] = false;
+      logger?.error?.(
+        `[checkProofParamsStatus] Error checking parameters for k=${k}:`,
+        error,
+      );
     }
   }
 
@@ -120,16 +121,14 @@ export async function checkProofParamsStatus(
  */
 export async function ensureLunarswapProofParams(
   proofServerUrl = 'http://localhost:6300',
+  logger?: {
+    info?: (...args: unknown[]) => void;
+    error?: (...args: unknown[]) => void;
+  },
 ): Promise<DownloadParamsResult> {
-  console.log('[ensureLunarswapProofParams] Checking parameter status...');
-
   // Check which parameters are already available
   //const status = await checkProofParamsStatus(proofServerUrl);
   const missingParams = LUNARSWAP_K_VALUES;
-
-  console.log(
-    `[ensureLunarswapProofParams] Missing parameters: ${missingParams.join(', ')}`,
-  );
 
   // Download only missing parameters
   const result: DownloadParamsResult = {
@@ -141,10 +140,6 @@ export async function ensureLunarswapProofParams(
 
   for (const k of missingParams) {
     try {
-      console.log(
-        `[ensureLunarswapProofParams] Downloading parameters for k=${k}...`,
-      );
-
       const response = await fetch(`${proofServerUrl}/fetch-params/${k}`, {
         method: 'GET',
         headers: {
@@ -153,38 +148,31 @@ export async function ensureLunarswapProofParams(
       });
 
       if (response.ok) {
-        console.log(
-          `[ensureLunarswapProofParams] ✅ Successfully downloaded parameters for k=${k}`,
-        );
         result.downloaded.push(k);
       } else {
         const errorText = await response.text();
-        console.error(
-          `[ensureLunarswapProofParams] ❌ Failed to download parameters for k=${k}:`,
-          errorText,
-        );
         result.failed.push(k);
         result.errors.push(
           `k=${k}: ${response.status} ${response.statusText} - ${errorText}`,
         );
         result.success = false;
+        logger?.error?.(
+          `[ensureLunarswapProofParams] Failed to download parameters for k=${k}:`,
+          errorText,
+        );
       }
     } catch (error) {
-      console.error(
-        `[ensureLunarswapProofParams] ❌ Error downloading parameters for k=${k}:`,
-        error,
-      );
       result.failed.push(k);
       result.errors.push(
         `k=${k}: ${error instanceof Error ? error.message : String(error)}`,
       );
       result.success = false;
+      logger?.error?.(
+        `[ensureLunarswapProofParams] Error downloading parameters for k=${k}:`,
+        error,
+      );
     }
   }
 
-  console.log(
-    '[ensureLunarswapProofParams] Parameter download complete:',
-    result,
-  );
   return result;
 }

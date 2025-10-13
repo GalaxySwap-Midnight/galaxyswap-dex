@@ -1,11 +1,11 @@
 'use client';
 
 import {
+  type ReactNode,
   createContext,
   useContext,
   useEffect,
   useState,
-  type ReactNode,
 } from 'react';
 
 export interface RuntimeConfiguration {
@@ -38,11 +38,9 @@ interface RuntimeConfigurationProviderProps {
  */
 export const loadRuntimeConfiguration =
   async (): Promise<RuntimeConfiguration> => {
-    console.log('Fetching /config.json for runtime configuration...');
     const response = await fetch(`/config.json?t=${Date.now()}`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const value: Record<string, string> = await response.json();
-    console.log('Loaded runtime configuration:', value);
 
     return {
       LOGGING_LEVEL: value.LOGGING_LEVEL,

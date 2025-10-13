@@ -1,9 +1,9 @@
-import React, { type ReactNode } from 'react';
+import { Wallet } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../hooks/use-wallet';
-import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Wallet } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
 
 interface ProtectedRouteProps {
   children: ReactNode;

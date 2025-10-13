@@ -9,7 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Info, AlertTriangle, Clock, Shield, Wallet } from 'lucide-react';
+import {
+  AlertTriangle,
+  Clock,
+  Info,
+  Loader2,
+  Shield,
+  Wallet,
+} from 'lucide-react';
 
 interface ZkWarningDialogProps {
   isOpen: boolean;
@@ -21,39 +28,41 @@ interface ZkWarningDialogProps {
   tokenBSymbol?: string;
 }
 
-export function ZkWarningDialog({ 
-  isOpen, 
-  onClose, 
-  onProceed, 
-  isSubmitting, 
+export function ZkWarningDialog({
+  isOpen,
+  onClose,
+  onProceed,
+  isSubmitting,
   operationType = 'add-liquidity',
   tokenASymbol = 'token A',
-  tokenBSymbol = 'token B'
+  tokenBSymbol = 'token B',
 }: ZkWarningDialogProps) {
-  
   // Get operation-specific content
   const getOperationContent = () => {
     switch (operationType) {
       case 'remove-liquidity':
         return {
           title: 'Remove Liquidity',
-          description: 'This transaction requires a ZK proof to be generated for privacy and security.',
+          description:
+            'This transaction requires a ZK proof to be generated for privacy and security.',
           circuit: 'removeLiquidity',
-          iconColor: 'text-red-500'
+          iconColor: 'text-red-500',
         };
       case 'swap':
         return {
           title: 'Swap Tokens',
-          description: 'This transaction requires a ZK proof to be generated for privacy and security.',
+          description:
+            'This transaction requires a ZK proof to be generated for privacy and security.',
           circuit: 'swap',
-          iconColor: 'text-green-500'
+          iconColor: 'text-green-500',
         };
       default:
         return {
           title: 'Add Liquidity',
-          description: 'This transaction requires a ZK proof to be generated for privacy and security.',
+          description:
+            'This transaction requires a ZK proof to be generated for privacy and security.',
           circuit: 'addLiquidity',
-          iconColor: 'text-orange-500'
+          iconColor: 'text-orange-500',
         };
     }
   };
@@ -64,7 +73,9 @@ export function ZkWarningDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className={`flex items-center gap-2 text-lg ${operationContent.iconColor}`}>
+          <DialogTitle
+            className={`flex items-center gap-2 text-lg ${operationContent.iconColor}`}
+          >
             <Shield className="h-4 w-4" />
             Zero-Knowledge Proof Required
           </DialogTitle>
@@ -72,7 +83,7 @@ export function ZkWarningDialog({
             {operationContent.description}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-3">
           {/* Circuit Information */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
@@ -81,9 +92,15 @@ export function ZkWarningDialog({
               <span className="font-medium text-xs">Circuit Constraints</span>
             </div>
             <div className="text-xs space-y-0.5">
-              <div><strong>Circuit:</strong> {operationContent.circuit}</div>
-              <div><strong>Complexity:</strong> k=19, rows=334,954</div>
-              <div><strong>Security Level:</strong> 128-bit</div>
+              <div>
+                <strong>Circuit:</strong> {operationContent.circuit}
+              </div>
+              <div>
+                <strong>Complexity:</strong> k=19, rows=334,954
+              </div>
+              <div>
+                <strong>Security Level:</strong> 128-bit
+              </div>
             </div>
           </div>
 
@@ -94,9 +111,13 @@ export function ZkWarningDialog({
               <span className="font-medium text-xs">Estimated Time</span>
             </div>
             <div className="text-xs">
-              <strong>Local Proof Server:</strong> 3-8 minutes<br/>
-              <strong>Remote Proof Server:</strong> 45-90 seconds<br/>
-              <span className="text-xs text-gray-600">Time may vary based on your hardware and network</span>
+              <strong>Local Proof Server:</strong> 3-8 minutes
+              <br />
+              <strong>Remote Proof Server:</strong> 45-90 seconds
+              <br />
+              <span className="text-xs text-gray-600">
+                Time may vary based on your hardware and network
+              </span>
             </div>
           </div>
 
@@ -134,7 +155,9 @@ export function ZkWarningDialog({
           <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded">
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="h-3 w-3 text-purple-600" />
-              <span className="font-medium text-xs">During Proof Generation</span>
+              <span className="font-medium text-xs">
+                During Proof Generation
+              </span>
             </div>
             <div className="text-xs space-y-0.5">
               <div>⚠️ Do not refresh the page</div>
@@ -146,8 +169,8 @@ export function ZkWarningDialog({
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={onClose}
             disabled={isSubmitting}
@@ -155,7 +178,7 @@ export function ZkWarningDialog({
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={onProceed}
             disabled={isSubmitting}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5"
@@ -163,10 +186,12 @@ export function ZkWarningDialog({
             {isSubmitting && (
               <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
             )}
-            {isSubmitting ? 'Generating Proof...' : `Proceed with ${operationContent.title}`}
+            {isSubmitting
+              ? 'Generating Proof...'
+              : `Proceed with ${operationContent.title}`}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-} 
+}

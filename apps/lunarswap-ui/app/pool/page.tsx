@@ -1,14 +1,12 @@
 import { Header } from '@/components/header';
+import { MoonDustBackground } from '@/components/moon-dust-background';
 import { NewPositionWizard } from '@/components/pool/new-position-wizard';
 import { RemoveLiquidityWizard } from '@/components/pool/remove-liquidity-wizard';
-import { Button } from '@/components/ui/button';
 import { TopPoolsList } from '@/components/pool/top-pools-list';
 import { StarsBackground } from '@/components/stars-background';
-import { MoonDustBackground } from '@/components/moon-dust-background';
+import { Button } from '@/components/ui/button';
+import { Minus, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useViewPreference } from '@/hooks/use-view-preference';
-import { useWallet } from '@/hooks/use-wallet';
-import { Plus, Minus } from 'lucide-react';
 
 export const metadata = {
   title: 'Manage Liquidity & Positions',
@@ -19,8 +17,6 @@ export const metadata = {
 export default function PoolPage() {
   const [showNewPosition, setShowNewPosition] = useState(true); // Default to Add Liquidity
   const [showRemoveLiquidity, setShowRemoveLiquidity] = useState(false);
-  const viewPreference = useViewPreference();
-  const { isConnected } = useWallet();
 
   useEffect(() => {
     document.title = 'Manage Liquidity & Positions';

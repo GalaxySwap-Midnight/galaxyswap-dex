@@ -6,7 +6,7 @@ import { AlertTriangle, Chrome, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function BrowserCompatibility() {
-  const [isFirefox, setIsFirefox] = useState(false);
+  const [_isFirefox, setIsFirefox] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -26,10 +26,6 @@ export function BrowserCompatibility() {
     window.open('https://www.google.com/chrome/', '_blank');
   };
 
-  const openChromeExtension = () => {
-    window.open('https://chrome.google.com/webstore/detail/midnight-lace/your-extension-id', '_blank');
-  };
-
   if (!isVisible) {
     return null;
   }
@@ -43,7 +39,9 @@ export function BrowserCompatibility() {
       <AlertDescription className="text-yellow-700 dark:text-yellow-300">
         <div className="space-y-3">
           <p>
-            Midnight Lace wallet is not available in Firefox-based browsers. Please use a Chromium-based browser (Chrome, Edge, Brave, etc.) for the best experience.
+            Midnight Lace wallet is not available in Firefox-based browsers.
+            Please use a Chromium-based browser (Chrome, Edge, Brave, etc.) for
+            the best experience.
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <Button

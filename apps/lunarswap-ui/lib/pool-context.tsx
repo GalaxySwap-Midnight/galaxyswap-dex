@@ -1,16 +1,16 @@
 'use client';
 
-import React, {
+import { useLogger } from '@/hooks/use-logger';
+import type { Ledger, Pair } from '@openzeppelin-midnight-apps/lunarswap-v1';
+import {
+  type ReactNode,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
-  useCallback,
-  type ReactNode,
 } from 'react';
 import { useLunarswapContext } from './lunarswap-context';
-import { DEMO_TOKENS } from './lunarswap-integration';
-import type { Ledger, Pair } from '@midnight-dapps/lunarswap-v1';
 
 interface PoolData {
   isLoading: boolean;
@@ -40,6 +40,7 @@ interface PoolProviderProps {
 
 export const PoolProvider = ({ children }: PoolProviderProps) => {
   const { contractIntegration } = useLunarswapContext();
+  const _logger = useLogger();
   const [isLoading, setIsLoading] = useState(false);
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [allPairs, setAllPairs] = useState<
@@ -60,17 +61,16 @@ export const PoolProvider = ({ children }: PoolProviderProps) => {
       if (poolLedger) {
         const pairs = contractIntegration.getAllPairs();
         setAllPairs(pairs);
-        console.log('Pool data refreshed:', {
-          poolSize: poolLedger.pool.size(),
-          pairsCount: pairs.length,
-        });
       }
     } catch (error) {
-      console.error('Failed to refresh pool data:', error);
+      _logger?.error(
+        `Failed to refresh pool data: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [contractIntegration]);
+  }, [contractIntegration, _logger]);
 
   // Auto-refresh pool data when contract is initialized
   useEffect(() => {

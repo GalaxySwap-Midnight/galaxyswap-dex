@@ -3,7 +3,7 @@ import type {
   ShieldedFungibleTokenPrivateState,
   Witnesses,
   Ledger,
-} from '@midnight-dapps/shielded-token';
+} from '@openzeppelin-midnight-apps/shielded-token';
 import type { MidnightProviders } from '@midnight-ntwrk/midnight-js-types';
 import type { FoundContract } from '@midnight-ntwrk/midnight-js-contracts';
 

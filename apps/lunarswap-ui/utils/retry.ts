@@ -21,31 +21,33 @@ export function retry<T>(
       currentDelay: number,
       isRetry: boolean,
     ) => {
-      console.log(
+      (_logger as { info?: (msg: unknown) => void })?.info?.(
         `[${operationName}] Attempt ${retryCount + 1} of ${retries + 1}`,
       );
       operation()
         .then((result) => {
           if (isRetry) {
-            console.log(
+            (_logger as { info?: (msg: unknown) => void })?.info?.(
               `[${operationName}] Operation succeeded after retries.`,
             );
           }
           resolve(result);
         })
         .catch((error) => {
-          console.error(
-            `[${operationName}] Operation failed: ${error.message}`,
+          (
+            _logger as { error?: (msg: unknown, err?: unknown) => void }
+          )?.error?.(
+            `[${operationName}] Operation failed: ${error instanceof Error ? error.message : String(error)}`,
+            error,
           );
-          console.error(error);
 
           if (retryCount <= 0) {
-            console.error(
-              `[${operationName}] All retries exhausted. Rejecting.`,
-            );
+            (
+              _logger as { error?: (msg: unknown, err?: unknown) => void }
+            )?.error?.(`[${operationName}] All retries exhausted. Rejecting.`);
             reject(error);
           } else {
-            console.log(
+            (_logger as { info?: (msg: unknown) => void })?.info?.(
               `[${operationName}] Retrying operation in ${currentDelay}ms...`,
             );
             setTimeout(() => {

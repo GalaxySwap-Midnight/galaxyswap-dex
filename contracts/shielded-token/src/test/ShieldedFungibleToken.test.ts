@@ -3,7 +3,7 @@ import type {
   ContractAddress,
   Either,
   ZswapCoinPublicKey,
-} from '@midnight-dapps/compact-std';
+} from '@openzeppelin-midnight-apps/compact-std';
 import {
   NetworkId,
   getZswapNetworkId,

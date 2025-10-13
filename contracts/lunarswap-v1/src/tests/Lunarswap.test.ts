@@ -1,10 +1,9 @@
-import type { CoinInfo } from '@midnight-dapps/compact-std';
+import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
+import { sampleCoinPublicKey } from '@midnight-ntwrk/zswap';
 import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
-} from '@midnight-dapps/lunarswap-sdk';
-import { encodeCoinPublicKey } from '@midnight-ntwrk/compact-runtime';
-import { sampleCoinPublicKey } from '@midnight-ntwrk/zswap';
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
@@ -247,7 +246,10 @@ describe('Lunarswap', () => {
 
       expect(pair).toBeDefined();
 
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(10000n);
       expect(reserveNIGHT.value).toBe(5000n);
     });
@@ -278,7 +280,10 @@ describe('Lunarswap', () => {
       expect(pair).toBeDefined();
 
       // Use getPairId to determine expected token order
-      const [reserveUSDC, reserveDUST] = lunarswap.getPairReserves(usdcCoin, dustCoin);
+      const [reserveUSDC, reserveDUST] = lunarswap.getPairReserves(
+        usdcCoin,
+        dustCoin,
+      );
       expect(reserveUSDC.value).toBe(20000n);
       expect(reserveDUST.value).toBe(10000n);
       expect(lunarswap.getLpTokenTotalSupply(usdcCoin, dustCoin).value).toBe(
@@ -313,7 +318,10 @@ describe('Lunarswap', () => {
       expect(pair).toBeDefined();
 
       // Use getPairId to determine expected token order
-      const [reserveNIGHT, reserveDUST] = lunarswap.getPairReserves(nightCoin, dustCoin);
+      const [reserveNIGHT, reserveDUST] = lunarswap.getPairReserves(
+        nightCoin,
+        dustCoin,
+      );
       expect(reserveNIGHT.value).toBe(8000n);
       expect(reserveDUST.value).toBe(12000n);
       expect(lunarswap.getLpTokenTotalSupply(nightCoin, dustCoin).value).toBe(
@@ -443,7 +451,7 @@ describe('Lunarswap', () => {
     it('should generate consistent reserve ID for same pair and token type', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 100n);
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 100n);
-      
+
       // Create pair first
       const result = calculateAddLiquidityAmounts(
         100n, // desired USDC
@@ -463,7 +471,7 @@ describe('Lunarswap', () => {
       const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
       const reserveId1 = lunarswap.getReserveId(pairId, usdcCoin.color);
       const reserveId2 = lunarswap.getReserveId(pairId, usdcCoin.color);
-      
+
       expect(reserveId1).toEqual(reserveId2);
       expect(reserveId1.length).toBe(32);
     });
@@ -471,7 +479,7 @@ describe('Lunarswap', () => {
     it('should generate different reserve IDs for different token types in same pair', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 100n);
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 100n);
-      
+
       // Create pair first
       const result = calculateAddLiquidityAmounts(
         100n, // desired USDC
@@ -491,7 +499,7 @@ describe('Lunarswap', () => {
       const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
       const reserveIdA = lunarswap.getReserveId(pairId, usdcCoin.color);
       const reserveIdB = lunarswap.getReserveId(pairId, nightCoin.color);
-      
+
       expect(reserveIdA).not.toEqual(reserveIdB);
       expect(reserveIdA.length).toBe(32);
       expect(reserveIdB.length).toBe(32);
@@ -502,10 +510,14 @@ describe('Lunarswap', () => {
       const nightCoin1 = night.mint(createEitherFromHex(LP_USER), 100n);
       const usdcCoin2 = usdc.mint(createEitherFromHex(LP_USER), 100n);
       const dustCoin = dust.mint(createEitherFromHex(LP_USER), 100n);
-      
+
       // Create first pair (USDC/NIGHT)
       const result1 = calculateAddLiquidityAmounts(
-        100n, 100n, 0n, 0n, SLIPPAGE_TOLERANCE.LOW,
+        100n,
+        100n,
+        0n,
+        0n,
+        SLIPPAGE_TOLERANCE.LOW,
       );
       lunarswap.addLiquidity(
         usdcCoin1,
@@ -517,7 +529,11 @@ describe('Lunarswap', () => {
 
       // Create second pair (USDC/DUST)
       const result2 = calculateAddLiquidityAmounts(
-        100n, 100n, 0n, 0n, SLIPPAGE_TOLERANCE.LOW,
+        100n,
+        100n,
+        0n,
+        0n,
+        SLIPPAGE_TOLERANCE.LOW,
       );
       lunarswap.addLiquidity(
         usdcCoin2,
@@ -529,10 +545,10 @@ describe('Lunarswap', () => {
 
       const pairId1 = lunarswap.getPairId(usdcCoin1, nightCoin1);
       const pairId2 = lunarswap.getPairId(usdcCoin2, dustCoin);
-      
+
       const reserveId1 = lunarswap.getReserveId(pairId1, usdcCoin1.color);
       const reserveId2 = lunarswap.getReserveId(pairId2, usdcCoin2.color);
-      
+
       expect(reserveId1).not.toEqual(reserveId2);
       expect(reserveId1.length).toBe(32);
       expect(reserveId2.length).toBe(32);
@@ -541,10 +557,14 @@ describe('Lunarswap', () => {
     it('should work with different senders', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 100n);
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 100n);
-      
+
       // Create pair first
       const result = calculateAddLiquidityAmounts(
-        100n, 100n, 0n, 0n, SLIPPAGE_TOLERANCE.LOW,
+        100n,
+        100n,
+        0n,
+        0n,
+        SLIPPAGE_TOLERANCE.LOW,
       );
       lunarswap.addLiquidity(
         usdcCoin,
@@ -555,14 +575,18 @@ describe('Lunarswap', () => {
       );
 
       const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
-      
+
       // Test with default sender
       const reserveIdDefault = lunarswap.getReserveId(pairId, usdcCoin.color);
-      
+
       // Test with explicit sender
       const explicitSender = sampleCoinPublicKey();
-      const reserveIdExplicit = lunarswap.getReserveId(pairId, usdcCoin.color, explicitSender);
-      
+      const reserveIdExplicit = lunarswap.getReserveId(
+        pairId,
+        usdcCoin.color,
+        explicitSender,
+      );
+
       // Both should return the same result (reserve ID is deterministic)
       expect(reserveIdDefault).toEqual(reserveIdExplicit);
       expect(reserveIdDefault.length).toBe(32);
@@ -571,10 +595,14 @@ describe('Lunarswap', () => {
     it('should handle edge cases with zero values', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 100n);
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 100n);
-      
+
       // Create pair first
       const result = calculateAddLiquidityAmounts(
-        100n, 100n, 0n, 0n, SLIPPAGE_TOLERANCE.LOW,
+        100n,
+        100n,
+        0n,
+        0n,
+        SLIPPAGE_TOLERANCE.LOW,
       );
       lunarswap.addLiquidity(
         usdcCoin,
@@ -585,11 +613,11 @@ describe('Lunarswap', () => {
       );
 
       const pairId = lunarswap.getPairId(usdcCoin, nightCoin);
-      
+
       // Test with zero-filled token type
       const zeroTokenType = new Uint8Array(32).fill(0);
       const reserveIdZero = lunarswap.getReserveId(pairId, zeroTokenType);
-      
+
       expect(reserveIdZero.length).toBe(32);
       expect(reserveIdZero).not.toEqual(new Uint8Array(32).fill(0)); // Should not be all zeros
     });
@@ -599,7 +627,7 @@ describe('Lunarswap', () => {
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 1000n);
       const dustCoin = dust.mint(createEitherFromHex(LP_USER), 1000n);
       const fooCoin = foo.mint(createEitherFromHex(LP_USER), 1000n);
-      
+
       // Create multiple pairs
       const pairs = [
         { tokenA: usdcCoin, tokenB: nightCoin },
@@ -607,12 +635,16 @@ describe('Lunarswap', () => {
         { tokenA: nightCoin, tokenB: dustCoin },
         { tokenA: usdcCoin, tokenB: fooCoin },
       ];
-      
+
       const reserveIds = new Set<string>();
-      
+
       for (const { tokenA, tokenB } of pairs) {
         const result = calculateAddLiquidityAmounts(
-          1000n, 1000n, 0n, 0n, SLIPPAGE_TOLERANCE.LOW,
+          1000n,
+          1000n,
+          0n,
+          0n,
+          SLIPPAGE_TOLERANCE.LOW,
         );
         lunarswap.addLiquidity(
           tokenA,
@@ -625,18 +657,18 @@ describe('Lunarswap', () => {
         const pairId = lunarswap.getPairId(tokenA, tokenB);
         const reserveIdA = lunarswap.getReserveId(pairId, tokenA.color);
         const reserveIdB = lunarswap.getReserveId(pairId, tokenB.color);
-        
+
         // Convert to hex string for easier comparison
         const reserveIdAHex = Buffer.from(reserveIdA).toString('hex');
         const reserveIdBHex = Buffer.from(reserveIdB).toString('hex');
-        
+
         reserveIds.add(reserveIdAHex);
         reserveIds.add(reserveIdBHex);
-        
+
         expect(reserveIdA.length).toBe(32);
         expect(reserveIdB.length).toBe(32);
       }
-      
+
       // All reserve IDs should be unique (8 tokens across 4 pairs)
       expect(reserveIds.size).toBe(8);
     });

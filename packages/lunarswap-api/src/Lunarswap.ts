@@ -1,18 +1,3 @@
-import type {
-  CoinInfo,
-  ContractAddress,
-  Either,
-  ZswapCoinPublicKey,
-  QualifiedCoinInfo,
-} from '@midnight-dapps/compact-std';
-import {
-  Contract,
-  ledger,
-  LunarswapWitnesses,
-  LunarswapPrivateState,
-  type Ledger,
-  type Pair,
-} from '@midnight-dapps/lunarswap-v1';
 // TODO: Question: Why is ContractAddress exported differently in compact-std and compact-runtime?
 // TODO: Question: why is also the coinInfo type are different?
 import type {
@@ -20,23 +5,39 @@ import type {
   ContractState,
 } from '@midnight-ntwrk/compact-runtime';
 import type { ZswapChainState } from '@midnight-ntwrk/ledger';
-import { combineLatest, from, map, tap, type Observable } from 'rxjs';
+import {
+  type FinalizedCallTxData,
+  deployContract,
+  findDeployedContract,
+} from '@midnight-ntwrk/midnight-js-contracts';
+import type {
+  CoinInfo,
+  ContractAddress,
+  Either,
+  QualifiedCoinInfo,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
+import {
+  Contract,
+  type Ledger,
+  LunarswapPrivateState,
+  LunarswapWitnesses,
+  type Pair,
+  ledger,
+} from '@openzeppelin-midnight-apps/lunarswap-v1';
 import type { Logger } from 'pino';
+import { type Observable, combineLatest, from, map, tap } from 'rxjs';
 import {
   type DeployedLunarswapContract,
   type LunarswapContract,
+  LunarswapPrivateStateId,
   type LunarswapProviders,
   type LunarswapPublicState,
-  LunarswapPrivateStateId,
-  type LunarswapCircuitKeys,
 } from './types';
-import {
-  deployContract,
-  type FinalizedCallTxData,
-  findDeployedContract,
-} from '@midnight-ntwrk/midnight-js-contracts';
 
-const lunarswapContractInstance: LunarswapContract = new Contract(LunarswapWitnesses());
+const lunarswapContractInstance: LunarswapContract = new Contract(
+  LunarswapWitnesses(),
+);
 
 export interface ILunarswap {
   deployedContractAddressHex: string;
@@ -62,14 +63,18 @@ export interface ILunarswap {
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>>;
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>
+  >;
   swapTokensForExactTokens(
     tokenIn: CoinInfo,
     tokenOut: CoinInfo,
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>>;
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>
+  >;
   isPairExists(tokenA: CoinInfo, tokenB: CoinInfo): Promise<boolean>;
   getAllPairLength(): Promise<bigint>;
   getPair(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Pair>;
@@ -250,11 +255,15 @@ export class Lunarswap implements ILunarswap {
     amountBMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
   ): Promise<FinalizedCallTxData<LunarswapContract, 'addLiquidity'>> {
-    console.log('API addLiquidity tokenA:', tokenA);
-    console.log('API addLiquidity tokenB:', tokenB);
-    console.log('API addLiquidity amountAMin:', amountAMin);
-    console.log('API addLiquidity amountBMin:', amountBMin);
-    console.log('API addLiquidity to:', to);
+    this.logger?.trace({
+      addLiquidityParams: {
+        tokenA,
+        tokenB,
+        amountAMin,
+        amountBMin,
+        to,
+      },
+    });
 
     const txData = await this.deployedContract.callTx.addLiquidity(
       tokenA,
@@ -264,7 +273,7 @@ export class Lunarswap implements ILunarswap {
       to,
     );
 
-    console.log('API addLiquidity txData:', txData);
+    this.logger?.trace({ addLiquidityTx: txData.public });
 
     this.logger?.trace({
       transactionAdded: {
@@ -311,7 +320,9 @@ export class Lunarswap implements ILunarswap {
     amountIn: bigint,
     amountOutMin: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>> {
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapExactTokensForTokens'>
+  > {
     const txData = await this.deployedContract.callTx.swapExactTokensForTokens(
       tokenIn,
       tokenOut,
@@ -337,7 +348,9 @@ export class Lunarswap implements ILunarswap {
     amountOut: bigint,
     amountInMax: bigint,
     to: Either<ZswapCoinPublicKey, ContractAddress>,
-  ): Promise<FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>> {
+  ): Promise<
+    FinalizedCallTxData<LunarswapContract, 'swapTokensForExactTokens'>
+  > {
     const txData = await this.deployedContract.callTx.swapTokensForExactTokens(
       tokenIn,
       tokenOut,
@@ -386,14 +399,8 @@ export class Lunarswap implements ILunarswap {
     return txData.private.result;
   }
 
-  async getPairId(
-    tokenA: CoinInfo,
-    tokenB: CoinInfo,
-  ): Promise<Uint8Array> {
-    const txData = await this.deployedContract.callTx.getPairId(
-      tokenA,
-      tokenB,
-    );
+  async getPairId(tokenA: CoinInfo, tokenB: CoinInfo): Promise<Uint8Array> {
+    const txData = await this.deployedContract.callTx.getPairId(tokenA, tokenB);
     return txData.private.result;
   }
 

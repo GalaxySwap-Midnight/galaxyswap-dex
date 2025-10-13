@@ -1,21 +1,22 @@
 'use client';
 
-import React, {
+import { useLogger } from '@/hooks/use-logger';
+import type { Ledger, Pair } from '@openzeppelin-midnight-apps/lunarswap-v1';
+import {
+  type ReactNode,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
-  useCallback,
-  type ReactNode,
 } from 'react';
 import {
-  LunarswapIntegration,
-  type ContractStatusInfo,
   type ContractStatus,
+  type ContractStatusInfo,
+  LunarswapIntegration,
 } from './lunarswap-integration';
 import { useRuntimeConfiguration } from './runtime-configuration';
 import { useMidnightWallet } from './wallet-context';
-import type { Pair, Ledger } from '@midnight-dapps/lunarswap-v1';
 
 interface LunarswapContextType {
   lunarswap: LunarswapIntegration | null;
@@ -27,7 +28,7 @@ interface LunarswapContextType {
   error: string | null;
   refreshContract: () => Promise<void>;
   publicState: Ledger | null;
-  allPairs: Array<Pool>;
+  allPairs: Pool[];
   lpTotalSupply: Ledger['lpTotalSupply'] | null;
   refreshPublicState: () => Promise<void>;
   pauseRefresh: () => void;
@@ -56,6 +57,7 @@ export type Pool = {
 };
 
 export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
+  const _logger = useLogger();
   const runtimeConfig = useRuntimeConfiguration();
   const midnightWallet = useMidnightWallet();
   const [lunarswap, setLunarswap] = useState<LunarswapIntegration | null>(null);
@@ -66,8 +68,10 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<Ledger | null>(null);
-  const [allPairs, setAllPairs] = useState<Array<Pool>>([]);
-  const [lpTotalSupply, setLpTotalSupply] = useState<Ledger['lpTotalSupply'] | null>(null);
+  const [allPairs, setAllPairs] = useState<Pool[]>([]);
+  const [lpTotalSupply, setLpTotalSupply] = useState<
+    Ledger['lpTotalSupply'] | null
+  >(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRefreshPaused, setIsRefreshPaused] = useState(false);
@@ -100,7 +104,6 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     setError(null);
 
     try {
-      console.log('[LunarswapContext] Creating contract integration...');
       const lunarswap = new LunarswapIntegration(
         midnightWallet.providers,
         midnightWallet.walletAPI,
@@ -120,16 +123,16 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
 
       setLunarswap(lunarswap);
 
-      console.log('[LunarswapContext] Joining contract...');
       const result = await lunarswap.joinContract();
 
       setStatus(result.status);
       setStatusInfo(result);
-
-      console.log('[LunarswapContext] Contract join result:', result);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('[LunarswapContext] Failed to initialize contract:', err);
+      _logger?.error(
+        `[LunarswapContext] Failed to initialize contract: ${errorMessage}`,
+        err,
+      );
       setError(errorMessage);
       setStatus('error');
       setStatusInfo({
@@ -146,6 +149,7 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     midnightWallet.walletAPI,
     midnightWallet.callback,
     midnightWallet.providers,
+    _logger,
   ]);
 
   // Refresh contract integration
@@ -156,11 +160,6 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
   // Refresh public state
   const refreshPublicState = useCallback(async () => {
     if (!lunarswap || status !== 'connected' || isRefreshing) {
-      console.log('[LunarswapContext] Refresh blocked:', {
-        hasLunarswap: !!lunarswap,
-        status,
-        isRefreshing
-      });
       setPublicState(null);
       setAllPairs([]);
       setLpTotalSupply(null);
@@ -169,13 +168,11 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
 
     // Prevent multiple simultaneous refreshes
     if (isRefreshing) {
-      console.log('[LunarswapContext] Refresh already in progress, skipping...');
       return;
     }
 
     // Add additional guard to prevent refresh during component transitions
     if (isRefreshPaused) {
-      console.log('[LunarswapContext] Refresh paused, skipping...');
       return;
     }
 
@@ -183,8 +180,6 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     setRetryCount(0);
 
     try {
-      console.log('[LunarswapContext] Fetching public state...');
-
       // Add a small delay to ensure contract is fully initialized
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -192,18 +187,19 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       setPublicState(state);
 
       if (state) {
-        console.log('[LunarswapContext] Fetching all pairs...');
         const pairs = lunarswap.getAllPairs();
         setAllPairs(pairs);
         const lpSupply = state.lpTotalSupply;
         setLpTotalSupply(lpSupply);
         setHasLoadedDataOnce(true); // Mark that we've successfully loaded data
-        console.log('[LunarswapContext] Fetched pairs:', pairs.length);
       } else {
         setAllPairs([]);
       }
     } catch (err) {
-      console.error('[LunarswapContext] Failed to fetch public state:', err);
+      _logger?.error(
+        `[LunarswapContext] Failed to fetch public state: ${err instanceof Error ? err.message : String(err)}`,
+        err,
+      );
 
       // If contract is not initialized, try again after a longer delay (but limit retries)
       if (
@@ -211,17 +207,24 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
         err.message.includes('Contract not initialized') &&
         retryCount < 3
       ) {
-        console.log(
+        _logger?.info(
           `[LunarswapContext] Contract not initialized, retrying after delay... (attempt ${retryCount + 1}/3)`,
         );
-        setRetryCount(prev => prev + 1);
+        setRetryCount((prev) => prev + 1);
         setTimeout(() => {
-          if (status === 'connected' && lunarswap && !isRefreshing && !isRefreshPaused) {
+          if (
+            status === 'connected' &&
+            lunarswap &&
+            !isRefreshing &&
+            !isRefreshPaused
+          ) {
             refreshPublicState();
           }
         }, 3000);
       } else if (retryCount >= 3) {
-        console.log('[LunarswapContext] Max retries reached, stopping refresh attempts');
+        _logger?.warn(
+          '[LunarswapContext] Max retries reached, stopping refresh attempts',
+        );
       }
 
       setPublicState(null);
@@ -229,45 +232,24 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [lunarswap, status, isRefreshing, retryCount, isRefreshPaused]);
+  }, [lunarswap, status, isRefreshing, retryCount, isRefreshPaused, _logger]);
 
   // Initialize contract when dependencies change
   useEffect(() => {
-    console.log(
-      '[LunarswapContext] Dependencies changed, reinitializing contract...',
-      {
-        isConnected: midnightWallet.isConnected,
-        hasWalletAPI: !!midnightWallet.walletAPI,
-        hasProviders: !!midnightWallet.providers,
-        providers: midnightWallet.providers
-          ? Object.keys(midnightWallet.providers)
-          : [],
-      },
-    );
     initializeLunarswap();
-  }, [
-    initializeLunarswap,
-    midnightWallet.isConnected,
-    midnightWallet.walletAPI,
-    midnightWallet.providers,
-  ]);
+  }, [initializeLunarswap]);
 
   // Fetch public state when contract is connected and refresh every 5 seconds
   useEffect(() => {
-    console.log('[LunarswapContext] Public state refresh effect triggered:', {
-      status,
-      hasLunarswap: !!lunarswap,
-      isRefreshPaused,
-      isRefreshing
-    });
-    
-    if (status === 'connected' && lunarswap && !isRefreshPaused && !isRefreshing) {
-      console.log('[LunarswapContext] Setting up refresh timers');
-      
+    if (
+      status === 'connected' &&
+      lunarswap &&
+      !isRefreshPaused &&
+      !isRefreshing
+    ) {
       // Add a longer delay to prevent immediate refresh when components mount
       const initialTimer = setTimeout(() => {
         if (!isRefreshPaused && !isRefreshing) {
-          console.log('[LunarswapContext] Initial refresh timer fired');
           refreshPublicState();
         }
       }, 8000); // Increased from 5000ms to 8000ms for more reliable initial loading
@@ -275,15 +257,11 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
       // Set up 10-second interval for continuous updates (increased from 5s)
       const intervalTimer = setInterval(() => {
         if (!isRefreshPaused && !isRefreshing) {
-          console.log(
-            '[LunarswapContext] Refreshing public state (10s interval)...',
-          );
           refreshPublicState();
         }
       }, 10000); // Increased from 5000ms to 10000ms
 
       return () => {
-        console.log('[LunarswapContext] Cleaning up refresh timers');
         clearTimeout(initialTimer);
         clearInterval(intervalTimer);
       };
@@ -295,12 +273,10 @@ export const LunarswapProvider = ({ children }: LunarswapProviderProps) => {
 
   // Pause/resume refresh functions
   const pauseRefresh = useCallback(() => {
-    console.log('[LunarswapContext] Pausing refresh...');
     setIsRefreshPaused(true);
   }, []);
 
   const resumeRefresh = useCallback(() => {
-    console.log('[LunarswapContext] Resuming refresh...');
     setIsRefreshPaused(false);
   }, []);
 

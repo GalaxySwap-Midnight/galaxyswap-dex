@@ -173,8 +173,8 @@ const burnResult = token.burn(coin, 300n);
 
 ## Dependencies
 
-- `@midnight-dapps/compact`: Compact language runtime
-- `@midnight-dapps/compact-std`: Standard library
+- `@openzeppelin-midnight-apps/compact`: Compact language runtime
+- `@openzeppelin-midnight-apps/compact-std`: Standard library
 - `@midnight-ntwrk/compact-runtime`: Runtime utilities
 - `@midnight-ntwrk/zswap`: Zswap protocol integration
 - `vitest`: Testing framework

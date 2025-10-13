@@ -3,14 +3,14 @@ import type {
   ContractAddress,
   Either,
   ZswapCoinPublicKey,
-} from '@midnight-dapps/compact-std';
+} from '@openzeppelin-midnight-apps/compact-std';
 import {
   Contract,
   ledger,
   ShieldedFungibleTokenWitnesses,
   ShieldedFungibleTokenPrivateState,
   type Ledger,
-} from '@midnight-dapps/shielded-token';
+} from '@openzeppelin-midnight-apps/shielded-token';
 import type { ContractState } from '@midnight-ntwrk/compact-runtime';
 import type { ZswapChainState } from '@midnight-ntwrk/ledger';
 import { combineLatest, from, map, tap, type Observable } from 'rxjs';

@@ -11,9 +11,7 @@ interface BalanceDisplayProps {
 }
 
 export function BalanceDisplay({
-  showSyncStatus = true,
   showRefreshButton = true,
-  showAllBalances = true,
   className = '',
 }: BalanceDisplayProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -20,8 +20,8 @@ module LunarswapPair {
     import CompactStandardLibrary;
     
     import "./openzeppelin/Utils";
-    import "../node_modules/@midnight-dapps/math/dist/Uint128" prefix Uint128_;
-    import "../node_modules/@midnight-dapps/math/dist/Max";
+    import "../node_modules/@openzeppelin-midnight-apps/math/dist/Uint128" prefix Uint128_;
+    import "../node_modules/@openzeppelin-midnight-apps/math/dist/Max";
     
     import "./interfaces/ILunarswapPair";
     

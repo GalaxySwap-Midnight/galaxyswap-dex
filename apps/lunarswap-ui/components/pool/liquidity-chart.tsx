@@ -1,7 +1,6 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, BarChart3 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart3 } from 'lucide-react';
 
 interface LiquidityChartProps {
   token0Symbol: string;
@@ -142,7 +141,7 @@ export function LiquidityChart({
             {/* Legend */}
             <div className="flex items-center justify-center space-x-6 text-sm">
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-blue-500/60 rounded"></div>
+                <div className="w-4 h-4 bg-blue-500/60 rounded" />
                 <span className="text-muted-foreground">Liquidity</span>
               </div>
               <div className="text-muted-foreground">

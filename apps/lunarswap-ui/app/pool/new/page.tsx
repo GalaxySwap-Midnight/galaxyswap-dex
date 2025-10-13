@@ -1,11 +1,11 @@
 import { Header } from '@/components/header';
-import { NewPositionWizard } from '@/components/pool/new-position-wizard';
-import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
+import { NewPositionWizard } from '@/components/pool/new-position-wizard';
 import { ProtectedRoute } from '@/components/protected-route';
+import { StarsBackground } from '@/components/stars-background';
 import { ChevronRight } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 export const metadata = {
   title: 'Create New Liquidity Position',

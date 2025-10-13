@@ -1,10 +1,10 @@
+import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 import type {
   ProverKey,
   VerifierKey,
   ZKIR,
 } from '@midnight-ntwrk/midnight-js-types';
 import { fetch } from 'cross-fetch';
-import { FetchZkConfigProvider } from '@midnight-ntwrk/midnight-js-fetch-zk-config-provider';
 
 type CacheKey =
   | `proverKey:${string}`

@@ -1,5 +1,5 @@
 {
-  "name": "@midnight-dapps/lunarswap-cli",
+  "name": "@openzeppelin-midnight-apps/lunarswap-cli",
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
@@ -22,10 +22,10 @@
     "types": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@midnight-dapps/biome-config": "workspace:*",
-    "@midnight-dapps/compact-std": "workspace:*",
-    "@midnight-dapps/lunarswap-api": "workspace:*",
-    "@midnight-dapps/lunarswap-v1": "workspace:*",
+    "@openzeppelin-midnight-apps/biome-config": "workspace:*",
+    "@openzeppelin-midnight-apps/compact-std": "workspace:*",
+    "@openzeppelin-midnight-apps/lunarswap-api": "workspace:*",
+    "@openzeppelin-midnight-apps/lunarswap-v1": "workspace:*",
     "@midnight-ntwrk/compact-runtime": "^0.8.1",
     "@midnight-ntwrk/ledger": "^4.0.0",
     "@midnight-ntwrk/midnight-js-contracts": "^2.0.2",

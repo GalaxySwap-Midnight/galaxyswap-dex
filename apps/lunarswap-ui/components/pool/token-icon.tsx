@@ -1,4 +1,3 @@
-import React from 'react';
 import { getTokenDetails } from '../../lib/token-utils';
 
 interface TokenIconProps {

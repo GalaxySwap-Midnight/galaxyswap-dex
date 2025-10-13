@@ -3,15 +3,15 @@
 import { useWallet } from '@/hooks/use-wallet';
 import { useWalletRx } from '@/hooks/use-wallet-rx';
 import { formatAddress } from '@/utils/wallet-utils';
-import { ChevronsRight, LogOut, Settings, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronsRight, LogOut, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Button } from './ui/button';
+import type { DAppConnectorWalletState } from '@midnight-ntwrk/dapp-connector-api';
+import { AccountDetailsModal } from './account-details-modal';
+import { GlobalPreferences } from './global-preferences';
 import { Identicon } from './identicon';
 import { NetworkSelector } from './network-selector';
-import { GlobalPreferences } from './global-preferences';
-import { AccountDetailsModal } from './account-details-modal';
-import type { DAppConnectorWalletState } from '@midnight-ntwrk/dapp-connector-api';
+import { Button } from './ui/button';
 
 type AccountPanelPage = 'main' | 'settings';
 
@@ -59,7 +59,7 @@ export function AccountPanel({
         }
       : null;
 
-  const walletInfo = formatAddress(address);
+  const _walletInfo = formatAddress(address);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {

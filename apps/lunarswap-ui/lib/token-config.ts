@@ -1,4 +1,4 @@
-import { decodeTokenType, nativeToken, type TokenType } from "@midnight-ntwrk/ledger";
+import { type TokenType, decodeTokenType } from '@midnight-ntwrk/ledger';
 
 export interface Token {
   symbol: string;
@@ -87,7 +87,7 @@ export const popularTokens: Token[] = [
     address:
       '0200301d8a841b7da59442371c92f39ae4369f4f09e946a5e2ce3bb8edd9c3b677d2',
     shielded: true,
-  }
+  },
 ];
 
 /**

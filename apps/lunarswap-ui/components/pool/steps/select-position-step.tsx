@@ -1,16 +1,14 @@
 'use client';
-
-import React from 'react';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useWallet } from '@/hooks/use-wallet';
+import { useLunarswapContext } from '@/lib/lunarswap-context';
+import { getTokenSymbolByColor } from '@/lib/token-utils';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
-import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { useWallet } from '@/hooks/use-wallet';
-import { getTokenSymbolByColor } from '@/lib/token-utils';
-import { SplitTokenIcon } from '@/components/pool/split-token-icon';
 
 interface PositionData {
   pairId: string;

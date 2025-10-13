@@ -51,9 +51,10 @@ export function TradeTabs({ initialTokens, previewMode }: TradeTabsProps) {
 
       {/* Card Content */}
       <div className="transition-all duration-200">
-        <SwapCard 
-          initialTokens={initialTokens} 
+        <SwapCard
+          initialTokens={initialTokens}
           mode={activeTab}
+          previewMode={previewMode}
         />
       </div>
     </div>

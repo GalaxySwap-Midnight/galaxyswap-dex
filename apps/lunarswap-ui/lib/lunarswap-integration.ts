@@ -1,55 +1,33 @@
 import { Buffer } from 'buffer';
-import type {
-  MidnightProviders,
-  PrivateStateProvider,
-  ProofProvider,
-  UnprovenTransaction,
-} from '@midnight-ntwrk/midnight-js-types';
-import {
-  Lunarswap,
-  type LunarswapCircuitKeys,
-  type LunarswapProviders,
-} from '@midnight-dapps/lunarswap-api';
-import type {
-  CoinInfo,
-  Either,
-  ZswapCoinPublicKey,
-  ContractAddress,
-} from '@midnight-dapps/compact-std';
-import type {
-  FinalizedCallTxData,
-  FoundContract,
-} from '@midnight-ntwrk/midnight-js-contracts';
-import {
-  type Contract,
-  LunarswapWitnesses,
-  type LunarswapPrivateState,
-  type Witnesses,
-  type Ledger,
-  type Pair,
-} from '@midnight-dapps/lunarswap-v1';
-import { LunarswapSimulator } from '@midnight-dapps/lunarswap-v1';
-import { ZkConfigProviderWrapper } from '@/providers/zk-config';
-import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { proofClient } from '@/providers/proof';
-import type { ProviderCallbackAction, WalletAPI } from './wallet-context';
-import {
-  getLedgerNetworkId,
-  getZswapNetworkId,
-} from '@midnight-ntwrk/midnight-js-network-id';
 import { encodeCoinInfo } from '@midnight-ntwrk/compact-runtime';
+import { type TokenType, createCoinInfo } from '@midnight-ntwrk/ledger';
+import type { FinalizedCallTxData } from '@midnight-ntwrk/midnight-js-contracts';
+import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import {
-  createCoinInfo,
-  encodeCoinPublicKey,
-  encodeQualifiedCoinInfo,
-  type TokenType,
-} from '@midnight-ntwrk/ledger';
-import {
-  ShieldedAddress,
   MidnightBech32m,
   ShieldedCoinPublicKey,
 } from '@midnight-ntwrk/wallet-sdk-address-format';
+import type {
+  CoinInfo,
+  ContractAddress,
+  Either,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
+import {
+  Lunarswap,
+  type LunarswapProviders,
+} from '@openzeppelin-midnight-apps/lunarswap-api';
+import type {
+  Contract,
+  Ledger,
+  LunarswapPrivateState,
+  Pair,
+  Witnesses,
+} from '@openzeppelin-midnight-apps/lunarswap-v1';
+import { LunarswapSimulator } from '@openzeppelin-midnight-apps/lunarswap-v1';
+import type { Logger } from 'pino';
 import { ensureLunarswapProofParams } from '../utils/proof-params';
+import type { ProviderCallbackAction, WalletAPI } from './wallet-context';
 
 // Contract status types
 export type ContractStatus =
@@ -70,7 +48,6 @@ type LunarswapContract = Contract<
   LunarswapPrivateState,
   Witnesses<LunarswapPrivateState>
 >;
-type DeployedLunarswap = FoundContract<LunarswapContract>;
 
 // Contract interaction utilities
 export class LunarswapIntegration {
@@ -83,11 +60,13 @@ export class LunarswapIntegration {
   private _statusInfo: ContractStatusInfo = { status: 'not-configured' };
   private contractAddress?: string;
   private lunarswapSimulator: LunarswapSimulator;
+  private _logger?: Logger;
   constructor(
     providers: LunarswapProviders,
     walletAPI: WalletAPI,
     callback: (action: ProviderCallbackAction) => void,
     contractAddress?: string,
+    logger?: Logger,
   ) {
     this.providers = providers;
     this.walletAPI = walletAPI;
@@ -99,6 +78,7 @@ export class LunarswapIntegration {
       new Uint8Array(32),
       BigInt(18),
     );
+    this._logger = logger;
   }
 
   /**
@@ -155,30 +135,6 @@ export class LunarswapIntegration {
           `No contract deployed at contract address '${targetAddress}'`,
         );
       }
-      console.log(
-        '[LunarswapIntegration] Full contract state:',
-        currentContractState,
-      );
-
-      const operations = currentContractState.operations();
-      console.log(
-        '[LunarswapIntegration] Contract state operations:',
-        operations,
-      );
-      console.dir(operations, { depth: null });
-      console.log(
-        '[LunarswapIntegration] Contract state operations length:',
-        operations.length,
-      );
-      console.log(
-        '[LunarswapIntegration] Contract state operations types:',
-        operations.map((op) => typeof op),
-      );
-      console.log(
-        '[LunarswapIntegration] Contract state operations details:',
-        operations.map((op, index) => ({ index, op, type: typeof op })),
-      );
-
       // Note: We're using a fixed order for lunarswap verifier keys instead of dynamic ordering
 
       // Step 3: Use the original join method
@@ -225,16 +181,17 @@ export class LunarswapIntegration {
       );
       return this.poolData;
     } catch (error) {
-      console.error('Failed to fetch pool data:', error);
+      this._logger?.error(
+        `Failed to fetch pool data: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
 
       // Handle the specific case where watchForDeployTxData is not available
       if (
         error instanceof Error &&
         error.message.includes('watchForDeployTxData is not available')
       ) {
-        console.log(
-          'Contract appears to be already deployed, returning empty pool data',
-        );
+        // Contract appears to be already deployed; returning empty pool data
         // Return empty pool data instead of throwing
         return null;
       }
@@ -269,7 +226,7 @@ export class LunarswapIntegration {
    */
   async isPairExists(tokenA: string, tokenB: string): Promise<boolean> {
     if (!this.isReady) {
-      console.warn('Contract not ready for isPairExists operation');
+      this._logger?.warn('Contract not ready for isPairExists operation');
       return false;
     }
 
@@ -291,12 +248,13 @@ export class LunarswapIntegration {
         tokenBInfo,
       );
 
-      console.log('[DEBUG] pairIdentity:', pairIdentity);
-
       // Check if this pairId exists in the pool
       return this.poolData.pool.member(pairIdentity);
     } catch (error) {
-      console.error('Failed to check pair existence:', error);
+      this._logger?.error(
+        `Failed to check pair existence: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       return false;
     }
   }
@@ -309,7 +267,7 @@ export class LunarswapIntegration {
     tokenB: TokenType,
   ): Promise<[bigint, bigint] | null> {
     if (!this.isReady) {
-      console.warn('Contract not ready for getPairReserves operation');
+      this._logger?.warn('Contract not ready for getPairReserves operation');
       return null;
     }
 
@@ -339,17 +297,20 @@ export class LunarswapIntegration {
       const reserveB = this.poolData.reserves.lookup(reserveBId);
       return [reserveA.value, reserveB.value];
     } catch (error) {
-      console.error('Failed to get pair reserves:', error);
+      this._logger?.error(
+        `Failed to get pair reserves: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       return null;
     }
   }
 
   async getPairId(tokenA: TokenType, tokenB: TokenType): Promise<Uint8Array> {
     if (!this.isReady) {
-      console.warn('Contract not ready for getPairId operation');
+      this._logger?.warn('Contract not ready for getPairId operation');
       return new Uint8Array(32);
     }
-    
+
     if (!this.poolData || !this.lunarswap) {
       return new Uint8Array(32);
     }
@@ -461,24 +422,6 @@ export class LunarswapIntegration {
       recipientCoinPublicKey,
     );
 
-    // Add console logs for debugging
-    console.log('[DEBUG] addLiquidity called with:', {
-      tokenA,
-      tokenB,
-      amountA,
-      amountB,
-      minAmountA,
-      minAmountB,
-      recipientCoinPublicKey,
-    });
-    console.log('[DEBUG] addLiquidity tokenAInfo:', tokenAInfo);
-    console.log('[DEBUG] addLiquidity tokenBInfo:', tokenBInfo);
-    console.log('[DEBUG] addLiquidity recipientAddress:', recipientAddress);
-    console.log(
-      '[DEBUG] addLiquidity wallet coinPublicKey:',
-      this.walletAPI.coinPublicKey,
-    );
-
     return await this.lunarswap.addLiquidity(
       tokenAInfo,
       tokenBInfo,
@@ -559,10 +502,6 @@ export class LunarswapIntegration {
    */
   private async ensureProofParams(): Promise<void> {
     try {
-      console.log(
-        '[LunarswapIntegration] Ensuring proof parameters are downloaded...',
-      );
-
       // Get the proof server URL from the wallet API
       const proofServerUrl =
         this.walletAPI?.uris?.proverServerUri || 'http://localhost:6300';
@@ -570,20 +509,15 @@ export class LunarswapIntegration {
       const result = await ensureLunarswapProofParams(proofServerUrl);
 
       if (!result.success) {
-        console.warn(
+        this._logger?.warn(
           '[LunarswapIntegration] Some proof parameters failed to download:',
           result.errors,
         );
         // Don't throw here - let the transaction proceed and fail naturally if needed
-      } else {
-        console.log(
-          '[LunarswapIntegration] Proof parameters ready:',
-          result.downloaded,
-        );
       }
     } catch (error) {
-      console.error(
-        '[LunarswapIntegration] Error ensuring proof parameters:',
+      this._logger?.error(
+        `[LunarswapIntegration] Error ensuring proof parameters: ${error instanceof Error ? error.message : String(error)}`,
         error,
       );
       // Don't throw here - let the transaction proceed and fail naturally if needed
@@ -615,10 +549,8 @@ export class LunarswapIntegration {
   static createRecipient(
     recipientCoinPublicKey: string,
   ): Either<ZswapCoinPublicKey, ContractAddress> {
-    console.log('[DEBUG] createRecipient called with:', recipientCoinPublicKey);
-
     if (!recipientCoinPublicKey || recipientCoinPublicKey.length === 0) {
-      console.error('[DEBUG] Empty recipient address provided');
+      console.error('[createRecipient] Empty recipient address provided');
       throw new Error('Recipient address cannot be empty');
     }
 
@@ -658,7 +590,10 @@ export class LunarswapIntegration {
 
       return `0x${Buffer.from(pairIdentity).toString('hex')}`;
     } catch (error) {
-      console.error('Failed to calculate pool address using getPairId:', error);
+      this._logger?.error(
+        `Failed to calculate pool address using getPairId: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       throw error;
     }
   }

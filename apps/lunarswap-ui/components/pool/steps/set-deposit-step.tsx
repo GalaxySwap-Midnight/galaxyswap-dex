@@ -1,32 +1,25 @@
 'use client';
 
-import { Button } from '../../ui/button';
 import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useLunarswapContext } from '../../../lib/lunarswap-context';
-import { useWallet } from '../../../hooks/use-wallet';
-import { createContractIntegration } from '../../../lib/lunarswap-integration';
-import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { SplitTokenIcon } from '../split-token-icon';
-import {
-  calculateAddLiquidityAmounts,
-  SLIPPAGE_TOLERANCE,
-  hasLiquidity,
-} from '@midnight-dapps/lunarswap-sdk';
-import { Loader2, Info, AlertTriangle, Clock, Shield, Wallet } from 'lucide-react';
 import { useRuntimeConfiguration } from '@/lib/runtime-configuration';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  SLIPPAGE_TOLERANCE,
+  calculateAddLiquidityAmounts,
+  hasLiquidity,
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { useWallet } from '../../../hooks/use-wallet';
+import { useLunarswapContext } from '../../../lib/lunarswap-context';
+import { createContractIntegration } from '../../../lib/lunarswap-integration';
+import { Button } from '../../ui/button';
 import { LiquidityProgress } from '../liquidity-progress';
+import { SplitTokenIcon } from '../split-token-icon';
 import { ZkWarningDialog } from '../zk-warning-dialog';
 
+import { useLogger } from '@/hooks/use-logger';
 import type { Token as UiToken } from '@/lib/token-config';
 
 interface PairData {
@@ -41,20 +34,19 @@ interface SetDepositStepProps {
 }
 
 export function SetDepositStep({ pairData }: SetDepositStepProps) {
+  const _logger = useLogger();
   const runtimeConfig = useRuntimeConfiguration();
-  const {
-    isConnected,
-    address,
-    providers,
-    walletAPI,
-    callback,
-  } = useWallet();
-  const { lunarswap, status, pauseRefresh, resumeRefresh } = useLunarswapContext();
-  const [refreshPauseTimeout, setRefreshPauseTimeout] = useState<NodeJS.Timeout | null>(null);
+  const { isConnected, address, providers, walletAPI, callback } = useWallet();
+  const { lunarswap, status, pauseRefresh, resumeRefresh } =
+    useLunarswapContext();
+  const [refreshPauseTimeout, setRefreshPauseTimeout] =
+    useState<NodeJS.Timeout | null>(null);
   const [amountA, setAmountA] = useState<string>('');
   const [amountB, setAmountB] = useState<string>('');
-  const [poolExists, setPoolExists] = useState<boolean | null>(null);
-  const [poolReserves, setPoolReserves] = useState<[bigint, bigint] | null>(null);
+  const [_poolExists, _setPoolExists] = useState<boolean | null>(null);
+  const [poolReserves, _setPoolReserves] = useState<[bigint, bigint] | null>(
+    null,
+  );
   const [calculatedAmounts, setCalculatedAmounts] = useState<{
     amountAOptimal: bigint;
     amountBOptimal: bigint;
@@ -70,12 +62,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
   // Temporarily pause refresh when component mounts to prevent interference
   useEffect(() => {
     pauseRefresh();
-    
+
     // Resume refresh after a short delay
     const resumeTimer = setTimeout(() => {
       resumeRefresh();
     }, 2000);
-    
+
     return () => {
       clearTimeout(resumeTimer);
       // Ensure refresh is resumed if component unmounts
@@ -116,13 +108,16 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
         setCalculatedAmounts(amounts);
       } catch (error) {
-        console.error('[SetDepositStep] Error calculating optimal amounts:', error);
+        _logger?.error(
+          `[SetDepositStep] Error calculating optimal amounts: ${error instanceof Error ? error.message : String(error)}`,
+          error,
+        );
         setCalculatedAmounts(null);
       }
     };
 
     calculateAmounts();
-  }, [amountA, amountB, poolReserves]);
+  }, [amountA, amountB, poolReserves, _logger]);
 
   const handleAddLiquidity = async () => {
     if (!isConnected) {
@@ -149,14 +144,17 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       toast.error('Wallet API not available');
       return;
     }
-    
+
     // Pause the context refresh immediately to prevent memory issues
     pauseRefresh();
 
     // Set a safety timeout to resume refresh after 5 minutes (in case something goes wrong)
-    const timeout = setTimeout(() => {
-      resumeRefresh();
-    }, 5 * 60 * 1000); // 5 minutes
+    const timeout = setTimeout(
+      () => {
+        resumeRefresh();
+      },
+      5 * 60 * 1000,
+    ); // 5 minutes
     setRefreshPauseTimeout(timeout);
 
     // Show ZK warning popup first
@@ -173,7 +171,12 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       pauseRefresh();
 
       // Validate amounts
-      if (!amountA || !amountB || Number.parseFloat(amountA) <= 0 || Number.parseFloat(amountB) <= 0) {
+      if (
+        !amountA ||
+        !amountB ||
+        Number.parseFloat(amountA) <= 0 ||
+        Number.parseFloat(amountB) <= 0
+      ) {
         throw new Error('Please enter valid amounts greater than 0');
       }
 
@@ -184,7 +187,9 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
 
       // Ensure coinPublicKey is available
       if (!walletAPI.coinPublicKey) {
-        throw new Error('Wallet coin public key not available. Please ensure your wallet is properly connected.');
+        throw new Error(
+          'Wallet coin public key not available. Please ensure your wallet is properly connected.',
+        );
       }
 
       // Create contract integration
@@ -195,7 +200,9 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
         runtimeConfig.LUNARSWAP_ADDRESS,
       );
       if (!lunarswapIntegration) {
-        throw new Error('Failed to create contract integration. Please try again.');
+        throw new Error(
+          'Failed to create contract integration. Please try again.',
+        );
       }
 
       // Get current reserves (use 0 for new pools)
@@ -207,22 +214,15 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       }
 
       // Use SDK to calculate optimal amounts and minimum amounts with slippage protection
-      const { amountAOptimal, amountBOptimal, amountAMin, amountBMin } =
-        calculateAddLiquidityAmounts(
-          BigInt(amountA),
-          BigInt(amountB),
-          reserveA,
-          reserveB,
-          SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage tolerance
-        );
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
+        BigInt(amountA),
+        BigInt(amountB),
+        reserveA,
+        reserveB,
+        SLIPPAGE_TOLERANCE.LOW, // 0.5% slippage tolerance
+      );
 
-      // Use the LunarswapIntegration to add liquidity
-      // Pass token types directly as strings (TokenType from @midnight-ntwrk/ledger)
-      console.log('[DEBUG] Token types being passed to addLiquidity:');
-      console.log('tokenA type:', pairData.tokenA.type);
-      console.log('tokenB type:', pairData.tokenB.type);
-      
-      const txData = await lunarswapIntegration.addLiquidity(
+      await lunarswapIntegration.addLiquidity(
         pairData.tokenA.type,
         pairData.tokenB.type,
         BigInt(amountA),
@@ -240,20 +240,31 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
       setCalculatedAmounts(null);
 
       // Transaction completed successfully - progress dialog will close via onComplete callback
-
     } catch (error) {
-      console.error('[AddLiquidity] Error:', error);
-      
+      _logger?.error(
+        `[AddLiquidity] Error: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
+
       // Provide more specific error messages
       if (error instanceof Error) {
         if (error.message.includes('Insufficient')) {
           toast.error('Insufficient token balance for liquidity addition');
         } else if (error.message.includes('Slippage')) {
-          toast.error('Transaction failed due to high slippage. Try adjusting amounts.');
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
-          toast.error('Network connection issue. Please check your internet connection and try again.');
+          toast.error(
+            'Transaction failed due to high slippage. Try adjusting amounts.',
+          );
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ) {
+          toast.error(
+            'Network connection issue. Please check your internet connection and try again.',
+          );
         } else if (error.message.includes('wallet')) {
-          toast.error('Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.');
+          toast.error(
+            'Wallet connection issue. Please ensure your Midnight Lace wallet is connected and try again.',
+          );
         } else {
           toast.error(`Add liquidity failed: ${error.message}`);
         }
@@ -353,9 +364,13 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 className="mr-2"
               />
               <div className="flex items-center">
-                <span className="font-medium mr-1 text-sm">{tokenADetails.symbol || 'Unknown'}</span>
+                <span className="font-medium mr-1 text-sm">
+                  {tokenADetails.symbol || 'Unknown'}
+                </span>
                 <span className="text-gray-500">/</span>
-                <span className="font-medium ml-1 text-sm">{tokenBDetails.symbol || 'Unknown'}</span>
+                <span className="font-medium ml-1 text-sm">
+                  {tokenBDetails.symbol || 'Unknown'}
+                </span>
               </div>
             </div>
             <div className="flex items-center text-xs text-gray-500">
@@ -443,7 +458,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                 <div className="border-t border-blue-200 dark:border-blue-700 pt-1 mt-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-blue-600 dark:text-blue-400">
-                      Min {tokenADetails.symbol || 'Unknown'} (with 0.5% slippage):
+                      Min {tokenADetails.symbol || 'Unknown'} (with 0.5%
+                      slippage):
                     </span>
                     <span className="font-mono">
                       {Number(calculatedAmounts.amountAMin)}
@@ -451,7 +467,8 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-blue-600 dark:text-blue-400">
-                      Min {tokenBDetails.symbol || 'Unknown'} (with 0.5% slippage):
+                      Min {tokenBDetails.symbol || 'Unknown'} (with 0.5%
+                      slippage):
                     </span>
                     <span className="font-mono">
                       {Number(calculatedAmounts.amountBMin)}
@@ -472,17 +489,31 @@ export function SetDepositStep({ pairData }: SetDepositStepProps) {
             </p>
           </div>
         )}
-        
+
         <Button
           className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50 transition-all duration-300 text-sm"
-          disabled={!isConnected || !lunarswap || status !== 'connected' || !amountA || !amountB || isSubmitting}
+          disabled={
+            !isConnected ||
+            !lunarswap ||
+            status !== 'connected' ||
+            !amountA ||
+            !amountB ||
+            isSubmitting
+          }
           onClick={handleAddLiquidity}
         >
           {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {!isConnected ? 'Connect Wallet' : !lunarswap || status !== 'connected' ? 'Connecting...' : !amountA || !amountB ? 'Enter Amounts' : isSubmitting ? 'Processing...' : 'Add Liquidity'}
+          {!isConnected
+            ? 'Connect Wallet'
+            : !lunarswap || status !== 'connected'
+              ? 'Connecting...'
+              : !amountA || !amountB
+                ? 'Enter Amounts'
+                : isSubmitting
+                  ? 'Processing...'
+                  : 'Add Liquidity'}
         </Button>
       </CardFooter>
     </>
   );
 }
-

@@ -1,3 +1,47 @@
+import { PrivateDataProviderWrapper } from '@/providers/private';
+import { noopProofClient } from '@/providers/proof';
+import { proofClient } from '@/providers/proof';
+import { PublicDataProviderWrapper } from '@/providers/public';
+import { ZkConfigProviderWrapper } from '@/providers/zk-config';
+import { connectToWallet } from '@/utils/wallet-utils';
+import type {
+  DAppConnectorWalletAPI,
+  ServiceUriConfig,
+} from '@midnight-ntwrk/dapp-connector-api';
+import {
+  type CoinInfo,
+  type EncPublicKey,
+  Transaction,
+  type TransactionId,
+} from '@midnight-ntwrk/ledger';
+import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
+import {
+  getLedgerNetworkId,
+  getZswapNetworkId,
+} from '@midnight-ntwrk/midnight-js-network-id';
+import {
+  type BalancedTransaction,
+  type PrivateStateProvider,
+  type PublicDataProvider,
+  type UnbalancedTransaction,
+  createBalancedTx,
+} from '@midnight-ntwrk/midnight-js-types';
+import type {
+  MidnightProvider,
+  ProofProvider,
+  WalletProvider,
+  ZKConfigProvider,
+} from '@midnight-ntwrk/midnight-js-types';
+import type { Address, CoinPublicKey } from '@midnight-ntwrk/wallet-api';
+import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
+import type {
+  LunarswapCircuitKeys,
+  LunarswapPrivateStateId,
+  LunarswapProviders,
+} from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { LunarswapPrivateState } from '@openzeppelin-midnight-apps/lunarswap-v1';
+import type { Logger } from 'pino';
 import React, {
   createContext,
   useContext,
@@ -6,51 +50,7 @@ import React, {
   useState,
   useCallback,
 } from 'react';
-import type { Logger } from 'pino';
-import type { Address, CoinPublicKey } from '@midnight-ntwrk/wallet-api';
-import type {
-  LunarswapCircuitKeys,
-  LunarswapPrivateStateId,
-  LunarswapProviders,
-} from '@midnight-dapps/lunarswap-api';
-import type { LunarswapPrivateState } from '@midnight-dapps/lunarswap-v1';
-import {
-  type BalancedTransaction,
-  createBalancedTx,
-  type PrivateStateProvider,
-  type PublicDataProvider,
-  type UnbalancedTransaction,
-} from '@midnight-ntwrk/midnight-js-types';
-import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
-import {
-  type CoinInfo,
-  Transaction,
-  type TransactionId,
-  type EncPublicKey,
-} from '@midnight-ntwrk/ledger';
-import { Transaction as ZswapTransaction } from '@midnight-ntwrk/zswap';
-import {
-  getLedgerNetworkId,
-  getZswapNetworkId,
-} from '@midnight-ntwrk/midnight-js-network-id';
 import { useRuntimeConfiguration } from './runtime-configuration';
-import type {
-  DAppConnectorWalletAPI,
-  ServiceUriConfig,
-} from '@midnight-ntwrk/dapp-connector-api';
-import type {
-  ZKConfigProvider,
-  WalletProvider,
-  MidnightProvider,
-  ProofProvider,
-} from '@midnight-ntwrk/midnight-js-types';
-import { PrivateDataProviderWrapper } from '@/providers/private';
-import { connectToWallet } from '@/utils/wallet-utils';
-import { ZkConfigProviderWrapper } from '@/providers/zk-config';
-import { PublicDataProviderWrapper } from '@/providers/public';
-import { noopProofClient } from '@/providers/proof';
-import { proofClient } from '@/providers/proof';
 
 export interface MidnightWalletState {
   isConnected: boolean;
@@ -157,9 +157,11 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   const [proofServerIsOnline, setProofServerIsOnline] =
     React.useState<boolean>(false);
   const config = useRuntimeConfiguration();
-  const [openWallet, setOpenWallet] = React.useState(false);
-  const [isRotate, setRotate] = React.useState(false);
-  const [snackBarText, setSnackBarText] = useState<string | undefined>(undefined);
+  const [_openWallet, setOpenWallet] = React.useState(false);
+  const [_isRotate, setRotate] = React.useState(false);
+  const [snackBarText, setSnackBarText] = useState<string | undefined>(
+    undefined,
+  );
   const [walletAPI, setWalletAPI] = useState<WalletAPI | undefined>(undefined);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [lastReconnectTime, setLastReconnectTime] = useState(0);
@@ -178,49 +180,52 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
   }, []);
 
   // Enhanced connect function with better error handling
-  const connect = useCallback(async (manual: boolean): Promise<void> => {
-    setIsConnecting(true);
-    setWalletError(undefined);
-    
-    let walletResult:
-      | { wallet: DAppConnectorWalletAPI; uris: ServiceUriConfig }
-      | undefined;
-    
-    try {
-      walletResult = await connectToWallet(logger);
-    } catch (e) {
-      const walletError = getErrorType(e as Error);
-      setWalletError(walletError);
+  const connect = useCallback(
+    async (manual: boolean): Promise<void> => {
+      setIsConnecting(true);
+      setWalletError(undefined);
+
+      let walletResult:
+        | { wallet: DAppConnectorWalletAPI; uris: ServiceUriConfig }
+        | undefined;
+
+      try {
+        walletResult = await connectToWallet(logger);
+      } catch (e) {
+        const walletError = getErrorType(e as Error);
+        setWalletError(walletError);
+        setIsConnecting(false);
+        return;
+      }
+
+      if (!walletResult) {
+        setIsConnecting(false);
+        if (manual) setOpenWallet(true);
+        return;
+      }
+
+      await checkProofServerStatus(walletResult.uris.proverServerUri);
+
+      try {
+        const reqState = await walletResult.wallet.state();
+        setAddress(reqState.address);
+        setWalletAPI({
+          address: reqState.address,
+          wallet: walletResult.wallet,
+          coinPublicKey: reqState.coinPublicKey,
+          encryptionPublicKey: reqState.encryptionPublicKey,
+          uris: walletResult.uris,
+        });
+        // Reset reconnect attempts on successful connection
+        setReconnectAttempts(0);
+      } catch (_e) {
+        setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
+      }
+
       setIsConnecting(false);
-      return;
-    }
-    
-    if (!walletResult) {
-      setIsConnecting(false);
-      if (manual) setOpenWallet(true);
-      return;
-    }
-    
-    await checkProofServerStatus(walletResult.uris.proverServerUri);
-    
-    try {
-      const reqState = await walletResult.wallet.state();
-      setAddress(reqState.address);
-      setWalletAPI({
-        address: reqState.address,
-        wallet: walletResult.wallet,
-        coinPublicKey: reqState.coinPublicKey,
-        encryptionPublicKey: reqState.encryptionPublicKey,
-        uris: walletResult.uris,
-      });
-      // Reset reconnect attempts on successful connection
-      setReconnectAttempts(0);
-    } catch (e) {
-      setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
-    }
-    
-    setIsConnecting(false);
-  }, [logger]);
+    },
+    [logger],
+  );
 
   // Reconnection function with exponential backoff
   const attemptReconnect = useCallback(async () => {
@@ -230,7 +235,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
     const now = Date.now();
     const timeSinceLastAttempt = now - lastReconnectTime;
-    const backoffDelay = Math.min(1000 * (2 ** reconnectAttempts), 30000); // Max 30 seconds
+    const backoffDelay = Math.min(1000 * 2 ** reconnectAttempts, 30000); // Max 30 seconds
 
     if (timeSinceLastAttempt < backoffDelay) {
       return;
@@ -238,7 +243,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
 
     setIsReconnecting(true);
     setLastReconnectTime(now);
-    setReconnectAttempts(prev => prev + 1);
+    setReconnectAttempts((prev) => prev + 1);
 
     try {
       await connect(false);
@@ -246,7 +251,10 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       setReconnectAttempts(0);
       setWalletError(undefined);
     } catch (error) {
-      console.warn(`Reconnection attempt ${reconnectAttempts + 1} failed:`, error);
+      console.warn(
+        `Reconnection attempt ${reconnectAttempts + 1} failed:`,
+        error,
+      );
       if (reconnectAttempts >= 4) {
         setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
       }
@@ -312,7 +320,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         providerCallback,
         fetch.bind(window),
       ),
-    [],
+    [providerCallback],
   );
 
   const publicDataProvider = useMemo(
@@ -322,7 +330,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         providerCallback,
         logger,
       ),
-    [],
+    [providerCallback, config.INDEXER_URI, config.INDEXER_WS_URI, logger],
   );
 
   const shake = useCallback((): void => {
@@ -351,16 +359,6 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
           tx: UnbalancedTransaction,
           newCoins: CoinInfo[],
         ): Promise<BalancedTransaction> {
-          console.log('[DEBUG] tx', tx.toString());
-          console.log('[DEBUG] newCoins', newCoins);
-          console.dir(
-            {
-              tx,
-              imbalances: tx.imbalances(true),
-              deltas: tx.guaranteedCoins?.deltas,
-            },
-            { depth: null },
-          );
           providerCallback('balanceTxStarted');
           return walletAPI.wallet
             .balanceAndProveTransaction(
@@ -394,7 +392,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI]);
+  }, [walletAPI, providerCallback]);
 
   const midnightProvider: MidnightProvider = useMemo(() => {
     if (walletAPI) {
@@ -408,11 +406,11 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       };
     }
     return {
-      submitTx(tx: BalancedTransaction): Promise<TransactionId> {
+      submitTx(_tx: BalancedTransaction): Promise<TransactionId> {
         return Promise.reject(new Error('readonly'));
       },
     };
-  }, [walletAPI]);
+  }, [walletAPI, providerCallback]);
 
   // Add manual reconnect to wallet state
   const [walletState, setWalletState] = useState<MidnightWalletState>({
@@ -454,7 +452,7 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
       }
       const text = await response.text();
       setProofServerIsOnline(text.includes("We're alive 🎉!"));
-    } catch (error) {
+    } catch (_error) {
       setProofServerIsOnline(false);
     }
   }
@@ -527,12 +525,20 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
     ) {
       void connect(false); // auto connect
     }
-  }, [walletState.isConnected, isConnecting, isWalletAvailable, connect]);
+  }, [
+    walletState.isConnected,
+    isConnecting,
+    isWalletAvailable,
+    connect,
+    walletError,
+  ]);
 
   // Auto-reconnection for stale connections
   useEffect(() => {
-    if (walletError === MidnightWalletErrorType.TIMEOUT_API_RESPONSE || 
-        walletError === MidnightWalletErrorType.TIMEOUT_FINDING_API) {
+    if (
+      walletError === MidnightWalletErrorType.TIMEOUT_API_RESPONSE ||
+      walletError === MidnightWalletErrorType.TIMEOUT_FINDING_API
+    ) {
       // Schedule automatic reconnection for timeout errors
       const timeoutId = setTimeout(() => {
         if (!isConnecting && !isReconnecting) {
@@ -555,31 +561,23 @@ export const MidnightWalletProvider: React.FC<MidnightWalletProviderProps> = ({
         // Test if wallet is still responsive
         await walletAPI.wallet.state();
       } catch (error) {
-        console.warn('Wallet connection health check failed:', error);
+        logger.warn(
+          `Wallet connection health check failed: ${error instanceof Error ? error.message : String(error)}`,
+          error,
+        );
         // If wallet is not responsive, trigger reconnection
         setWalletError(MidnightWalletErrorType.TIMEOUT_API_RESPONSE);
       }
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(healthCheckInterval);
-  }, [walletState.isConnected, walletAPI]);
+  }, [walletState.isConnected, walletAPI, logger]);
 
   // Expose wallet state for debugging
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).debugWalletState = () => {
-        console.log('[WalletContext] Current wallet state:', {
-          isConnected: walletState.isConnected,
-          address: walletState.address,
-          hasWalletAPI: !!walletState.walletAPI,
-          hasProviders: !!walletState.providers,
-          providerKeys: walletState.providers
-            ? Object.keys(walletState.providers)
-            : [],
-          walletProviderAddress: walletState.walletAPI?.address,
-          midnightProviderType: typeof walletState.midnightProvider?.submitTx,
-        });
         return walletState;
       };
     }

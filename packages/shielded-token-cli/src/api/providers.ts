@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import type {
   ShieldedTokenProviders,
   ShieldedTokenPrivateStateId,
-} from '@midnight-dapps/shielded-token-api';
+} from '@openzeppelin-midnight-apps/shielded-token-api';
 import {
   Transaction,
   type TransactionId,

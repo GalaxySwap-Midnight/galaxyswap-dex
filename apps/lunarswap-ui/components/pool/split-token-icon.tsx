@@ -1,4 +1,3 @@
-import React from 'react';
 import { TokenIcon } from '@/components/token-icon';
 import { getTokenDetails } from '../../lib/token-utils';
 

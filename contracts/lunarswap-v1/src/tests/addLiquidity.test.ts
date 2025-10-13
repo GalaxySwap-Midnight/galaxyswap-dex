@@ -1,16 +1,19 @@
-import type { CoinInfo } from '@midnight-dapps/compact-std';
+import {
+  getZswapNetworkId,
+  setNetworkId,
+} from '@midnight-ntwrk/midnight-js-network-id';
+import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
+import {
+  MidnightBech32m,
+  ShieldedCoinPublicKey,
+} from '@midnight-ntwrk/wallet-sdk-address-format';
 import {
   SLIPPAGE_TOLERANCE,
   calculateAddLiquidityAmounts,
-} from '@midnight-dapps/lunarswap-sdk';
-import { decodeCoinPublicKey, encodeCoinInfo, encodeCoinPublicKey, EncodedRecipient, encodeRecipient } from '@midnight-ntwrk/compact-runtime';
+} from '@openzeppelin-midnight-apps/lunarswap-sdk';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LunarswapSimulator } from './LunarswapSimulator';
 import { ShieldedFungibleTokenSimulator } from './ShieldedFungibleTokenSimulator';
-import { getZswapNetworkId, setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import { MidnightBech32m, ShieldedCoinPublicKey } from '@midnight-ntwrk/wallet-sdk-address-format';
-import { NetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import { createCoinInfo, nativeToken } from '@midnight-ntwrk/zswap';
 
 const NONCE = new Uint8Array(32).fill(0x44);
 const DOMAIN = new Uint8Array(32).fill(0x44);
@@ -19,11 +22,12 @@ const DOMAIN = new Uint8Array(32).fill(0x44);
 // const LP_USER =
 //   'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456';
 
-const LP_USER = 'mn_shield-cpk_test1v3xew9zdxkn48c76e6yzcqw69y44vzscu7dp4mlmvalakpdtjfaq7zczq3';
+const LP_USER =
+  'mn_shield-cpk_test1v3xew9zdxkn48c76e6yzcqw69y44vzscu7dp4mlmvalakpdtjfaq7zczq3';
 
 // Helper function to create Either for hex addresses
 const createEitherFromHex = (hexString: string) => {
-  setNetworkId(NetworkId.TestNet); 
+  setNetworkId(NetworkId.TestNet);
   const bech32mCoinPublicKey = MidnightBech32m.parse(hexString);
   const coinPublicKey = ShieldedCoinPublicKey.codec.decode(
     getZswapNetworkId(),
@@ -33,7 +37,7 @@ const createEitherFromHex = (hexString: string) => {
     is_left: true,
     left: { bytes: coinPublicKey.data },
     right: { bytes: new Uint8Array(32) },
-  }
+  };
 };
 
 // TODO: allow and test fees
@@ -49,7 +53,7 @@ describe('addLiquidity', () => {
     // Deploy tokens with admin
     usdc = new ShieldedFungibleTokenSimulator(NONCE, 'USDC', 'USDC', NONCE);
     night = new ShieldedFungibleTokenSimulator(NONCE, 'Night', 'NIGHT', DOMAIN);
-    dust = new ShieldedFungibleTokenSimulator(NONCE, 'Dust', 'DUST', DOMAIN); 
+    dust = new ShieldedFungibleTokenSimulator(NONCE, 'Dust', 'DUST', DOMAIN);
   };
 
   beforeEach(setup);
@@ -92,7 +96,10 @@ describe('addLiquidity', () => {
 
       expect(pair).toBeDefined();
 
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(2000n);
       expect(reserveNIGHT.value).toBe(1000n);
 
@@ -143,7 +150,10 @@ describe('addLiquidity', () => {
 
       expect(pair).toBeDefined();
 
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(1000n);
       expect(reserveNIGHT.value).toBe(800n);
 
@@ -228,20 +238,17 @@ describe('addLiquidity', () => {
 
       const pair = lunarswap.getPair(usdcCoin1, nightCoin1);
 
+      const [expectedToken0, expectedToken1] =
+        lunarswap.getSortedCoinsAndAmounts(usdcCoin1, nightCoin1, 4000n, 2000n);
 
-        const [expectedToken0, expectedToken1] = lunarswap.getSortedCoinsAndAmounts(
-          usdcCoin1,
-          nightCoin1,
-            4000n,
-            2000n,
-          );
-      
       // Assert token colors and values
       expect(pair.token0Type).toEqual(expectedToken0.color);
       expect(pair.token1Type).toEqual(expectedToken1.color);
 
-
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin1, nightCoin1);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin1,
+        nightCoin1,
+      );
       expect(reserveUSDC.value).toBe(4000n);
       expect(reserveNIGHT.value).toBe(2000n);
 
@@ -339,8 +346,11 @@ describe('addLiquidity', () => {
       );
       const pair = lunarswap.getPair(usdcCoin, dustCoin);
       expect(pair).toBeDefined();
-  
-      const [reservesUSDC, reservesDUST] = lunarswap.getPairReserves(usdcCoin, dustCoin);
+
+      const [reservesUSDC, reservesDUST] = lunarswap.getPairReserves(
+        usdcCoin,
+        dustCoin,
+      );
       expect(reservesUSDC.value).toBe(2000n);
       expect(reservesDUST.value).toBe(1000n);
     });
@@ -362,7 +372,7 @@ describe('addLiquidity', () => {
       const usdcCoin1 = usdc.mint(createEitherFromHex(LP_USER), 2000n);
       const dustCoin1 = dust.mint(createEitherFromHex(LP_USER), 1000n);
       const recipient = createEitherFromHex(LP_USER);
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         2000n, // desired USDC
         1000n, // desired DUST
         0n, // reserve USDC
@@ -407,7 +417,10 @@ describe('addLiquidity', () => {
       // Get updated pair
       const updatedPair = lunarswap.getPair(usdcCoin1, dustCoin1);
 
-      const [reservesUSDC, reservesDUST] = lunarswap.getPairReserves(usdcCoin1, dustCoin1);
+      const [reservesUSDC, reservesDUST] = lunarswap.getPairReserves(
+        usdcCoin1,
+        dustCoin1,
+      );
       expect(reservesUSDC.value).toBe(3000n);
       expect(reservesDUST.value).toBe(1500n);
       expect(lunarswap.getLpTokenTotalSupply(usdcCoin1, dustCoin1).value).toBe(
@@ -430,7 +443,7 @@ describe('addLiquidity', () => {
       const usdcCoin = usdc.mint(createEitherFromHex(LP_USER), 2000n);
       const dustCoin = dust.mint(createEitherFromHex(LP_USER), 1000n);
       const recipient = createEitherFromHex(LP_USER);
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         2000n, // desired USDC
         1000n, // desired DUST
         0n, // reserve USDC
@@ -490,7 +503,10 @@ describe('addLiquidity', () => {
 
       expect(pair).toBeDefined();
 
-      const [reserveNight, reserveDust] = lunarswap.getPairReserves(nightCoin, dustCoin);
+      const [reserveNight, reserveDust] = lunarswap.getPairReserves(
+        nightCoin,
+        dustCoin,
+      );
       expect(reserveNight.value).toBe(8000n);
       expect(reserveDust.value).toBe(12000n);
       expect(lunarswap.getLpTokenTotalSupply(nightCoin, dustCoin).value).toBe(
@@ -517,7 +533,7 @@ describe('addLiquidity', () => {
       const dustCoin1 = dust.mint(createEitherFromHex(LP_USER), 12000n);
       const recipient = createEitherFromHex(LP_USER);
 
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         8000n, // desired NIGHT
         12000n, // desired DUST
         0n, // reserve NIGHT
@@ -562,7 +578,10 @@ describe('addLiquidity', () => {
       // Get updated pair
       const updatedPair = lunarswap.getPair(nightCoin1, dustCoin1);
 
-      const [reservesNight, reservesDust] = lunarswap.getPairReserves(nightCoin2, dustCoin2);
+      const [reservesNight, reservesDust] = lunarswap.getPairReserves(
+        nightCoin2,
+        dustCoin2,
+      );
       expect(reservesNight.value).toBe(12000n);
       expect(reservesDust.value).toBe(18000n);
       expect(lunarswap.getLpTokenTotalSupply(nightCoin1, dustCoin1).value).toBe(
@@ -585,7 +604,7 @@ describe('addLiquidity', () => {
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 8000n);
       const dustCoin = dust.mint(createEitherFromHex(LP_USER), 12000n);
       const recipient = createEitherFromHex(LP_USER);
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         8000n, // desired NIGHT
         12000n, // desired DUST
         0n, // reserve NIGHT
@@ -629,7 +648,7 @@ describe('addLiquidity', () => {
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 10000n);
       const recipient = createEitherFromHex(LP_USER);
 
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         10000n, // desired USDC
         10000n, // desired NIGHT
         0n, // reserve USDC
@@ -666,7 +685,7 @@ describe('addLiquidity', () => {
       const nightCoin = night.mint(createEitherFromHex(LP_USER), 10000n);
       const recipient = createEitherFromHex(LP_USER);
 
-      const {amountAMin, amountBMin} = calculateAddLiquidityAmounts(
+      const { amountAMin, amountBMin } = calculateAddLiquidityAmounts(
         10000n, // desired USDC
         10000n, // desired NIGHT
         0n, // reserve USDC
@@ -683,7 +702,10 @@ describe('addLiquidity', () => {
 
       const pair = lunarswap.getPair(usdcCoin, nightCoin);
 
-      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(usdcCoin, nightCoin);
+      const [reserveUSDC, reserveNIGHT] = lunarswap.getPairReserves(
+        usdcCoin,
+        nightCoin,
+      );
       expect(reserveUSDC.value).toBe(10000n);
       expect(reserveNIGHT.value).toBe(10000n);
       expect(lunarswap.getLpTokenTotalSupply(usdcCoin, nightCoin).value).toBe(
@@ -711,7 +733,9 @@ describe('addLiquidity', () => {
       // Try to add liquidity with amounts too small to meet minimum liquidity
       expect(() => {
         lunarswap.addLiquidity(usdcCoin, nightCoin, 1n, 1n, recipient);
-      }).toThrow('LunarswapPair: mint() - New pair insufficient liquidity minted');
+      }).toThrow(
+        'LunarswapPair: mint() - New pair insufficient liquidity minted',
+      );
     });
 
     /**
@@ -757,8 +781,12 @@ describe('addLiquidity', () => {
         }
         // Accept either Insufficient A or B amount error since token order can vary
         expect(
-          message.includes('LunarswapRouter: _addLiquidity() - Insufficient A amount') ||
-            message.includes('LunarswapRouter: _addLiquidity() - Insufficient B amount'),
+          message.includes(
+            'LunarswapRouter: _addLiquidity() - Insufficient A amount',
+          ) ||
+            message.includes(
+              'LunarswapRouter: _addLiquidity() - Insufficient B amount',
+            ),
         ).toBe(true);
       }
     });
@@ -800,8 +828,12 @@ describe('addLiquidity', () => {
         }
         // Accept either Insufficient A or B amount error since token order can vary
         expect(
-          message.includes('LunarswapRouter: _addLiquidity() - Insufficient A amount') ||
-            message.includes('LunarswapRouter: _addLiquidity() - Insufficient B amount'),
+          message.includes(
+            'LunarswapRouter: _addLiquidity() - Insufficient A amount',
+          ) ||
+            message.includes(
+              'LunarswapRouter: _addLiquidity() - Insufficient B amount',
+            ),
         ).toBe(true);
       }
     });
@@ -944,7 +976,9 @@ describe('addLiquidity', () => {
           900n,
           recipient,
         );
-      }).toThrow('LunarswapPair: mint() - New pair insufficient liquidity minted');
+      }).toThrow(
+        'LunarswapPair: mint() - New pair insufficient liquidity minted',
+      );
     });
 
     /**
@@ -971,7 +1005,9 @@ describe('addLiquidity', () => {
           1100n, // amountBMin > amountBDesired
           recipient,
         );
-      }).toThrow('LunarswapPair: mint() - New pair insufficient liquidity minted');
+      }).toThrow(
+        'LunarswapPair: mint() - New pair insufficient liquidity minted',
+      );
     });
 
     /**
@@ -1045,8 +1081,12 @@ describe('addLiquidity', () => {
         }
         // Accept either Insufficient A or B amount error since token order can vary
         expect(
-          message.includes('LunarswapRouter: _addLiquidity() - Insufficient A amount') ||
-            message.includes('LunarswapRouter: _addLiquidity() - Insufficient B amount'),
+          message.includes(
+            'LunarswapRouter: _addLiquidity() - Insufficient A amount',
+          ) ||
+            message.includes(
+              'LunarswapRouter: _addLiquidity() - Insufficient B amount',
+            ),
         ).toBe(true);
       }
     });
@@ -1149,7 +1189,7 @@ describe('addLiquidity', () => {
      */
     it('should handle concurrent pair creation', () => {
       const recipient = createEitherFromHex(LP_USER);
-      
+
       // Create multiple pairs simultaneously
       const usdcCoin1 = usdc.mint(createEitherFromHex(LP_USER), 2000n);
       const nightCoin1 = night.mint(createEitherFromHex(LP_USER), 2000n);

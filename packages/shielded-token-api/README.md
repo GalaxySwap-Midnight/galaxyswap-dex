@@ -23,8 +23,8 @@ pnpm install
 ### Basic Setup
 
 ```typescript
-import { ShieldedToken } from '@midnight-dapps/shielded-token-api';
-import type { ShieldedTokenProviders } from '@midnight-dapps/shielded-token-api';
+import { ShieldedToken } from '@openzeppelin-midnight-apps/shielded-token-api';
+import type { ShieldedTokenProviders } from '@openzeppelin-midnight-apps/shielded-token-api';
 import pino from 'pino';
 
 // Create logger
@@ -63,7 +63,7 @@ console.log('Contract deployed at:', shieldedToken.deployedContractAddressHex);
 ### Joining an Existing Contract
 
 ```typescript
-import type { ContractAddress } from '@midnight-dapps/compact-std';
+import type { ContractAddress } from '@openzeppelin-midnight-apps/compact-std';
 
 const contractAddress: ContractAddress = {
   bytes: Buffer.from("0x1234567890abcdef...", 'hex')
@@ -101,7 +101,7 @@ const zswapState = await ShieldedToken.getZswapChainState(
 ### Minting Tokens
 
 ```typescript
-import type { Either, ZswapCoinPublicKey, ContractAddress } from '@midnight-dapps/compact-std';
+import type { Either, ZswapCoinPublicKey, ContractAddress } from '@openzeppelin-midnight-apps/compact-std';
 
 // Create recipient (either a public key or contract address)
 const recipient: Either<ZswapCoinPublicKey, ContractAddress> = {
@@ -118,7 +118,7 @@ await shieldedToken.mint(recipient, amount);
 ### Burning Tokens
 
 ```typescript
-import type { CoinInfo } from '@midnight-dapps/compact-std';
+import type { CoinInfo } from '@openzeppelin-midnight-apps/compact-std';
 
 // Create coin info
 const coin: CoinInfo = {
@@ -268,7 +268,7 @@ pnpm run types
 
 ## Dependencies
 
-- `@midnight-dapps/shielded-token-contract` - The Shielded Token contract
+- `@openzeppelin-midnight-apps/shielded-token-contract` - The Shielded Token contract
 - `@midnight-ntwrk/compact-runtime` - Compact runtime utilities
 - `@midnight-ntwrk/midnight-js-contracts` - Contract deployment utilities
 - `@midnight-ntwrk/midnight-js-types` - Midnight types

@@ -1,8 +1,8 @@
 'use client';
 
-import { popularTokens } from '@/lib/token-config';
 import { TokenIcon } from '@/components/token-icon';
-import { useState, useMemo } from 'react';
+import { popularTokens } from '@/lib/token-config';
+import { useMemo, useState } from 'react';
 
 interface Blob {
   className: string;
@@ -18,17 +18,26 @@ export function TokenCloud() {
   // Generate static positions for blobs
   const blobs: Blob[] = useMemo(() => {
     const colors = [
-      'bg-blue-400/20', 'bg-green-400/20', 'bg-yellow-400/20', 'bg-purple-400/20',
-      'bg-red-400/20', 'bg-indigo-400/20', 'bg-pink-400/20', 'bg-cyan-400/20',
-      'bg-orange-400/20', 'bg-teal-400/20', 'bg-lime-400/20', 'bg-rose-400/20'
+      'bg-blue-400/20',
+      'bg-green-400/20',
+      'bg-yellow-400/20',
+      'bg-purple-400/20',
+      'bg-red-400/20',
+      'bg-indigo-400/20',
+      'bg-pink-400/20',
+      'bg-cyan-400/20',
+      'bg-orange-400/20',
+      'bg-teal-400/20',
+      'bg-lime-400/20',
+      'bg-rose-400/20',
     ];
-    
+
     const generatedBlobs: Blob[] = [];
-    
+
     // Create one blob for each token, ensuring no duplicates
     popularTokens.forEach((token, index) => {
       const color = colors[index % colors.length]; // Cycle through colors
-      
+
       generatedBlobs.push({
         className: color,
         size: Math.random() * 60 + 60, // 60-120px (bigger tokens)
@@ -37,13 +46,13 @@ export function TokenCloud() {
         symbol: token.symbol,
       });
     });
-    
+
     return generatedBlobs;
   }, []);
 
   // Get token details for display
   const getTokenDetails = (symbol: string) => {
-    return popularTokens.find(token => token.symbol === symbol);
+    return popularTokens.find((token) => token.symbol === symbol);
   };
 
   return (
@@ -51,7 +60,7 @@ export function TokenCloud() {
       {blobs.map((b, idx) => {
         const tokenDetails = getTokenDetails(b.symbol);
         const isHovered = hoveredBlob === idx;
-        
+
         return (
           <div
             key={`blob-${b.symbol}-${b.size}-${b.top}-${b.left}`}
@@ -86,9 +95,13 @@ export function TokenCloud() {
               </div>
 
               {/* Hover tooltip */}
-              <div className={`absolute -bottom-12 left-1/2 transform -translate-x-1/2 transition-opacity duration-600 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+              <div
+                className={`absolute -bottom-12 left-1/2 transform -translate-x-1/2 transition-opacity duration-600 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+              >
                 <div className="bg-black/80 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap backdrop-blur-sm">
-                  <div className="font-bold">{tokenDetails?.name || b.symbol}</div>
+                  <div className="font-bold">
+                    {tokenDetails?.name || b.symbol}
+                  </div>
                   <div className="text-xs text-gray-300">{b.symbol}</div>
                   {tokenDetails?.shielded && (
                     <div className="text-xs text-blue-300 mt-1">🛡️ Shielded</div>

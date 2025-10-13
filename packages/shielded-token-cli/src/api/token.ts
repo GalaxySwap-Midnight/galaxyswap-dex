@@ -2,14 +2,14 @@ import type { Logger } from 'pino';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
 import { firstValueFrom } from 'rxjs';
-import type { ShieldedToken } from '@midnight-dapps/shielded-token-api';
+import type { ShieldedToken } from '@openzeppelin-midnight-apps/shielded-token-api';
 
 import type {
   Either,
   ZswapCoinPublicKey,
   CoinInfo,
   ContractAddress,
-} from '@midnight-dapps/compact-std';
+} from '@openzeppelin-midnight-apps/compact-std';
 import {
   ShieldedAddress,
   MidnightBech32m,
@@ -52,7 +52,10 @@ export const mintTokens = async (
   let recipient: Either<ZswapCoinPublicKey, ContractAddress>;
 
   if (recipientCoinPublicKey) {
-    logger.debug('[mintTokens] Parsing recipientCoinPublicKey:', recipientCoinPublicKey);
+    logger.debug(
+      '[mintTokens] Parsing recipientCoinPublicKey:',
+      recipientCoinPublicKey,
+    );
     // Parse the shielded address string to get the MidnightBech32m object
     const bech32mAddress = MidnightBech32m.parse(recipientCoinPublicKey);
     logger.debug('[mintTokens] Parsed bech32mAddress:', bech32mAddress);
@@ -67,7 +70,10 @@ export const mintTokens = async (
 
     // Extract the coin public key from the shielded address
     const coinPublicKeyBytes = shieldedAddress.coinPublicKey.data;
-    logger.debug('[mintTokens] Extracted coinPublicKeyBytes:', Buffer.from(coinPublicKeyBytes).toString('hex'));
+    logger.debug(
+      '[mintTokens] Extracted coinPublicKeyBytes:',
+      Buffer.from(coinPublicKeyBytes).toString('hex'),
+    );
 
     // Use the provided recipient's coin public key
     recipient = {
@@ -82,13 +88,15 @@ export const mintTokens = async (
     });
   } else {
     // Use the wallet's own coin public key (default behavior)
-    logger.debug('[mintTokens] No recipientCoinPublicKey provided, using wallet state');
+    logger.debug(
+      '[mintTokens] No recipientCoinPublicKey provided, using wallet state',
+    );
     const state = await firstValueFrom(wallet.state());
     logger.debug('[mintTokens] Wallet state:', {
       address: state.address,
       coinPublicKey: Buffer.from(state.coinPublicKey).toString('hex'),
     });
-    
+
     // Convert the coin public key string to Uint8Array
     const bech32mCoinPublicKey = MidnightBech32m.parse(state.coinPublicKey);
     const coinPublicKey = ShieldedCoinPublicKey.codec.decode(
@@ -107,14 +115,17 @@ export const mintTokens = async (
     });
   }
 
-  logger.debug('[mintTokens] Calling shieldedToken.mint with recipient and amount', {
-    recipient: {
-      is_left: recipient.is_left,
-      left: Buffer.from(recipient.left.bytes).toString('hex'),
-      right: Buffer.from(recipient.right.bytes).toString('hex'),
+  logger.debug(
+    '[mintTokens] Calling shieldedToken.mint with recipient and amount',
+    {
+      recipient: {
+        is_left: recipient.is_left,
+        left: Buffer.from(recipient.left.bytes).toString('hex'),
+        right: Buffer.from(recipient.right.bytes).toString('hex'),
+      },
+      amount: amount.toString(),
     },
-    amount: amount.toString(),
-  });
+  );
 
   await shieldedToken.mint(recipient, amount);
 
@@ -154,7 +165,9 @@ export const getTokenInfo = async (
     logger.info('Token information retrieved successfully');
     logger.info('');
     logger.info('📊 Token Information:');
-    logger.info(`   Contract Address: ${shieldedToken.deployedContractAddressHex}`);
+    logger.info(
+      `   Contract Address: ${shieldedToken.deployedContractAddressHex}`,
+    );
     logger.info(`   Name: ${name}`);
     logger.info(`   Symbol: ${symbol}`);
     logger.info(`   Decimals: ${decimals}`);
@@ -162,11 +175,19 @@ export const getTokenInfo = async (
     logger.info(`   Type: ${Buffer.from(type).toString('hex')}`);
     logger.info('');
   } catch (error) {
-    if (error instanceof Error && error.message.includes('Not sufficient funds')) {
+    if (
+      error instanceof Error &&
+      error.message.includes('Not sufficient funds')
+    ) {
       logger.error('❌ Cannot retrieve token information: Token balance error');
-      logger.error('💡 This may be a temporary wallet sync issue. Try again in a moment.');
+      logger.error(
+        '💡 This may be a temporary wallet sync issue. Try again in a moment.',
+      );
     } else {
-      logger.error('❌ Failed to retrieve token information:', error instanceof Error ? error.message : error);
+      logger.error(
+        '❌ Failed to retrieve token information:',
+        error instanceof Error ? error.message : error,
+      );
     }
     // Don't throw - just return gracefully to the menu
     logger.info('Returning to main menu...');

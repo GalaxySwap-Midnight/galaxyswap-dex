@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/header';
-import { StarsBackground } from '@/components/stars-background';
+import { Identicon } from '@/components/identicon';
 import { MoonDustBackground } from '@/components/moon-dust-background';
+import { LiquidityChart } from '@/components/pool/liquidity-chart';
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { StarsBackground } from '@/components/stars-background';
+import { TokenIcon } from '@/components/token-icon';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,20 +16,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ExternalLink, Droplets, Clock, Repeat } from 'lucide-react';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { getTokenSymbolByColor, getTokenNameByColor } from '@/lib/token-utils';
-import { Identicon } from '@/components/identicon';
-import { TokenIcon } from '@/components/token-icon';
-import { SplitTokenIcon } from '@/components/pool/split-token-icon';
-import { LiquidityChart } from '@/components/pool/liquidity-chart';
+import { getTokenNameByColor, getTokenSymbolByColor } from '@/lib/token-utils';
+import { Clock, Droplets, Repeat } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function PoolDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
-  const { isLoading, allPairs, lunarswap, publicState } = useLunarswapContext();
+  const { isLoading, allPairs, lunarswap } = useLunarswapContext();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [reserves, setReserves] = useState<[bigint, bigint] | null>(null);
 
@@ -452,7 +452,9 @@ export default function PoolDetailPage() {
                             <span className="text-sm">{getToken0Symbol()}</span>
                           </div>
                           <span className="text-sm font-medium">
-                            {reserves ? formatReserve(reserves[0]) : 'Loading...'}
+                            {reserves
+                              ? formatReserve(reserves[0])
+                              : 'Loading...'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -461,7 +463,9 @@ export default function PoolDetailPage() {
                             <span className="text-sm">{getToken1Symbol()}</span>
                           </div>
                           <span className="text-sm font-medium">
-                            {reserves ? formatReserve(reserves[1]) : 'Loading...'}
+                            {reserves
+                              ? formatReserve(reserves[1])
+                              : 'Loading...'}
                           </span>
                         </div>
                       </div>

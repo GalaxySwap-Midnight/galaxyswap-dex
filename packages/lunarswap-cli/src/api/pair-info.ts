@@ -1,6 +1,6 @@
+import type { CoinInfo } from '@openzeppelin-midnight-apps/compact-std';
+import type { Lunarswap } from '@openzeppelin-midnight-apps/lunarswap-api';
 import type { Logger } from 'pino';
-import type { Lunarswap } from '@midnight-dapps/lunarswap-api';
-import type { CoinInfo } from '@midnight-dapps/compact-std';
 
 export const checkPairExists = async (
   lunarswap: Lunarswap,
@@ -18,7 +18,10 @@ export const checkPairExists = async (
     logger.info(`   Pair Exists: ${exists ? '✅ Yes' : '❌ No'}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to check pair existence:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to check pair existence:',
+      error instanceof Error ? error.message : error,
+    );
   }
 };
 
@@ -34,7 +37,10 @@ export const getAllPairsLength = async (
     logger.info(`   Total Pairs: ${pairCount}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to get pair count:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to get pair count:',
+      error instanceof Error ? error.message : error,
+    );
   }
 };
 
@@ -54,7 +60,10 @@ export const getPairInfo = async (
     logger.info(`   Pair Info: ${JSON.stringify(pair, null, 2)}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to get pair info:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to get pair info:',
+      error instanceof Error ? error.message : error,
+    );
   }
 };
 
@@ -66,7 +75,10 @@ export const getPairReservesInfo = async (
 ): Promise<void> => {
   logger.info('Getting pair reserves...');
   try {
-    const [reserveA, reserveB] = await lunarswap.getPairReserves(tokenA, tokenB);
+    const [reserveA, reserveB] = await lunarswap.getPairReserves(
+      tokenA,
+      tokenB,
+    );
     logger.info('');
     logger.info('💰 Pair Reserves:');
     logger.info(`   Token A: ${Buffer.from(tokenA.color).toString('hex')}`);
@@ -75,7 +87,10 @@ export const getPairReservesInfo = async (
     logger.info(`   Reserve B: ${reserveB}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to get pair reserves:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to get pair reserves:',
+      error instanceof Error ? error.message : error,
+    );
   }
 };
 
@@ -95,7 +110,10 @@ export const getPairIdentityInfo = async (
     logger.info(`   Identity: ${Buffer.from(identity).toString('hex')}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to get pair identity:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to get pair identity:',
+      error instanceof Error ? error.message : error,
+    );
   }
 };
 
@@ -105,8 +123,7 @@ export const getPairIdentityInfo = async (
 // ): Promise<void> => {
 //   logger.info('Getting LP token information...');
 //   try {
-    
-    
+
 //     logger.info('');
 //     logger.info('🪙 LP Token Information:');
 //     logger.info(`   Name: ${name}`);
@@ -135,6 +152,9 @@ export const getLpTokenTotalSupplyInfo = async (
     logger.info(`   Total Supply: ${JSON.stringify(totalSupply, null, 2)}`);
     logger.info('');
   } catch (error) {
-    logger.error('❌ Failed to get LP token total supply:', error instanceof Error ? error.message : error);
+    logger.error(
+      '❌ Failed to get LP token total supply:',
+      error instanceof Error ? error.message : error,
+    );
   }
-}; 
+};

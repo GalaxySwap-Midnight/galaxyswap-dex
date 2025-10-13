@@ -219,8 +219,8 @@ pnpm run types
 
 ## Dependencies
 
-- `@midnight-dapps/shielded-token-api` - The Shielded Token API
-- `@midnight-dapps/shielded-token-contract` - The Shielded Token contract
+- `@openzeppelin-midnight-apps/shielded-token-api` - The Shielded Token API
+- `@openzeppelin-midnight-apps/shielded-token-contract` - The Shielded Token contract
 - `@midnight-ntwrk/compact-runtime` - Compact runtime utilities
 - `@midnight-ntwrk/zswap` - Zswap protocol integration
 - `pino` - Logging

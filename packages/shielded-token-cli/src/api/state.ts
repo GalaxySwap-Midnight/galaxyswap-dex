@@ -2,7 +2,7 @@ import type { Logger } from 'pino';
 import type {
   ShieldedToken,
   ShieldedTokenProviders,
-} from '@midnight-dapps/shielded-token-api';
+} from '@openzeppelin-midnight-apps/shielded-token-api';
 
 export const getPublicState = async (
   shieldedToken: ShieldedToken,

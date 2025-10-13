@@ -1,31 +1,24 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Button } from './ui/button';
+import { useLogger } from '@/hooks/use-logger';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { Badge } from './ui/badge';
-import { ThemeToggle } from './theme-toggle';
-import { useWallet } from '../hooks/use-wallet';
-import { useVersion } from '../lib/version-context';
-import { useLunarswapContext } from '../lib/lunarswap-context';
-import { useRuntimeConfiguration } from '../lib/runtime-configuration';
-import {
-  Settings,
-  Check,
-  Clock,
   AlertCircle,
+  Check,
   CheckCircle,
-  XCircle,
-  Loader2,
-  Globe,
+  Clock,
   DollarSign,
+  Globe,
+  Loader2,
+  Settings,
+  XCircle,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useWallet } from '../hooks/use-wallet';
+import { useLunarswapContext } from '../lib/lunarswap-context';
+import { useVersion } from '../lib/version-context';
+import { ThemeToggle } from './theme-toggle';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
-import { cn } from '../utils/cn';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 interface GlobalPreferencesProps {
   inline?: boolean;
@@ -41,20 +40,14 @@ interface GlobalPreferencesProps {
 }
 
 function PreferencesContent() {
+  const _logger = useLogger();
   const midnightWallet = useWallet();
   const { version, setVersion } = useVersion();
-  const runtimeConfig = useRuntimeConfiguration();
   const { statusInfo, isLoading, refreshContract } = useLunarswapContext();
   const [animationsEnabled, setAnimationsEnabledState] = useState(true);
   const [showContractDetails, setShowContractDetails] = useState(false);
 
   // Use the contract integration context instead of local state
-  useEffect(() => {
-    console.log(
-      '[ContractStatusIndicator] useEffect triggered, contract status from context:',
-      statusInfo,
-    );
-  }, [statusInfo]);
   // Load animation setting from localStorage
   useEffect(() => {
     try {
@@ -63,9 +56,12 @@ function PreferencesContent() {
         setAnimationsEnabledState(JSON.parse(stored));
       }
     } catch (error) {
-      console.warn('Failed to load animation settings:', error);
+      _logger?.warn(
+        `[GlobalPreferences] Failed to load animation settings: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
     }
-  }, []);
+  }, [_logger]);
 
   // Save animation setting to localStorage
   const toggleAnimations = (enabled: boolean) => {
@@ -80,7 +76,10 @@ function PreferencesContent() {
         new CustomEvent('animations-toggled', { detail: { enabled } }),
       );
     } catch (error) {
-      console.warn('Failed to save animation settings:', error);
+      _logger?.warn(
+        `[GlobalPreferences] Failed to save animation settings: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
     }
   };
 

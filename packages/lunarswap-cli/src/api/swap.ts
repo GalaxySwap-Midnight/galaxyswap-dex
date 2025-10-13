@@ -1,11 +1,11 @@
-import type { Logger } from 'pino';
-import type { Lunarswap } from '@midnight-dapps/lunarswap-api';
 import type {
-  Either,
-  ZswapCoinPublicKey,
   CoinInfo,
   ContractAddress,
-} from '@midnight-dapps/compact-std';
+  Either,
+  ZswapCoinPublicKey,
+} from '@openzeppelin-midnight-apps/compact-std';
+import type { Lunarswap } from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { Logger } from 'pino';
 
 // Helper function to create CoinInfo from user input
 export const createCoinInfo = (color: string, value: bigint): CoinInfo => ({

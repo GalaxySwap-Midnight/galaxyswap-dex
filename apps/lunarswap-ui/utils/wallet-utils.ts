@@ -4,6 +4,7 @@ import type {
   DAppConnectorWalletState,
   ServiceUriConfig,
 } from '@midnight-ntwrk/dapp-connector-api';
+import { pipe as fnPipe } from 'fp-ts/function';
 import type { Logger } from 'pino';
 import {
   concatMap,
@@ -17,7 +18,6 @@ import {
   throwError,
   timeout,
 } from 'rxjs';
-import { pipe as fnPipe } from 'fp-ts/function';
 import semver from 'semver';
 
 // Helper function to add timeout to promises
@@ -153,7 +153,7 @@ export const connectToWallet = (
             walletConnectorAPI: await connectorAPI.enable(),
             connectorAPI,
           };
-        } catch (e) {
+        } catch (_e) {
           logger.error('Unable to enable connector API');
           throw new Error('Application is not authorized');
         }

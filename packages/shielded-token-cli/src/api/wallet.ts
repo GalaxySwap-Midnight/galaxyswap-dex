@@ -5,17 +5,20 @@ import { type Resource, WalletBuilder } from '@midnight-ntwrk/wallet';
 import { getZswapNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
 import { firstValueFrom, throttleTime, tap, filter, map } from 'rxjs';
 import { existsSync, createReadStream } from 'node:fs';
-import { encodeCoinPublicKey, nativeToken } from '@midnight-ntwrk/ledger';
+import { nativeToken } from '@midnight-ntwrk/ledger';
 import { streamToString, serializeBigInts, toHex, randomBytes } from './utils';
 import * as bip39 from '@scure/bip39';
 import { wordlist as english } from '@scure/bip39/wordlists/english';
 import { HDWallet, Roles } from '@midnight-ntwrk/wallet-sdk-hd';
 
-export const mnemonicToWords: (mnemonic: string) => string[] = (mnemonic: string) => mnemonic.split(' ');
+export const mnemonicToWords: (mnemonic: string) => string[] = (
+  mnemonic: string,
+) => mnemonic.split(' ');
 
 /** A wrapper around the bip39 package function, with default strength applied to produce 24 words */
-export const generateMnemonicWords: (strength?: number) => string[] = (strength = 256) =>
-  mnemonicToWords(bip39.generateMnemonic(english, strength));
+export const generateMnemonicWords: (strength?: number) => string[] = (
+  strength = 256,
+) => mnemonicToWords(bip39.generateMnemonic(english, strength));
 
 const waitForSyncProgress = async (wallet: Wallet, logger: Logger) => {
   await firstValueFrom(
@@ -78,30 +81,34 @@ const waitForFunds = (wallet: Wallet, logger: Logger) =>
         const sourceGap = state.syncProgress?.lag.sourceGap ?? 0n;
         const balance = state.balances;
         const nativeBalance = balance[nativeToken()];
-        
+
         if (state.syncProgress?.synced === true) {
           if (nativeBalance === undefined || nativeBalance === 0n) {
             logger.warn(
-              `⚠️  Wallet is synced but balance is 0. Please fund your wallet or wait for transactions to process.`
+              '⚠️  Wallet is synced but balance is 0. Please fund your wallet or wait for transactions to process.',
             );
             logger.info(
-              `💰 Current balances: ${JSON.stringify(serializeBigInts(balance))}`
+              `💰 Current balances: ${JSON.stringify(serializeBigInts(balance))}`,
             );
           } else {
             logger.info(
-              `✅ Wallet funded! Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`
+              `✅ Wallet funded! Native balance: ${nativeBalance}, balances: ${JSON.stringify(serializeBigInts(balance))}`,
             );
           }
         } else {
           logger.info(
-            `🔄 Wallet syncing... Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`
+            `🔄 Wallet syncing... Backend lag: ${sourceGap}, wallet lag: ${applyGap}, transactions=${state.transactionHistory.length}`,
           );
         }
       }),
       filter((state) => {
         const balance = state.balances;
         const nativeBalance = balance[nativeToken()];
-        return state.syncProgress?.synced === true && nativeBalance !== undefined && nativeBalance > 0n;
+        return (
+          state.syncProgress?.synced === true &&
+          nativeBalance !== undefined &&
+          nativeBalance > 0n
+        );
       }),
       map((s) => {
         const balance = s.balances;
@@ -245,14 +252,18 @@ export const buildWalletAndWaitForFunds = async (
   logger.info(`Your wallet seed is: ${seed}`);
   logger.info(`Your wallet address is: ${state.address}`);
   logger.info(`Your wallet coin public key is: ${state.coinPublicKey}`);
-  logger.info(`Your wallet encrypted coin public key is: ${state.encryptionPublicKey}`);
+  logger.info(
+    `Your wallet encrypted coin public key is: ${state.encryptionPublicKey}`,
+  );
   let balance = state.balances[nativeToken()];
   if (balance === undefined || balance === 0n) {
     logger.info('Your wallet balance is: 0');
     logger.info('Waiting to receive tokens...');
     balance = await waitForFunds(wallet, logger);
   }
-  logger.info(`Your wallet balance is: ${(Number(balance) / 1e6).toFixed(6)} (raw: ${balance})`);
+  logger.info(
+    `Your wallet balance is: ${(Number(balance) / 1e6).toFixed(6)} (raw: ${balance})`,
+  );
   return wallet;
 };
 
@@ -296,16 +307,20 @@ export const buildWalletFromRecoveryPhrase = async (
 
   logger.info('Converting recovery phrase to seed...');
   logger.info(`Recovery phrase: ${recoveryPhrase}`);
-  logger.info(`Generated seed (64 bytes): ${Buffer.from(seed).toString('hex')}`);
+  logger.info(
+    `Generated seed (64 bytes): ${Buffer.from(seed).toString('hex')}`,
+  );
 
   // Create HD wallet from seed
   const hdWalletResult = HDWallet.fromSeed(seed);
   if (hdWalletResult.type === 'seedError') {
-    throw new Error(`Failed to create HD wallet from seed: ${hdWalletResult.error}`);
+    throw new Error(
+      `Failed to create HD wallet from seed: ${hdWalletResult.error}`,
+    );
   }
 
   const hdWallet = hdWalletResult.hdWallet;
-  
+
   // Derive the Zswap key (account 0, role Zswap, index 0)
   const accountKey = hdWallet.selectAccount(0);
   const roleKey = accountKey.selectRole(Roles.Zswap);

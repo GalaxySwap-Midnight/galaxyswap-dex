@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { Buffer } from 'buffer';
 import { Header } from '@/components/header';
-import { StarsBackground } from '@/components/stars-background';
 import { MoonDustBackground } from '@/components/moon-dust-background';
+import { StarsBackground } from '@/components/stars-background';
 import { TokenIcon } from '@/components/token-icon';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,16 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Grid3X3, List, Clock } from 'lucide-react';
-import { popularTokens } from '@/lib/token-config';
-import type { Token } from '@/lib/token-config';
 import { useViewPreference } from '@/hooks/use-view-preference';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { Buffer } from 'buffer';
+import { popularTokens } from '@/lib/token-config';
+import type { Token } from '@/lib/token-config';
+import { Clock, Grid3X3, List, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export const metadata = {
   title: 'Explore & Manage Midnight Tokens',
@@ -54,8 +54,6 @@ function TokensContent() {
       return;
     }
 
-    console.log('Filtering tokens based on allPairs:', allPairs.length);
-
     // Extract unique tokens from all pairs
     const tokenSet = new Set<string>();
     for (const { pair } of allPairs) {
@@ -63,16 +61,7 @@ function TokensContent() {
       const token1Color = Buffer.from(pair.token1Type).toString('hex');
       tokenSet.add(token0Color);
       tokenSet.add(token1Color);
-      console.log('Added token colors:', {
-        token0Color: token0Color.slice(-8),
-        token1Color: token1Color.slice(-8),
-      });
     }
-
-    console.log(
-      'All token colors from pools:',
-      Array.from(tokenSet).map((color) => color.slice(-8)),
-    );
 
     // Filter popular tokens to only include those with pools
     const available = popularTokens.filter((token) => {
@@ -80,23 +69,12 @@ function TokensContent() {
       const hasMatch = Array.from(tokenSet).some(
         (color) => color.slice(-8) === tokenTypeSuffix,
       );
-      console.log(
-        `Token ${token.symbol}: type suffix ${tokenTypeSuffix}, has match: ${hasMatch}`,
-      );
       return hasMatch;
     });
-
-    console.log(
-      'Available tokens after filtering:',
-      available.map((t) => ({ symbol: t.symbol, shielded: t.shielded })),
-    );
 
     // Only set available tokens if we have a successful connection and pools
     if (isConnected && status === 'connected') {
       if (available.length === 0 && allPairs.length > 0) {
-        console.log(
-          'No matching tokens found in pools, showing all popular tokens',
-        );
         setAvailableTokens(popularTokens);
       } else {
         setAvailableTokens(available);
@@ -108,16 +86,6 @@ function TokensContent() {
 
   const tokens: Token[] =
     isConnected && status === 'connected' ? availableTokens : [];
-
-  // Debug logging
-  console.log('Tokens page state:', {
-    isConnected,
-    status,
-    availableTokensLength: availableTokens.length,
-    tokensLength: tokens.length,
-    allPairsLength: allPairs.length,
-    availableTokens: availableTokens.map(t => ({ symbol: t.symbol, shielded: t.shielded })),
-  });
 
   const filteredTokens = tokens.filter(
     (token) =>
@@ -156,7 +124,10 @@ function TokensContent() {
                 <div className="flex items-center gap-2 mb-1">
                   <CardTitle className="text-lg">{token.symbol}</CardTitle>
                   {token.shielded && (
-                    <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700"
+                    >
                       Shielded
                     </Badge>
                   )}
@@ -255,7 +226,10 @@ function TokensContent() {
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-lg font-semibold">{token.symbol}</h3>
                     {token.shielded && (
-                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-700"
+                      >
                         Shielded
                       </Badge>
                     )}
@@ -464,7 +438,9 @@ function TokensContent() {
                   </div>
                   <div>
                     <span className="font-medium">Shielded:</span>
-                    <span className="ml-2">{tokens.filter(t => t.shielded).length}</span>
+                    <span className="ml-2">
+                      {tokens.filter((t) => t.shielded).length}
+                    </span>
                   </div>
                   <div>
                     <span className="font-medium">Network:</span>

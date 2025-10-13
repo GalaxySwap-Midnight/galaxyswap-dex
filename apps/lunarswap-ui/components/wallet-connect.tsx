@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
-import { Wallet, ChevronDown, Chrome, ExternalLink } from 'lucide-react';
+import { ChevronDown, Chrome, ExternalLink, Wallet } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
 import { AccountPanel } from './account-panel';
 import { Identicon } from './identicon';
 
@@ -12,24 +12,36 @@ interface WalletConnectProps {
   onAccountPanelStateChange?: (isOpen: boolean) => void;
 }
 
-export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps) {
-  const { isConnected, isConnecting, connect, disconnect, address, walletAPI } = useWallet();
+export function WalletConnect({
+  onAccountPanelStateChange,
+}: WalletConnectProps) {
+  const { isConnected, isConnecting, connect, disconnect, address } =
+    useWallet();
   const [isAccountPanelOpen, setIsAccountPanelOpen] = useState(false);
-  const [browserStatus, setBrowserStatus] = useState<'firefox' | 'no-wallet' | 'supported' | 'checking'>('checking');
+  const [browserStatus, setBrowserStatus] = useState<
+    'firefox' | 'no-wallet' | 'supported' | 'checking'
+  >('checking');
 
   useEffect(() => {
     // Check browser type
     const userAgent = navigator.userAgent.toLowerCase();
-    const isFirefox = userAgent.includes('firefox') || userAgent.includes('waterfox') || userAgent.includes('iceweasel');
-    
+    const isFirefox =
+      userAgent.includes('firefox') ||
+      userAgent.includes('waterfox') ||
+      userAgent.includes('iceweasel');
+
     if (isFirefox) {
       setBrowserStatus('firefox');
       return;
     }
 
     // Check if it's a Chromium-based browser
-    const isChromium = userAgent.includes('chrome') || userAgent.includes('edge') || userAgent.includes('brave') || userAgent.includes('chromium');
-    
+    const isChromium =
+      userAgent.includes('chrome') ||
+      userAgent.includes('edge') ||
+      userAgent.includes('brave') ||
+      userAgent.includes('chromium');
+
     if (isChromium) {
       // Check if Midnight Lace wallet is available
       const checkWalletAvailability = () => {
@@ -47,7 +59,7 @@ export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps)
       const timeout = setTimeout(checkWalletAvailability, 1000);
       return () => clearTimeout(timeout);
     }
-    
+
     // Other browsers, assume supported
     setBrowserStatus('supported');
   }, []);
@@ -55,7 +67,7 @@ export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps)
   const handleConnect = async () => {
     try {
       await connect(true);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to connect to wallet. Please try again.');
     }
   };
@@ -82,12 +94,17 @@ export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps)
   };
 
   const openLaceWalletDownload = () => {
-    window.open('https://chrome.google.com/webstore/detail/midnight-lace/your-extension-id', '_blank');
+    window.open(
+      'https://chrome.google.com/webstore/detail/midnight-lace/your-extension-id',
+      '_blank',
+    );
   };
 
   if (isConnected && address) {
-    const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-5)}` : '...';
-    
+    const shortAddress = address
+      ? `${address.slice(0, 6)}...${address.slice(-5)}`
+      : '...';
+
     return (
       <>
         <Button
@@ -96,9 +113,7 @@ export function WalletConnect({ onAccountPanelStateChange }: WalletConnectProps)
           className="flex items-center gap-2 rounded-full px-3 py-2"
         >
           <Identicon address={address} size={20} />
-          <span className="font-mono text-sm">
-            {shortAddress}
-          </span>
+          <span className="font-mono text-sm">{shortAddress}</span>
           <ChevronDown className="h-4 w-4" />
         </Button>
 

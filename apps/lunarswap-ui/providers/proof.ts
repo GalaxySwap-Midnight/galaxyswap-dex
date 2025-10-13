@@ -1,10 +1,10 @@
+import type { UnprovenTransaction } from '@midnight-ntwrk/ledger';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import type {
   ProofProvider,
   UnbalancedTransaction,
 } from '@midnight-ntwrk/midnight-js-types';
 import type { ProveTxConfig } from '@midnight-ntwrk/midnight-js-types';
-import type { UnprovenTransaction } from '@midnight-ntwrk/ledger';
 
 export const proofClient = <K extends string>(
   url: string,
@@ -16,10 +16,6 @@ export const proofClient = <K extends string>(
       tx: UnprovenTransaction,
       proveTxConfig?: ProveTxConfig<K>,
     ): Promise<UnbalancedTransaction> => {
-      console.log('proveTx', tx);
-      console.dir(tx, { depth: null });
-      console.log('proveTxConfig', proveTxConfig);
-      console.dir(proveTxConfig, { depth: null });
       // eslint-disable-next-line n/no-callback-literal
       callback('proveTxStarted');
       try {

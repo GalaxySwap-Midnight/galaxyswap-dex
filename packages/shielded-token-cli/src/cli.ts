@@ -5,10 +5,14 @@ import type { Config } from './config';
 import type {
   ShieldedTokenProviders,
   ShieldedToken,
-} from '@midnight-dapps/shielded-token-api';
+} from '@openzeppelin-midnight-apps/shielded-token-api';
 import type { Wallet } from '@midnight-ntwrk/wallet-api';
 import type { Resource } from '@midnight-ntwrk/wallet';
-import { buildFreshWallet, buildWalletFromSeed, buildWalletFromRecoveryPhrase } from './api/wallet';
+import {
+  buildFreshWallet,
+  buildWalletFromSeed,
+  buildWalletFromRecoveryPhrase,
+} from './api/wallet';
 import { configureProviders } from './api/providers';
 import { deployContract, joinContract } from './api/contract';
 import {
@@ -88,7 +92,11 @@ const buildWallet = async (
       case '4': {
         if (config.testRecoveryPhrase) {
           logger.info('Using test recovery phrase from environment variable');
-          return await buildWalletFromRecoveryPhrase(config, config.testRecoveryPhrase, logger);
+          return await buildWalletFromRecoveryPhrase(
+            config,
+            config.testRecoveryPhrase,
+            logger,
+          );
         }
         logger.error(
           'No test recovery phrase found in environment variable TEST_RECOVERY_PHRASE',
@@ -115,30 +123,45 @@ const deployOrJoin = async (
     const choice = await rli.question(DEPLOY_OR_JOIN_QUESTION);
     switch (choice) {
       case '1': {
-        const tokenName = await rli.question('Enter token name (e.g., "My Awesome Token"): ');
+        const tokenName = await rli.question(
+          'Enter token name (e.g., "My Awesome Token"): ',
+        );
         if (!tokenName.trim()) {
           logger.error('Token name cannot be empty. Please try again.');
           continue;
         }
-        
-        const tokenSymbol = await rli.question('Enter token symbol (e.g., "MAT"): ');
+
+        const tokenSymbol = await rli.question(
+          'Enter token symbol (e.g., "MAT"): ',
+        );
         if (!tokenSymbol.trim()) {
           logger.error('Token symbol cannot be empty. Please try again.');
           continue;
         }
-        
-        logger.info(`📋 Token Details:`);
+
+        logger.info('📋 Token Details:');
         logger.info(`   Name: ${tokenName}`);
         logger.info(`   Symbol: ${tokenSymbol}`);
         logger.info(''); // Empty line for better spacing
-        
-        const confirm = await rli.question('Deploy with these details? (Y/n): ');
-        if (confirm.trim() !== '' && confirm.toLowerCase() !== 'y' && confirm.toLowerCase() !== 'yes') {
+
+        const confirm = await rli.question(
+          'Deploy with these details? (Y/n): ',
+        );
+        if (
+          confirm.trim() !== '' &&
+          confirm.toLowerCase() !== 'y' &&
+          confirm.toLowerCase() !== 'yes'
+        ) {
           logger.info('Deployment cancelled. Please try again.');
           continue;
         }
-        
-        return await deployContract(providers, tokenName.trim(), tokenSymbol.trim(), logger);
+
+        return await deployContract(
+          providers,
+          tokenName.trim(),
+          tokenSymbol.trim(),
+          logger,
+        );
       }
       case '2': {
         const contractAddress = await rli.question(CONTRACT_ADDRESS_QUESTION);

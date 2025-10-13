@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { RotateCcw, Settings, X, Minus, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { SelectPositionStep } from './steps/select-position-step';
 import { SetWithdrawalStep } from './steps/set-withdrawal-step';
@@ -47,6 +47,11 @@ export function RemoveLiquidityWizard({ onClose }: RemoveLiquidityWizardProps) {
   const handleReset = () => {
     setPositionData(null);
     setCurrentStep('select-position');
+  };
+
+  const handleClose = () => {
+    handleReset();
+    onClose?.();
   };
 
   return (
@@ -124,7 +129,7 @@ export function RemoveLiquidityWizard({ onClose }: RemoveLiquidityWizardProps) {
         {/* Right content area */}
         <div className="flex-1">
           {/* Privacy Notice */}
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between">
             <div className="flex items-start space-x-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <div className="w-4 h-4 bg-red-100 dark:bg-red-800 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <AlertCircle className="w-2 h-2 text-red-600 dark:text-red-400" />
@@ -139,6 +144,11 @@ export function RemoveLiquidityWizard({ onClose }: RemoveLiquidityWizardProps) {
                   proofs. Your actual balances remain private.
                 </p>
               </div>
+            </div>
+            <div className="ml-2">
+              <Button onClick={handleClose} variant="outline" size="sm">
+                Close
+              </Button>
             </div>
           </div>
 

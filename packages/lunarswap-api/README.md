@@ -24,8 +24,8 @@ pnpm install
 ### Basic Setup
 
 ```typescript
-import { Lunarswap } from '@midnight-dapps/lunarswap-api';
-import type { LunarswapProviders } from '@midnight-dapps/lunarswap-api';
+import { Lunarswap } from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { LunarswapProviders } from '@openzeppelin-midnight-apps/lunarswap-api';
 
 // Set up your providers
 const providers: LunarswapProviders = {
@@ -42,7 +42,7 @@ const lunarswap = await Lunarswap.join(providers, contractAddress, logger);
 ### Adding Liquidity
 
 ```typescript
-import type { CoinInfo, Either, ZswapCoinPublicKey, ContractAddress } from '@midnight-dapps/compact-std';
+import type { CoinInfo, Either, ZswapCoinPublicKey, ContractAddress } from '@openzeppelin-midnight-apps/compact-std';
 
 const tokenA: CoinInfo = { /* token A info */ };
 const tokenB: CoinInfo = { /* token B info */ };
@@ -167,8 +167,8 @@ pnpm run lint
 
 ## Dependencies
 
-- `@midnight-dapps/lunarswap-v1` - Contract definitions
-- `@midnight-dapps/compact-std` - Standard types
+- `@openzeppelin-midnight-apps/lunarswap-v1` - Contract definitions
+- `@openzeppelin-midnight-apps/compact-std` - Standard types
 - `@midnight-ntwrk/compact-runtime` - Runtime utilities
 - `@midnight-ntwrk/midnight-js-contracts` - Contract deployment
 - `@midnight-ntwrk/midnight-js-types` - Midnight types

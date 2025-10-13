@@ -1,33 +1,37 @@
 import { stdin as input, stdout as output } from 'node:process';
-import { createInterface, type Interface } from 'node:readline/promises';
-import type { Logger } from 'pino';
-import type { Config } from './config';
-import type {
-  LunarswapProviders,
-  Lunarswap,
-} from '@midnight-dapps/lunarswap-api';
-import type { CoinInfo } from '@midnight-dapps/compact-std';
-import type { Wallet } from '@midnight-ntwrk/wallet-api';
+import { type Interface, createInterface } from 'node:readline/promises';
 import type { Resource } from '@midnight-ntwrk/wallet';
-import { buildFreshWallet, buildWalletFromSeed, buildWalletFromRecoveryPhrase } from './api/wallet';
-import { configureProviders } from './api/providers';
+import type { Wallet } from '@midnight-ntwrk/wallet-api';
+import type { CoinInfo } from '@openzeppelin-midnight-apps/compact-std';
+import type {
+  Lunarswap,
+  LunarswapProviders,
+} from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { Logger } from 'pino';
 import { deployContract, joinContract } from './api/contract';
 import {
+  checkPairExists,
+  getAllPairsLength,
+  getLpTokenTotalSupplyInfo,
+  getPairIdentityInfo,
+  getPairInfo,
+  getPairReservesInfo,
+} from './api/pair-info';
+import { configureProviders } from './api/providers';
+import {
+  addLiquidity,
   createCoinInfo,
   createRecipient,
-  addLiquidity,
   removeLiquidity,
   swapExactTokensForTokens,
   swapTokensForExactTokens,
 } from './api/swap';
 import {
-  checkPairExists,
-  getAllPairsLength,
-  getPairInfo,
-  getPairReservesInfo,
-  getPairIdentityInfo,
-  getLpTokenTotalSupplyInfo,
-} from './api/pair-info';
+  buildFreshWallet,
+  buildWalletFromRecoveryPhrase,
+  buildWalletFromSeed,
+} from './api/wallet';
+import type { Config } from './config';
 
 let logger: Logger;
 
@@ -89,9 +93,7 @@ const buildWallet = async (
           logger.info('Using test seed from environment variable');
           return await buildWalletFromSeed(config, config.testSeed, logger);
         }
-        logger.error(
-          'No test seed found in environment variable TEST_SEED',
-        );
+        logger.error('No test seed found in environment variable TEST_SEED');
         logger.info(
           'Please set TEST_SEED environment variable or choose option 2 to enter seed manually',
         );
@@ -100,7 +102,11 @@ const buildWallet = async (
       case '4': {
         if (config.testRecoveryPhrase) {
           logger.info('Using test recovery phrase from environment variable');
-          return await buildWalletFromRecoveryPhrase(config, config.testRecoveryPhrase, logger);
+          return await buildWalletFromRecoveryPhrase(
+            config,
+            config.testRecoveryPhrase,
+            logger,
+          );
         }
         logger.error(
           'No test recovery phrase found in environment variable TEST_RECOVERY_PHRASE',
@@ -255,7 +261,10 @@ const handleSwapTokensForExactTokens = async (
 };
 
 // Helper function to get token input from user
-const getTokenInput = async (rli: Interface, tokenLabel: string): Promise<CoinInfo> => {
+const getTokenInput = async (
+  rli: Interface,
+  tokenLabel: string,
+): Promise<CoinInfo> => {
   const color = await rli.question(`Enter ${tokenLabel} color (hex): `);
   return createCoinInfo(color, 0n);
 };
@@ -269,9 +278,7 @@ const handleCheckPairExists = async (
   await checkPairExists(lunarswap, tokenA, tokenB, logger);
 };
 
-const handleGetAllPairsLength = async (
-  lunarswap: Lunarswap,
-): Promise<void> => {
+const handleGetAllPairsLength = async (lunarswap: Lunarswap): Promise<void> => {
   await getAllPairsLength(lunarswap, logger);
 };
 

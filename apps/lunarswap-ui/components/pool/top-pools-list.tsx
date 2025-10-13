@@ -1,19 +1,25 @@
 'use client';
 
+import { SplitTokenIcon } from '@/components/pool/split-token-icon';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowUpRight, Droplets } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useWallet } from '@/hooks/use-wallet';
 import { useLunarswapContext } from '@/lib/lunarswap-context';
-import { Badge } from '@/components/ui/badge';
-import { SplitTokenIcon } from '@/components/pool/split-token-icon';
 import { getTokenSymbolByColor } from '@/lib/token-utils';
+import { ArrowUpRight, Droplets } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function TopPoolsList() {
   const navigate = useNavigate();
   const { isConnected } = useWallet();
-  const { status, isLoading, isLoadingPublicState, hasLoadedDataOnce, allPairs } = useLunarswapContext();
+  const {
+    status,
+    isLoading,
+    isLoadingPublicState,
+    hasLoadedDataOnce,
+    allPairs,
+  } = useLunarswapContext();
 
   const handleExploreMorePools = () => {
     navigate('/explore', { state: { selectedOption: 'pools' } });
@@ -60,10 +66,9 @@ export function TopPoolsList() {
               <div className="text-left">
                 <h4 className="text-lg font-semibold mb-1">Loading Pools...</h4>
                 <p className="text-sm text-muted-foreground">
-                  {isLoading 
+                  {isLoading
                     ? 'Connecting to Lunarswap contract and fetching pool data.'
-                    : 'Fetching latest pool data and statistics.'
-                  }
+                    : 'Fetching latest pool data and statistics.'}
                 </p>
               </div>
             </div>

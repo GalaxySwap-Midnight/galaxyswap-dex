@@ -1,5 +1,6 @@
 'use client';
 
+import { TokenIcon } from '@/components/token-icon';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,14 +9,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { popularTokens } from '@/lib/token-config';
+import type { Token as UiToken } from '@/lib/token-config';
 import { ChevronDown, Search } from 'lucide-react';
 import { useState } from 'react';
-import { TokenIcon } from '@/components/token-icon';
-import {
-  popularTokens,
-} from '@/lib/token-config';
-import { useLunarswapContext } from '@/lib/lunarswap-context';
-import type { Token as UiToken } from '@/lib/token-config';
 
 interface TokenSelectorProps {
   selectedToken: UiToken | null;
@@ -32,7 +29,6 @@ export function TokenSelector({
 }: TokenSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const { allPairs, status } = useLunarswapContext();
 
   // Always show all popular tokens for add liquidity, not just tokens in existing pools
   // This allows users to create new pools for any token pair

@@ -8,9 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/utils/cn';
 import { useVersion } from '@/lib/version-context';
-import { Check, ChevronsUpDown, ExternalLink, Clock } from 'lucide-react';
+import { cn } from '@/utils/cn';
+import { Check, ChevronsUpDown, Clock, ExternalLink } from 'lucide-react';
 
 export function VersionSwitcher() {
   const { version, setVersion } = useVersion();

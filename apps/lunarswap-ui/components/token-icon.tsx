@@ -1,14 +1,16 @@
 'use client';
 
-import React from 'react';
-
 interface TokenIconProps {
   symbol: string;
   size?: number;
   className?: string;
 }
 
-export function TokenIcon({ symbol, size = 24, className = '' }: TokenIconProps) {
+export function TokenIcon({
+  symbol,
+  size = 24,
+  className = '',
+}: TokenIconProps) {
   // Validate symbol parameter
   if (!symbol || typeof symbol !== 'string') {
     symbol = 'UNKNOWN';
@@ -34,15 +36,15 @@ export function TokenIcon({ symbol, size = 24, className = '' }: TokenIconProps)
     let hash = 0;
     for (let i = 0; i < symbol.length; i++) {
       const char = symbol.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
-    
+
     // Generate hue, saturation, and lightness from hash
     const hue = Math.abs(hash) % 360;
     const saturation = 60 + (Math.abs(hash) % 20); // 60-80%
     const lightness = 45 + (Math.abs(hash) % 15); // 45-60%
-    
+
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   };
 
@@ -72,4 +74,4 @@ export function TokenIcon({ symbol, size = 24, className = '' }: TokenIconProps)
       {formattedSymbol}
     </div>
   );
-} 
+}

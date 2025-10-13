@@ -1,19 +1,32 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useWallet } from '../hooks/use-wallet';
+import { useLogger } from '@/hooks/use-logger';
+import type { ContractStatusInfo } from '@/lib/lunarswap-integration';
+import { proofClient } from '@/providers/proof';
+import { ZKConfigProviderWrapper } from '@/providers/zk-config';
+import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
+import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
+import type { PrivateStateProvider } from '@midnight-ntwrk/midnight-js-types';
+import type { ProofProvider } from '@midnight-ntwrk/midnight-js-types';
+import type { LunarswapCircuitKeys } from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { LunarswapProviders } from '@openzeppelin-midnight-apps/lunarswap-api';
+import { LunarswapPrivateStateId } from '@openzeppelin-midnight-apps/lunarswap-api';
+import type { LunarswapContract } from '@openzeppelin-midnight-apps/lunarswap-api';
 import {
-  createContractIntegration,
-  type ContractStatusInfo,
-} from '../lib/contract-integration';
-import { useRuntimeConfiguration } from '../lib/runtime-configuration';
+  Contract,
+  type LunarswapPrivateState,
+} from '@openzeppelin-midnight-apps/lunarswap-v1';
+import { LunarswapWitnesses } from '@openzeppelin-midnight-apps/lunarswap-v1';
 import {
   AlertCircle,
   CheckCircle,
   Clock,
-  XCircle,
   WifiOff,
+  XCircle,
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useWallet } from '../hooks/use-wallet';
+import { useRuntimeConfiguration } from '../lib/runtime-configuration';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -22,52 +35,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { ProviderCallbackAction } from '../lib/wallet-context';
-import { Lunarswap, LunarswapCircuitKeys } from '@midnight-dapps/lunarswap-api';
-import { LunarswapProviders } from '@midnight-dapps/lunarswap-api';
-import { LunarswapPrivateStateId } from '@midnight-dapps/lunarswap-api';
-import { Contract, LunarswapPrivateState } from '@midnight-dapps/lunarswap-v1';
-import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
-import { LunarswapWitnesses } from '@midnight-dapps/lunarswap-v1';
-import { LunarswapContract } from '@midnight-dapps/lunarswap-api';
-import {
-  PrivateStateProvider,
-  ZKConfigProvider,
-} from '@midnight-ntwrk/midnight-js-types';
-import { ProofProvider } from '@midnight-ntwrk/midnight-js-types';
-import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
-import { ZKConfigProviderWrapper } from '@/providers/zk-config';
-import { proofClient } from '@/providers/proof';
-import pino from 'pino';
-
-// Create a logger instance
-const logger = pino({
-  level: 'debug',
-  browser: {
-    asObject: true,
-  },
-});
 
 export function ContractStatusIndicator() {
   const midnightWallet = useWallet();
   const runtimeConfig = useRuntimeConfiguration();
+  const _logger = useLogger();
   const [statusInfo, setStatusInfo] = useState<ContractStatusInfo>({
     status: 'not-configured',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  const checkContractStatus: () => Promise<void> = async () => {
-    console.log('[ContractStatusIndicator] checkContractStatus called');
-
+  const checkContractStatus = useCallback(async () => {
     if (
       !midnightWallet.walletAPI ||
       !midnightWallet.isConnected ||
       !runtimeConfig
     ) {
-      console.log(
-        '[ContractStatusIndicator] Early return - missing dependencies',
-      );
       setStatusInfo({
         status: 'not-configured',
         message: 'Please connect your wallet first',
@@ -77,7 +61,6 @@ export function ContractStatusIndicator() {
 
     setIsLoading(true);
     try {
-      console.log('[ContractStatusIndicator] Starting contract status check');
       // Create private state provider
       const privateStateProvider: PrivateStateProvider<
         typeof LunarswapPrivateStateId,
@@ -85,19 +68,11 @@ export function ContractStatusIndicator() {
       > = levelPrivateStateProvider({
         privateStateStoreName: 'lunarswap-private-state',
       });
-      console.log(
-        '[ContractStatusIndicator] Created privateStateProvider',
-        privateStateProvider,
-      );
 
       // Create proof provider
       const proofProvider: ProofProvider<LunarswapCircuitKeys> = proofClient(
         midnightWallet.walletAPI.uris.proverServerUri,
         midnightWallet.callback,
-      );
-      console.log(
-        '[ContractStatusIndicator] Created proofProvider',
-        proofProvider,
       );
 
       // Create ZK config provider
@@ -107,10 +82,6 @@ export function ContractStatusIndicator() {
           fetch.bind(window),
           midnightWallet.callback,
         );
-      console.log(
-        '[ContractStatusIndicator] Created zkConfigProvider',
-        zkConfigProvider,
-      );
 
       const providers: LunarswapProviders = {
         privateStateProvider,
@@ -120,19 +91,8 @@ export function ContractStatusIndicator() {
         walletProvider: midnightWallet.walletProvider,
         midnightProvider: midnightWallet.midnightProvider,
       };
-      console.log('[ContractStatusIndicator] Assembled providers', providers);
 
       const contract: LunarswapContract = new Contract(LunarswapWitnesses());
-      console.log('[ContractStatusIndicator] Instantiated contract', contract);
-
-      console.log(
-        '[ContractStatusIndicator] Calling findDeployedContract with:',
-        {
-          privateStateId: LunarswapPrivateStateId,
-          contractAddress: runtimeConfig.LUNARSWAP_ADDRESS,
-          contract,
-        },
-      );
 
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
@@ -143,26 +103,16 @@ export function ContractStatusIndicator() {
         );
       });
 
-      console.log(
-        '[ContractStatusIndicator] About to call findDeployedContract...',
-      );
       const findPromise = findDeployedContract(providers, {
         privateStateId: LunarswapPrivateStateId,
         contractAddress: runtimeConfig.LUNARSWAP_ADDRESS,
         contract,
       });
-      console.log(
-        '[ContractStatusIndicator] findDeployedContract called, waiting for result...',
-      );
 
       const found = (await Promise.race([
         findPromise,
         timeoutPromise,
       ])) as boolean;
-      console.log(
-        '[ContractStatusIndicator] findDeployedContract result:',
-        found,
-      );
 
       if (found) {
         setStatusInfo({
@@ -177,7 +127,10 @@ export function ContractStatusIndicator() {
         });
       }
     } catch (error) {
-      console.error('Contract status check failed:', error);
+      _logger?.error(
+        `[ContractStatusIndicator] Contract status check failed: ${error instanceof Error ? error.message : String(error)}`,
+        error,
+      );
       setStatusInfo({
         status: 'error',
         error: error instanceof Error ? error.message : String(error),
@@ -186,17 +139,20 @@ export function ContractStatusIndicator() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [
+    midnightWallet.walletAPI,
+    midnightWallet.isConnected,
+    midnightWallet.callback,
+    midnightWallet.publicDataProvider,
+    midnightWallet.walletProvider,
+    midnightWallet.midnightProvider,
+    runtimeConfig,
+    _logger,
+  ]);
 
-  useEffect(async () => {
-    console.log(
-      '[ContractStatusIndicator] useEffect triggered, calling checkContractStatus',
-    );
-    await checkContractStatus();
-    console.log(
-      '[ContractStatusIndicator] useEffect triggered, checkContractStatus completed',
-    );
-  }, []);
+  useEffect(() => {
+    void checkContractStatus();
+  }, [checkContractStatus]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
