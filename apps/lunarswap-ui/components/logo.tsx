@@ -56,9 +56,6 @@ export function Logo({ size = 36, className = '' }) {
             height={size}
             className={className}
           />
-          <div className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow-sm">
-            Alpha
-          </div>
         </div>
         <span className="font-bold text-xl bg-gradient-to-r from-gray-800 to-blue-600 dark:from-gray-300 dark:to-blue-400 bg-clip-text text-transparent tracking-tight">
           Lunarswap

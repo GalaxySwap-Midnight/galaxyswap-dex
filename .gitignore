@@ -158,3 +158,5 @@ artifacts/
 midnight-level-db/
 
 .vite
+
+.netlify

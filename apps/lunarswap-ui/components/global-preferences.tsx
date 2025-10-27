@@ -33,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { VersionInfo } from './version-info';
 
 interface GlobalPreferencesProps {
   inline?: boolean;
@@ -300,6 +301,11 @@ function PreferencesContent() {
               Coming Soon
             </Badge>
           </div>
+        </div>
+
+        {/* Version Information */}
+        <div className="p-2 rounded-lg">
+          <VersionInfo />
         </div>
       </div>
 

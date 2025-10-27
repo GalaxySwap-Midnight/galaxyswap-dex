@@ -2,6 +2,7 @@
 
 import { GlobalPreferences } from '@/components/global-preferences';
 import { Logo } from '@/components/logo';
+import { VersionBadge } from '@/components/version-badge';
 import { WalletConnect } from '@/components/wallet-connect';
 import { useWallet } from '@/hooks/use-wallet';
 import { cn } from '@/utils/cn';
@@ -58,6 +59,7 @@ export function Header() {
 
           {/* Right side - Global Preferences (only when not connected) and Wallet Connect */}
           <div className="flex items-center space-x-2">
+            <VersionBadge />
             {!isConnected && !isAccountPanelOpen && <GlobalPreferences />}
             <WalletConnect onAccountPanelStateChange={setIsAccountPanelOpen} />
           </div>
