@@ -38,13 +38,10 @@
   cd apps/lunarswap-ui
   pnpm run build
   """
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
 
 [build.environment]
   NODE_VERSION = "22"
   PNPM_VERSION = "10.4.1"
-  NPM_FLAGS = "--version"  # This prevents Netlify from auto-installing
-  NETLIFY_USE_PNPM = "false"  # Disable auto-detection
 
 [[redirects]]
   from = "/lunarswap/*"
