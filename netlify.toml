@@ -1,6 +1,6 @@
 [build]
   base = "."
-  publish = "apps/lunarswap-ui/.next"
+  publish = "apps/lunarswap-ui/dist"
   command = """
   set -euo pipefail
   corepack enable
