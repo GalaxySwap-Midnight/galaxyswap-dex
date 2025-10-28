@@ -9,7 +9,7 @@
   # go to repo root
   cd ..
 
-  # 1) Install compactc exactly where your packages expect it
+  # 1) Install compactc where packages expect it
   COMPACT_HOME="$PWD/packages/compact/compactc"
   mkdir -p "$COMPACT_HOME"
   V=0.23.0
@@ -21,17 +21,17 @@
   export COMPACT_HOME PATH="$COMPACT_HOME:$PATH"
   "$COMPACT_HOME/compactc" --version
 
-  # 2) Prebuild the local 'packages/compact' to create dist/run*.js
+  # 2) Prebuild packages/compact to create dist/run*.js
   pushd packages/compact >/dev/null
   pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
   pnpm run build
   popd >/dev/null
 
-  # 3) ***CRUCIAL*** Do a full install NOW (without --ignore-scripts)
-  #    This recreates node_modules/.bin/* links (compact-builder/compact-compiler)
-  pnpm install --frozen-lockfile --prefer-offline
+  # 3) Force reinstall to RELINK bins now that dist/* exists
+  pnpm install --force --frozen-lockfile --prefer-offline
+  pnpm rebuild -r
 
-  # 4) Build workspaces (serial to be safe)
+  # 4) Build workspaces (serial)
   pnpm -r --workspace-concurrency=1 run build
 
   # 5) Build Next app
@@ -42,7 +42,6 @@
 [build.environment]
   NODE_VERSION = "22"
   PNPM_VERSION = "10.4.1"
-  # Make Netlify’s *automatic* install skip scripts to avoid early failure
-  PNPM_FLAGS = "--ignore-scripts"
+  PNPM_FLAGS = "--ignore-scripts"            # keep Netlify auto-install from running scripts early
   PNPM_ALLOW_SCRIPT = "1"
   PNPM_ENABLE_PREPOST_SCRIPTS = "true"
