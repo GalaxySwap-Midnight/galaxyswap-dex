@@ -41,5 +41,6 @@
 
 [[redirects]]
   from = "/lunarswap/*"
-  to = "/lunarswap/index.html"
+  to = "https://lunarswap.netlify.app/:splat"
   status = 200
+  force = true
