@@ -64,7 +64,6 @@ Turbo manages tasks across the monorepo, defined in `turbo.json`. Key tasks:
   - **Note**: Running from root with `pnpm compact`, `pnpm compact:fast`, `pnpm compact:version`, or `pnpm compact:language-version` may cause output repetition issues.
   - Variants:
     - `pnpm compact:fast`: Compiles with `--skip-zk` flag for faster builds.
-    - `pnpm compact:fmt`: Formats all `.compact` files using `compact format`.
 
 - **`build`**:
   - **`build:contracts`**

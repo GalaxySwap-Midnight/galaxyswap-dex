@@ -10,7 +10,6 @@
     "compact:fast": "turbo run compact -- --skip-zk",
     "compact:version": "turbo run compact -- --version",
     "compact:language-version": "turbo run compact -- --language-version",
-    "compact:fmt": "compact format",
     "build": "turbo run build",
     "build:contracts": "turbo run build --filter './contracts/*'",
     "build:apps": "turbo run build --filter './apps/*'",
