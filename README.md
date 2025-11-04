@@ -49,7 +49,9 @@ compact --version
    ```bash
    # Navigate to each contract package and run build
    cd contracts/access && pnpm build 
+   cd ../compact-std && pnpm build
    cd ../math && pnpm build
+   cd ../shielded-token && pnpm build
    cd ../structs && pnpm build
    ```
    - **Note**: Running `pnpm build:contracts`, `pnpm compact`, `pnpm compact:fast`, `pnpm compact:version`, or `pnpm compact:language-version` from the root may cause repetitive output due to Turbo's logging behavior. It's recommended to compile contracts individually from within each package directory.
