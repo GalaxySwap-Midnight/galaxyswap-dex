@@ -29,6 +29,7 @@
     "compact:shielded-token": "compact-compiler --dir shielded-token",
     "compact:structs": "compact-compiler --dir structs",
     "compact:math": "compact-compiler --dir math",
+    "compact:lunarswap-v1": "compact-compiler --dir lunarswap-v1",
     "build": "compact-builder",
     "test": "compact-compiler --skip-zk && vitest run",
     "types": "tsc -p tsconfig.json --noEmit",
